@@ -30,6 +30,13 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       (participação), que virá com as próximas telas/entidades.
 - [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
       todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
+- [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já
+      existe e é atribuído na geração (`INITIAL_FAVORITE_SPORT_ID` em
+      `athletes.js`), mas por ora **todos nascem com Atletismo**. Depois, sortear
+      entre os esportes (provavelmente ponderando por popularidade). Estender a
+      ligação também para **modalidades** (modalidade favorita/praticada).
+- [ ] **Esporte favorito na UI de Atletas.** O campo `favoriteSportId` ainda
+      **não aparece** na tela; exibir no expandir do atleta depois.
 
 ## Atletas — UI
 

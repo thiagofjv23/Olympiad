@@ -95,6 +95,13 @@ Regras a seguir sempre, salvo instrução em contrário:
     Preparação Física reduz menos) — criei a fórmula, mas ela ainda não é aplicada
     (falta o vínculo atleta ↔ etapa). Registrado no `TODO.md`.
 
+14a. **Esporte favorito guardado como `favoriteSportId` (referência a `sports.js`),
+    não texto.** Segui o padrão das demais ligações do atleta (`countryId`,
+    `birthCityId`): guardo o id do esporte e resolvo o objeto quando preciso
+    (`getAthleteFavoriteSport`), evitando duplicar nome/dados. O valor inicial
+    fixo (Atletismo) fica numa constante única (`INITIAL_FAVORITE_SPORT_ID`) para
+    ser fácil trocar por um sorteio depois.
+
 ---
 
 ## Entidades e dados

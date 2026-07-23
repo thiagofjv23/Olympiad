@@ -112,9 +112,11 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
 | `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
+| `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — a ligação do atleta com um esporte. Todo regen recebe um ao ser gerado; neste início, **todos têm Atletismo** (`SPT-ATLETISMO`). |
 
 Nome exibido = `label` + código do COI do país, ex.: **`Atleta 1 (BRA)`**
-(via `getAthleteName(athlete)`).
+(via `getAthleteName(athlete)`). O esporte favorito é resolvido por
+`getAthleteFavoriteSport(athlete)` (objeto de `sports.js`).
 
 Regras de geração:
 
@@ -517,6 +519,20 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 20 — Esporte favorito do atleta (ligação atleta ↔ esporte)
+
+- Primeiro passo da ligação **atletas ↔ esportes/modalidades**: criado o campo
+  **`favoriteSportId`** na entidade Atleta (referência a `sports.js`).
+- **Todo regen recebe um esporte favorito ao ser gerado.** Neste início, todos
+  nascem com **Atletismo** (`SPT-ATLETISMO`), via a constante
+  `INITIAL_FAVORITE_SPORT_ID` em `athletes.js`.
+- Helper de resolução `getAthleteFavoriteSport(athlete)` (retorna o objeto do
+  esporte), no mesmo estilo de `getAthleteName`.
+- **Sem UI ainda** — apenas o campo, a atribuição na geração e o helper.
+  Variar o esporte favorito entre os regens fica registrado no `TODO.md`.
+- **Verificado**: `generateAthletes` produz atletas com
+  `favoriteSportId === "SPT-ATLETISMO"` e o helper resolve para "Atletismo".
 
 ---
 

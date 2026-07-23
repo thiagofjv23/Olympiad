@@ -12,6 +12,9 @@
 //   - physicalPreparation  : Preparação Física (0-100)
 //   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
 //   - birthCityId          : cidade de nascimento (ver cities.js)
+//   - favoriteSportId      : esporte favorito (ver sports.js) — a ligação do
+//                            atleta com um esporte. Todo regen recebe um ao ser
+//                            gerado; neste início, todos têm Atletismo.
 //
 // O nome exibido combina o label com o código do COI do país,
 // por exemplo: "Atleta 1 (BRA)".
@@ -19,6 +22,11 @@
 
 // Capacidade máxima do gerador (faixa de idade que ele consegue produzir).
 const ATHLETE_AGE_LIMITS = { min: 12, max: 40 };
+
+// Esporte favorito atribuído a todo regen no início. Por enquanto todos os
+// atletas nascem com o Atletismo como favorito (ver sports.js).
+// TODO: variar o esporte favorito entre os regens depois (ver TODO.md).
+const INITIAL_FAVORITE_SPORT_ID = "SPT-ATLETISMO";
 
 // Configuração de geração usada nos testes atuais.
 // TODO: `count` e a faixa de idade abaixo são apenas para testes — tornar
@@ -122,6 +130,12 @@ function getAthleteName(athlete) {
   return `${athlete.label} (${ioc})`;
 }
 
+// Esporte favorito do atleta (objeto de sports.js). Retorna undefined se o
+// esporte referenciado não existir.
+function getAthleteFavoriteSport(athlete) {
+  return getSport(athlete.favoriteSportId);
+}
+
 // Redução de Cansaço por etapa concluída: maior com a idade e menor quanto
 // melhor a Preparação Física (atleta mais preparado se cansa menos).
 // TODO: aplicar quando os atletas forem vinculados às etapas (ver TODO.md).
@@ -178,6 +192,7 @@ function createAthlete(index, country) {
     label: `Atleta ${index}`,
     countryId: country.id,
     birthCityId,
+    favoriteSportId: INITIAL_FAVORITE_SPORT_ID, // por ora, todos: Atletismo
     age,
     strength,
     potential,
