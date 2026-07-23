@@ -31,7 +31,8 @@ A interface tem duas abas:
 - **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), `eventos`, `modalidades`, `competidores` e `etapas`.
   - Campeonato inicial: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil, 0 participantes.
   - **10 etapas**, sempre no **segundo sábado de cada mês**, começando no segundo sábado de janeiro/2026.
-- **`athletes.js`** — entidade **Atletas** + gerador de "regens" (nome, país/COI, idade, Força, Potencial, Preparação Física e Cansaço). Ao iniciar a simulação, gera 10 atletas (número de teste — ver `TODO.md`). Ainda sem tela.
+- **`athletes.js`** — entidade **Atletas** + gerador de "regens" (nome, país/COI, idade, Força, Potencial, Preparação Física e Cansaço). Ao iniciar a simulação, gera 10 atletas (número de teste — ver `TODO.md`).
+- **`clubs.js`** — entidade **Clubes**: database inicial com 10 clubes reais de tradição no atletismo (id, país, presidente, ano de fundação, nível de infraestrutura, finanças e rivais). Sem gerador e ainda sem tela; os clubes inscreverão atletas nas competições (mecânica futura — ver `TODO.md`).
 
 Consulte **`DOCUMENTACAO.md`** (controle do projeto) e **`TODO.md`** (pendências).
 

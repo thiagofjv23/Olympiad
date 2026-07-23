@@ -28,3 +28,23 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       (nome, idade, Força) expansível para os demais atributos.
 - [ ] **Barras/visual dos atributos** (Força, Potencial, Preparação, Cansaço) —
       hoje são apenas números.
+
+## Clubes
+
+- [ ] **Inscrição de atletas via clube.** Os clubes serão responsáveis por
+      inscrever atletas nas competições — um atleta só entra numa competição
+      através de um clube. A mecânica de inscrição (vínculo atleta ↔ clube ↔
+      etapa) ainda não existe.
+- [ ] **Presidente.** Campo `president` já existe na entidade, mas ainda **não é
+      utilizado**.
+- [ ] **Finanças.** Campo `finances` já existe na entidade, mas ainda **não é
+      utilizado**.
+- [ ] **Rivais.** Campo `rivals` (clubes rivais) criado vazio — evoluir depois
+      (rivalidades, efeitos, etc.).
+- [ ] **Sistema de evolução de atletas via infraestrutura.** O
+      `infrastructureLevel` do clube (0–100, ligado à força olímpica do país)
+      servirá de base para a evolução dos atletas — sistema ainda **não** criado.
+- [ ] **Expandir/revisar a database de clubes.** Começamos com 10 clubes reais
+      (todos do Brasil) apenas para teste; ampliar e revisar depois, inclusive
+      com clubes de outros países quando existirem.
+- [ ] **UI dos clubes.** Ainda não existe tela para clubes.

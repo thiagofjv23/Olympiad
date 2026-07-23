@@ -23,6 +23,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `countries.js`      | **Entidade Países** (dados). Ex.: Brasil.                               |
 | `championships.js`  | **Entidade Campeonatos** (dados) + cálculo das etapas.                  |
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
+| `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
@@ -36,7 +37,7 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `championships.js` → `athletes.js` → `script.js`.
+`countries.js` → `championships.js` → `athletes.js` → `clubs.js` → `script.js`.
 
 ---
 
@@ -123,6 +124,31 @@ substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
 
 > Números de teste (10 atletas, idade 18–35) e a lógica de evolução de
 > Força/Potencial estão registrados em `TODO.md`.
+
+### Clubes — `clubs.js`
+
+Os clubes **inscrevem atletas nas competições** — um atleta só entra em uma
+competição por meio de um clube (mecânica ainda **não** implementada; ver
+`TODO.md`). Diferente dos atletas, os clubes **não são gerados**: são uma
+**database inicial** (objeto `CLUBS`) com clubes reais de tradição no atletismo.
+
+| Campo                 | Descrição                                                       |
+| --------------------- | --------------------------------------------------------------- |
+| `id`                  | Identificador único (ex.: `CLB-PINHEIROS`).                     |
+| `name`                | Nome do clube.                                                  |
+| `countryId`           | País do clube (ver `countries.js`).                            |
+| `president`           | Presidente — **ainda não utilizado** (ver `TODO.md`).          |
+| `foundationYear`      | Ano de fundação.                                               |
+| `infrastructureLevel` | Nível de infraestrutura (0–100), definido considerando a força olímpica do país. |
+| `finances`            | Finanças — **ainda não utilizado** (ver `TODO.md`).           |
+| `rivals`              | Clubes rivais (ids) — a evoluir (ver `TODO.md`).              |
+
+Funções utilitárias: `getClub(id)` e `getClubsByCountry(countryId)`.
+
+Conjunto inicial (10 clubes, todos do Brasil — único país existente): Pinheiros,
+Sogipa, Grêmio Náutico União, Minas Tênis Clube, Flamengo, Vasco da Gama,
+Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto de
+**teste**, a ser revisado e ampliado.
 
 ---
 
@@ -220,6 +246,17 @@ substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
   Preparação Física e Cansaço).
 - Sem novos dados: a tela apenas exibe os atletas já gerados no início da
   simulação.
+
+### Etapa 8 — Entidade Clubes (database inicial)
+
+- Criado `clubs.js` com a entidade Clube e uma **database inicial de 10 clubes
+  reais** de tradição no atletismo (sem gerador), todos do Brasil.
+- Campos: `id`, `name`, `countryId`, `president` (não usado), `foundationYear`,
+  `infrastructureLevel` (0–100, considerando a força olímpica do país),
+  `finances` (não usado) e `rivals` (a evoluir).
+- **Sem UI e sem novas mecânicas** — apenas a entidade/database, carregada no
+  ecossistema (`index.html`). A inscrição de atletas via clube e os demais
+  pontos ficam registrados em `TODO.md`.
 
 ---
 
