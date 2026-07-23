@@ -45,6 +45,10 @@ const TABS = {
     btn: document.getElementById("tab-btn-athletes"),
     panel: document.getElementById("tab-athletes"),
   },
+  clubs: {
+    btn: document.getElementById("tab-btn-clubs"),
+    panel: document.getElementById("tab-clubs"),
+  },
 };
 
 // Elementos — campeonatos.
@@ -55,6 +59,10 @@ const dayDetail = document.getElementById("day-detail");
 // Elementos — atletas.
 const athleteCountrySelect = document.getElementById("athlete-country-select");
 const athleteList = document.getElementById("athlete-list");
+
+// Elementos — clubes.
+const clubCountrySelect = document.getElementById("club-country-select");
+const clubList = document.getElementById("club-list");
 
 function sameDay(a, b) {
   return (
@@ -385,6 +393,59 @@ function renderAthletes(countryId) {
 }
 
 // -----------------------------------------------------------------------------
+// Clubes
+// -----------------------------------------------------------------------------
+function populateClubCountrySelect() {
+  clubCountrySelect.innerHTML = "";
+  for (const country of Object.values(COUNTRIES)) {
+    const option = document.createElement("option");
+    option.value = country.id;
+    option.textContent = country.name;
+    clubCountrySelect.appendChild(option);
+  }
+}
+
+// Lista os clubes de um país. Cada clube mostra nome, país e prestígio;
+// ao clicar, expande para as demais informações.
+// TODO: `prestige` ainda não existe na entidade Clube (ver TODO.md); exibido
+// aqui como "N/D" até criarmos o atributo.
+function renderClubs(countryId) {
+  const list = getClubsByCountry(countryId);
+
+  if (list.length === 0) {
+    clubList.innerHTML = `<p class="clubs__empty">Nenhum clube para este país.</p>`;
+    return;
+  }
+
+  clubList.innerHTML = list
+    .map((club) => {
+      const country = getCountry(club.countryId);
+      const countryName = country ? country.name : club.countryId;
+      const president = club.president || "—";
+      const finances = club.finances != null ? club.finances : "—";
+      const rivals = club.rivals.length > 0 ? club.rivals.join(", ") : "—";
+      return `
+        <details class="club">
+          <summary class="club__summary">
+            <span class="club__name">${club.name}</span>
+            <span class="club__brief">${countryName} · Prestígio N/D</span>
+          </summary>
+          <ul class="club__stats">
+            <li><span>ID</span><strong>${club.id}</strong></li>
+            <li><span>País</span><strong>${countryName}</strong></li>
+            <li><span>Prestígio</span><strong>N/D</strong></li>
+            <li><span>Ano de fundação</span><strong>${club.foundationYear}</strong></li>
+            <li><span>Infraestrutura</span><strong>${club.infrastructureLevel}/100</strong></li>
+            <li><span>Presidente</span><strong>${president}</strong></li>
+            <li><span>Finanças</span><strong>${finances}</strong></li>
+            <li><span>Rivais</span><strong>${rivals}</strong></li>
+          </ul>
+        </details>`;
+    })
+    .join("");
+}
+
+// -----------------------------------------------------------------------------
 // Eventos
 // -----------------------------------------------------------------------------
 prevBtn.addEventListener("click", () => changeMonth(-1));
@@ -396,8 +457,10 @@ goCurrentBtn.addEventListener("click", goToCurrent);
 TABS.calendar.btn.addEventListener("click", () => activateTab("calendar"));
 TABS.championships.btn.addEventListener("click", () => activateTab("championships"));
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
+TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
+clubCountrySelect.addEventListener("change", (e) => renderClubs(e.target.value));
 
 document.addEventListener("keydown", (event) => {
   if (panelCalendar.classList.contains("tab-panel--hidden")) return;
@@ -414,5 +477,8 @@ renderChampionship(championshipSelect.value);
 
 populateAthleteCountrySelect();
 renderAthletes(athleteCountrySelect.value);
+
+populateClubCountrySelect();
+renderClubs(clubCountrySelect.value);
 
 render();

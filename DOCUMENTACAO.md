@@ -258,6 +258,17 @@ Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto d
   ecossistema (`index.html`). A inscrição de atletas via clube e os demais
   pontos ficam registrados em `TODO.md`.
 
+### Etapa 9 — Aba Clubes (UI)
+
+- Adicionada a **quarta aba: Clubes**, no mesmo padrão da aba Atletas.
+- **Seletor por país**: ao escolher o país, lista **todos os clubes daquele país**
+  (`getClubsByCountry`).
+- Cada clube aparece inicialmente com **nome, país e Prestígio**; é **clicável e
+  expande** (via `<details>`) para as demais informações (ID, ano de fundação,
+  infraestrutura, presidente, finanças e rivais).
+- **Prestígio** é exibido como **"N/D"**: o atributo `prestige` ainda **não existe**
+  na entidade Clube — apenas na UI, conforme combinado (registrado em `TODO.md`).
+
 ---
 
 ## 4. Referência de funções (`script.js`)
@@ -279,6 +290,8 @@ Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto d
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
 | `renderAthletes(countryId)`         | Lista os atletas do país (expansíveis para ver todos os dados). |
+| `populateClubCountrySelect()`       | Preenche o seletor de países da aba Clubes.                     |
+| `renderClubs(countryId)`            | Lista os clubes do país (expansíveis para ver todos os dados).  |
 
 ---
 

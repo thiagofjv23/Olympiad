@@ -489,15 +489,17 @@ button.day:not(.day--current):hover {
   font-weight: 600;
 }
 
-/* Atletas ---------------------------------------------------------------- */
-.athletes {
+/* Atletas e Clubes (mesmo padrão visual) --------------------------------- */
+.athletes,
+.clubs {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 20px;
 }
 
-.athletes__select-label {
+.athletes__select-label,
+.clubs__select-label {
   display: block;
   font-size: 0.72rem;
   font-weight: 600;
@@ -507,7 +509,8 @@ button.day:not(.day--current):hover {
   margin-bottom: 6px;
 }
 
-.athletes__select {
+.athletes__select,
+.clubs__select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -520,25 +523,29 @@ button.day:not(.day--current):hover {
   margin-bottom: 18px;
 }
 
-.athletes__empty {
+.athletes__empty,
+.clubs__empty {
   margin: 0;
   font-size: 0.9rem;
   color: var(--muted);
 }
 
-.athlete-list {
+.athlete-list,
+.club-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.athlete {
+.athlete,
+.club {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
 }
 
-.athlete__summary {
+.athlete__summary,
+.club__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -550,52 +557,66 @@ button.day:not(.day--current):hover {
 }
 
 /* Remove o marcador padrão do <summary>. */
-.athlete__summary::-webkit-details-marker {
+.athlete__summary::-webkit-details-marker,
+.club__summary::-webkit-details-marker {
   display: none;
 }
 
-.athlete__summary::after {
+.athlete__summary::after,
+.club__summary::after {
   content: "▸";
   color: var(--muted);
   font-size: 0.85rem;
   transition: transform 0.15s ease;
 }
 
-.athlete[open] .athlete__summary::after {
+.athlete[open] .athlete__summary::after,
+.club[open] .club__summary::after {
   transform: rotate(90deg);
 }
 
-.athlete__summary:hover {
+.athlete__summary:hover,
+.club__summary:hover {
   background: var(--accent-soft);
 }
 
-.athlete__name {
+.athlete__name,
+.club__name {
   font-weight: 600;
 }
 
-.athlete__brief {
+.athlete__brief,
+.club__brief {
   margin-left: auto;
   margin-right: 8px;
   font-size: 0.85rem;
   color: var(--muted);
 }
 
-.athlete__stats {
+.athlete__stats,
+.club__stats {
   list-style: none;
   margin: 0;
   padding: 0 14px 12px;
 }
 
-.athlete__stats li {
+.athlete__stats li,
+.club__stats li {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   padding: 6px 0;
   border-top: 1px solid var(--border);
   font-size: 0.9rem;
 }
 
-.athlete__stats li span {
+.athlete__stats li span,
+.club__stats li span {
   color: var(--muted);
+}
+
+.club__stats li strong {
+  text-align: right;
 }
 
 .stage-status {

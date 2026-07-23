@@ -18,6 +18,9 @@
       <button id="tab-btn-athletes" class="tab" role="tab" aria-selected="false" aria-controls="tab-athletes" type="button">
         Atletas
       </button>
+      <button id="tab-btn-clubs" class="tab" role="tab" aria-selected="false" aria-controls="tab-clubs" type="button">
+        Clubes
+      </button>
     </nav>
 
     <!-- ABA: Calendário -->
@@ -72,6 +75,15 @@
         <label class="athletes__select-label" for="athlete-country-select">País</label>
         <select id="athlete-country-select" class="athletes__select"></select>
         <div id="athlete-list" class="athlete-list"></div>
+      </div>
+    </section>
+
+    <!-- ABA: Clubes -->
+    <section id="tab-clubs" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-clubs">
+      <div class="clubs">
+        <label class="clubs__select-label" for="club-country-select">País</label>
+        <select id="club-country-select" class="clubs__select"></select>
+        <div id="club-list" class="club-list"></div>
       </div>
     </section>
   </div>

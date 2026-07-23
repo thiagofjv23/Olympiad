@@ -47,4 +47,8 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Expandir/revisar a database de clubes.** Começamos com 10 clubes reais
       (todos do Brasil) apenas para teste; ampliar e revisar depois, inclusive
       com clubes de outros países quando existirem.
-- [ ] **UI dos clubes.** Ainda não existe tela para clubes.
+- [x] **UI dos clubes (lista por país).** Feita: seletor de país + lista de
+      clubes (nome, país, prestígio) expansível para as demais informações.
+- [ ] **Atributo de Prestígio do clube.** A aba de Clubes já exibe "Prestígio",
+      mas o campo `prestige` **ainda não existe** na entidade Clube (`clubs.js`) —
+      hoje mostrado como "N/D". Criar o atributo depois.
