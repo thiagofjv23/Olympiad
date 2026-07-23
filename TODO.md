@@ -3,6 +3,15 @@
 Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 `DOCUMENTACAO.md`.
 
+## 🔴 Prioridade alta
+
+- [ ] **Usar o Prestígio dos clubes.** O atributo `prestige` (0-100) já existe em
+      todos os clubes (`clubs.js`) com valores iniciais aproximados, **mas ainda
+      não é utilizado**. Ele será a base das próximas features:
+  - **Finanças** dos clubes.
+  - **Contratações** (de atletas).
+  - **Ordenamento de clubes** (ranking/classificação).
+
 ## Atletas (regens)
 
 - [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos **10**
@@ -49,6 +58,6 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       com clubes de outros países quando existirem.
 - [x] **UI dos clubes (lista por país).** Feita: seletor de país + lista de
       clubes (nome, país, prestígio) expansível para as demais informações.
-- [ ] **Atributo de Prestígio do clube.** A aba de Clubes já exibe "Prestígio",
-      mas o campo `prestige` **ainda não existe** na entidade Clube (`clubs.js`) —
-      hoje mostrado como "N/D". Criar o atributo depois.
+- [x] **Atributo de Prestígio do clube.** Criado: `prestige` (0-100) em todos os
+      clubes, com valores iniciais aproximados, e exibido na aba Clubes. O **uso**
+      do prestígio está na seção de prioridade alta, no topo deste arquivo.

@@ -16,6 +16,9 @@
 //   - foundationYear      : ano de fundação
 //   - infrastructureLevel : nível de infraestrutura (0-100), definido
 //                           considerando a força olímpica do país
+//   - prestige            : prestígio (0-100). Ainda NÃO é utilizado; servirá de
+//                           base para futuras features (Finanças, contratações e
+//                           ordenamento de clubes) — ver TODO.md.
 //   - finances            : finanças — ainda não utilizado (ver TODO.md)
 //   - rivals              : clubes rivais (ids) — a evoluir (ver TODO.md)
 //
@@ -32,6 +35,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1899,
     infrastructureLevel: 90,
+    prestige: 80,
     finances: null,
     rivals: [],
   },
@@ -42,6 +46,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1867,
     infrastructureLevel: 85,
+    prestige: 70,
     finances: null,
     rivals: [],
   },
@@ -52,6 +57,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1906,
     infrastructureLevel: 80,
+    prestige: 62,
     finances: null,
     rivals: [],
   },
@@ -62,6 +68,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1935,
     infrastructureLevel: 88,
+    prestige: 78,
     finances: null,
     rivals: [],
   },
@@ -72,6 +79,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1895,
     infrastructureLevel: 82,
+    prestige: 92,
     finances: null,
     rivals: [],
   },
@@ -82,6 +90,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1898,
     infrastructureLevel: 74,
+    prestige: 78,
     finances: null,
     rivals: [],
   },
@@ -92,6 +101,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1894,
     infrastructureLevel: 70,
+    prestige: 74,
     finances: null,
     rivals: [],
   },
@@ -102,6 +112,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1902,
     infrastructureLevel: 72,
+    prestige: 75,
     finances: null,
     rivals: [],
   },
@@ -112,6 +123,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1910,
     infrastructureLevel: 78,
+    prestige: 90,
     finances: null,
     rivals: [],
   },
@@ -122,6 +134,7 @@ const CLUBS = {
     president: null,
     foundationYear: 1900,
     infrastructureLevel: 68,
+    prestige: 60,
     finances: null,
     rivals: [],
   },

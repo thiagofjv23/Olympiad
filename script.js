@@ -407,8 +407,6 @@ function populateClubCountrySelect() {
 
 // Lista os clubes de um país. Cada clube mostra nome, país e prestígio;
 // ao clicar, expande para as demais informações.
-// TODO: `prestige` ainda não existe na entidade Clube (ver TODO.md); exibido
-// aqui como "N/D" até criarmos o atributo.
 function renderClubs(countryId) {
   const list = getClubsByCountry(countryId);
 
@@ -428,12 +426,12 @@ function renderClubs(countryId) {
         <details class="club">
           <summary class="club__summary">
             <span class="club__name">${club.name}</span>
-            <span class="club__brief">${countryName} · Prestígio N/D</span>
+            <span class="club__brief">${countryName} · Prestígio ${club.prestige}</span>
           </summary>
           <ul class="club__stats">
             <li><span>ID</span><strong>${club.id}</strong></li>
             <li><span>País</span><strong>${countryName}</strong></li>
-            <li><span>Prestígio</span><strong>N/D</strong></li>
+            <li><span>Prestígio</span><strong>${club.prestige}/100</strong></li>
             <li><span>Ano de fundação</span><strong>${club.foundationYear}</strong></li>
             <li><span>Infraestrutura</span><strong>${club.infrastructureLevel}/100</strong></li>
             <li><span>Presidente</span><strong>${president}</strong></li>

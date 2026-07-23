@@ -27,6 +27,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
+| `DECISOES.md`       | Decisões tomadas por conta própria (o "porquê").                       |
 
 ### Princípio de arquitetura
 
@@ -140,6 +141,7 @@ competição por meio de um clube (mecânica ainda **não** implementada; ver
 | `president`           | Presidente — **ainda não utilizado** (ver `TODO.md`).          |
 | `foundationYear`      | Ano de fundação.                                               |
 | `infrastructureLevel` | Nível de infraestrutura (0–100), definido considerando a força olímpica do país. |
+| `prestige`            | Prestígio (0–100). **Ainda não utilizado**; será a base de Finanças, contratações e ordenamento de clubes (ver `TODO.md`). |
 | `finances`            | Finanças — **ainda não utilizado** (ver `TODO.md`).           |
 | `rivals`              | Clubes rivais (ids) — a evoluir (ver `TODO.md`).              |
 
@@ -268,6 +270,18 @@ Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto d
   infraestrutura, presidente, finanças e rivais).
 - **Prestígio** é exibido como **"N/D"**: o atributo `prestige` ainda **não existe**
   na entidade Clube — apenas na UI, conforme combinado (registrado em `TODO.md`).
+
+### Etapa 10 — Prestígio dos clubes e registro de decisões
+
+- Criado o atributo **`prestige`** (0–100) em **todos os clubes** de `clubs.js`,
+  com valores iniciais aproximados. A aba Clubes passou a exibir o valor real
+  (antes era "N/D").
+- **Ainda não é utilizado** em nenhuma mecânica. Ficará como base das futuras
+  features: **Finanças**, **contratações** e **ordenamento de clubes** — marcado
+  como **prioridade alta** no `TODO.md`.
+- Criado o documento **`DECISOES.md`**, que registra as decisões tomadas por conta
+  própria durante o projeto (ex.: unificar o CSS de Atletas/Clubes, usar
+  `<details>`, manter todos os clubes no Brasil, etc.).
 
 ---
 
