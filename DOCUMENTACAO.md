@@ -25,6 +25,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
+| `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
@@ -40,8 +41,8 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `cities.js` → `championships.js` → `athletes.js` → `clubs.js`
-→ `script.js`.
+`countries.js` → `cities.js` → `sports.js` → `championships.js` → `athletes.js`
+→ `clubs.js` → `script.js`.
 
 ---
 
@@ -187,6 +188,28 @@ Funções utilitárias: `getCity(id)`, `getCitiesByCountry(countryId)` e
 As **regras de criação** (10 cidades por país no início, faixas de tamanho,
 influência da força olímpica) estão em **`PRINCIPIOS_CIDADES.md`**, junto da lista
 das 10 cidades do Brasil.
+
+### Esportes — `sports.js`
+
+Database inicial (objeto `SPORTS`). O esporte **definirá, no futuro, como os
+atributos dos atletas serão usados na simulação de resultados** (cada esporte
+valoriza atributos de forma diferente) — essa lógica ainda **não existe** (ver
+`TODO.md`).
+
+| Campo               | Descrição                                                        |
+| ------------------- | ---------------------------------------------------------------- |
+| `id`                | Identificador único (ex.: `SPT-ATLETISMO`).                     |
+| `name`              | Nome do esporte.                                                 |
+| `description`       | Descrição.                                                       |
+| `generalPopularity` | Popularidade geral (0–100).                                      |
+| `practiceStartYear` | Ano de início da prática (número; negativo = a.C., ex.: −776).  |
+| `originCountry`     | País originário (texto — ver `DECISOES.md`).                    |
+
+Funções utilitárias: `getSport(id)` e `getAllSports()`.
+
+Conjunto inicial (6 esportes): Atletismo (o do nosso campeonato), Natação,
+Futebol, Basquete, Vôlei e Ginástica Artística. Popularidade é aproximada; lista
+a ser ampliada.
 
 ---
 
@@ -383,6 +406,17 @@ das 10 cidades do Brasil.
     (Potencial = Força).
 - **Verificado** com amostra grande: gap médio Potencial−Força cai de ~15,5 (18
   anos) para ~1,15 (31 anos) e chega a 0 a partir dos 32 (100% já no potencial).
+
+### Etapa 16 — Entidade Esportes (database inicial)
+
+- Criado `sports.js` com a entidade Esporte e uma **database inicial de 6
+  esportes** (sem gerador): Atletismo, Natação, Futebol, Basquete, Vôlei e
+  Ginástica Artística.
+- Campos: `id`, `name`, `description`, `generalPopularity` (0–100),
+  `practiceStartYear` (negativo = a.C.) e `originCountry` (texto).
+- **Sem UI e sem novas mecânicas** — apenas a entidade/database, carregada no
+  ecossistema. A lógica de **como o esporte afeta o uso dos atributos na simulação
+  de resultados** fica registrada no `TODO.md`.
 
 ---
 

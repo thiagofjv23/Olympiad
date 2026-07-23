@@ -80,3 +80,14 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Cidades nas etapas de campeonatos.** Expandir o uso de cidades para as
       etapas (cada etapa acontecer em uma cidade-sede). **Apenas documentado por
       enquanto — lógica ainda não implementada.**
+
+## Esportes
+
+- [ ] **Esporte afeta o uso dos atributos na simulação de resultados.** A entidade
+      `sports.js` já existe, mas a lógica de **como cada esporte usa/pondera os
+      atributos dos atletas** para simular resultados ainda **não foi criada**.
+- [ ] **Vincular campeonatos/etapas a um esporte** (`sportId`), para saber qual
+      esporte cada competição disputa.
+- [ ] **Expandir a database de esportes** e revisar dados (popularidade é
+      aproximada).
+- [ ] **UI dos esportes.** Ainda não existe tela para esportes.

@@ -145,6 +145,20 @@ mudada se você preferir outro caminho.
     simples que reproduz "jovem cresce muito, veterano já no teto"; os dois
     limites são de balanceamento e fáceis de ajustar.
 
+19h. **Esporte: `originCountry` é texto, não referência a `countries.js`.** A origem
+    de um esporte costuma ser um país real que não é (nem será) um país jogável em
+    `COUNTRIES` (ex.: "Grécia Antiga"). Guardar como nome evita referência
+    quebrada; se um dia a origem coincidir com um país implantado, dá para linkar.
+
+19i. **Ano de início da prática usa negativos para a.C.** (ex.: Atletismo = −776 =
+    776 a.C.). Manter um único campo numérico é mais simples do que separar
+    era/ano.
+
+19j. **Conjunto e popularidade dos esportes escolhidos por mim.** Comecei com 6
+    esportes conhecidos (Atletismo é o do campeonato) e a `generalPopularity` é uma
+    aproximação de balanceamento, fácil de recalibrar. Anos e origens seguem fatos
+    razoavelmente estabelecidos da codificação moderna de cada esporte.
+
 ---
 
 ## Processo
