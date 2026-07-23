@@ -32,6 +32,14 @@ const ATHLETE_GENERATION_CONFIG = {
 // Idade de pico de rendimento — usada na curva de força por idade.
 const PEAK_AGE = 27;
 
+// Influência da infraestrutura esportiva da cidade de nascimento.
+// Cidades com melhor infraestrutura tendem a formar atletas mais fortes e com
+// maior potencial. O efeito é medido em relação a uma infra "neutra" (50):
+//   - infra 100 => bônus máximo; infra 50 => nenhum; infra 0 => penalidade máxima.
+const NEUTRAL_CITY_INFRA = 50;
+const MAX_CITY_STRENGTH_BONUS = 10; // pontos de Força no melhor/pior caso
+const MAX_CITY_POTENTIAL_BONUS = 8; // pontos extras no teto de Potencial
+
 // Lista viva de atletas da simulação atual.
 let ATHLETES = [];
 
@@ -61,18 +69,27 @@ function ageFactor(age) {
   return clampNumber(1 - penalty * 0.5, 0.6, 1);
 }
 
+// Fator de infraestrutura da cidade: -1 (infra 0) a +1 (infra 100), 0 no neutro.
+function cityInfraFactor(sportsInfrastructure) {
+  return (sportsInfrastructure - NEUTRAL_CITY_INFRA) / NEUTRAL_CITY_INFRA;
+}
+
 // --- geração de atributos -----------------------------------------------------
 
-// Força: distribuição normal centrada na força olímpica ajustada pela idade.
-function generateStrength(olympicStrength, age) {
-  const mean = olympicStrength * ageFactor(age);
+// Força: distribuição normal centrada na força olímpica ajustada pela idade,
+// mais um bônus/penalidade conforme a infraestrutura da cidade de nascimento.
+function generateStrength(olympicStrength, age, cityInfra) {
+  const cityBonus = cityInfraFactor(cityInfra) * MAX_CITY_STRENGTH_BONUS;
+  const mean = olympicStrength * ageFactor(age) + cityBonus;
   return Math.round(clampNumber(randomNormal(mean, 8), 1, 100));
 }
 
-// Potencial: força inicial + margem de crescimento (também vinda da força
-// olímpica). Nunca menor que a força e no máximo 100.
-function generatePotential(olympicStrength, strength) {
-  const margin = Math.abs(randomNormal(olympicStrength * 0.15, 6));
+// Potencial: força inicial + margem de crescimento (vinda da força olímpica),
+// acrescida de um bônus conforme a infraestrutura da cidade (melhor infra =
+// maior teto de crescimento). Nunca menor que a força e no máximo 100.
+function generatePotential(olympicStrength, strength, cityInfra) {
+  const cityBonus = cityInfraFactor(cityInfra) * MAX_CITY_POTENTIAL_BONUS;
+  const margin = Math.abs(randomNormal(olympicStrength * 0.15, 6)) + cityBonus;
   return Math.round(clampNumber(strength + margin, strength, 100));
 }
 
@@ -125,14 +142,20 @@ function createAthlete(index, country) {
     ATHLETE_GENERATION_CONFIG.minAge,
     ATHLETE_GENERATION_CONFIG.maxAge
   );
-  const strength = generateStrength(country.olympicStrength, age);
-  const potential = generatePotential(country.olympicStrength, strength);
+
+  // Cidade de nascimento e sua infraestrutura esportiva influenciam os atributos.
+  const birthCityId = randomBirthCityId(country.id);
+  const birthCity = birthCityId ? getCity(birthCityId) : null;
+  const cityInfra = birthCity ? birthCity.sportsInfrastructure : NEUTRAL_CITY_INFRA;
+
+  const strength = generateStrength(country.olympicStrength, age, cityInfra);
+  const potential = generatePotential(country.olympicStrength, strength, cityInfra);
 
   return {
     id: index,
     label: `Atleta ${index}`,
     countryId: country.id,
-    birthCityId: randomBirthCityId(country.id),
+    birthCityId,
     age,
     strength,
     potential,

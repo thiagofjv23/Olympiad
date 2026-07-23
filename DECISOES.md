@@ -131,6 +131,13 @@ mudada se você preferir outro caminho.
     cidades maiores concentrem claramente mais atletas; são valores de
     balanceamento, fáceis de ajustar.
 
+19f. **Infra da cidade influencia Força/Potencial via desvio de uma infra neutra
+    (50).** Escolhi medir o efeito em relação ao ponto médio da escala (50), de
+    modo que infra acima da média dá bônus e abaixo dá penalidade. Os tetos
+    (`MAX_CITY_STRENGTH_BONUS` ±10 e `MAX_CITY_POTENTIAL_BONUS` ±8) são valores de
+    balanceamento: mantêm a cidade como uma influência perceptível, porém menor
+    que idade e força olímpica do país. Fáceis de recalibrar.
+
 ---
 
 ## Processo

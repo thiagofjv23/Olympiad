@@ -116,9 +116,17 @@ Regras de geração:
 - **Idade**: gerador suporta **12–40** (`ATHLETE_AGE_LIMITS`); no exemplo atual
   gera **18–35** (`ATHLETE_GENERATION_CONFIG`).
 - **Força**: distribuição **normal** centrada na **força olímpica do país**
-  ajustada por uma curva de idade (pico em ~27 anos).
-- **Potencial**: força inicial + margem (também derivada da força olímpica);
-  **nunca menor que a Força** e no máximo 100.
+  ajustada por uma curva de idade (pico em ~27 anos) **e pela infraestrutura
+  esportiva da cidade de nascimento** (ver abaixo).
+- **Potencial**: força inicial + margem (também derivada da força olímpica),
+  **acrescida de um bônus pela infraestrutura da cidade**; **nunca menor que a
+  Força** e no máximo 100.
+- **Influência da cidade de nascimento**: a `sportsInfrastructure` da cidade
+  (0–100) desloca a média de Força e o teto de Potencial em relação a uma infra
+  neutra (50). Constantes em `athletes.js`: `MAX_CITY_STRENGTH_BONUS` (±10 na
+  Força) e `MAX_CITY_POTENTIAL_BONUS` (±8 no Potencial). Assim, **cidades com
+  melhor infraestrutura tendem a formar atletas mais fortes e com maior
+  potencial**.
 - **Preparação Física**: normal em torno de 60 (0–100).
 - **Cansaço**: começa em 100. `fatigueReductionForStage(athlete)` define quanto
   cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**
@@ -343,6 +351,22 @@ das 10 cidades do Brasil.
   cidades grandes (~5,9% cada).
 - Registrado no `TODO.md` (apenas documentação, sem lógica): **organizador/ordenador**
   nas telas de Clubes e Atletas (por prestígio, local, etc.).
+
+### Etapa 14 — Infraestrutura da cidade influencia Força e Potencial
+
+- O gerador de atletas passou a usar a **infraestrutura esportiva da cidade de
+  nascimento** para deslocar a **Força** e o **Potencial**.
+- **Lógica** (em `athletes.js`):
+  - `cityInfraFactor(infra) = (infra − 50) / 50` → varia de **−1** (infra 0) a
+    **+1** (infra 100), sendo **0** na infra neutra (50).
+  - **Força**: `média = forçaOlímpica × fatorIdade + fator × MAX_CITY_STRENGTH_BONUS`
+    (bônus/penalidade de até ±10), depois a amostragem normal e o clamp 1–100.
+  - **Potencial**: `margem = |normal(...)| + fator × MAX_CITY_POTENTIAL_BONUS`
+    (até ±8 no teto), mantendo `potencial ≥ força` e ≤ 100.
+  - Sem cidade cadastrada, usa-se a infra neutra (50) → sem efeito.
+- **Verificado** com amostra grande: a Força e o Potencial médios crescem de forma
+  monotônica com a infraestrutura da cidade (Rio, infra 92 → ~83,1 / ~96,7;
+  Manaus, infra 68 → ~78,3 / ~91,4).
 
 ---
 
