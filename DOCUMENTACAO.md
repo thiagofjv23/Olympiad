@@ -241,19 +241,35 @@ Competidores: `{ id, values: number[] }` ou `{ id, value }`.
 ### Modalidades — `modalities.js`
 
 Entidade **ligada a um esporte** (`sportId`), usada em esportes com mais de uma
-variação de prática (ex.: Atletismo → 100 m, salto em distância, etc.). A
-**database começa vazia** (nenhuma modalidade foi solicitada ainda).
+variação de prática (ex.: Atletismo → 100 m, salto em distância, etc.).
 
 | Campo               | Descrição                                                        |
 | ------------------- | ---------------------------------------------------------------- |
 | `id`                | Identificador único.                                             |
 | `name`              | Nome da modalidade.                                              |
 | `sportId`           | Esporte primário (ver `sports.js`).                             |
-| `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (ex.: `{ metric, order, aggregation, precision }`). |
+| `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). |
+| `performance`       | Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
 | `generalPopularity` | Popularidade geral da modalidade **dentro do esporte** (0–100).  |
 | `countryPopularity` | Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
 
 Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
+
+**Modalidade cadastrada: 100 m rasos** (`MOD-ATL-100M`, do Atletismo). Resolução:
+métrica tempo, **menor vence**, resultado único, 2 casas. Modelo de desempenho:
+
+- **Força efetiva** = `Força − (100 − fatigue) × fatiguePenaltyPerPoint`.
+  O stat `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga
+  acumulada**. Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
+- **Tempo** = `recordTime + (100 − Força efetiva) × secondsPerStrengthPoint`, com
+  `recordTime = 9.58` (recorde mundial, o **piso** — ninguém corre abaixo) e
+  `secondsPerStrengthPoint = 0.05`. Força efetiva 100 → 9,58 s; quanto menor,
+  mais lento.
+
+Funções do modelo: `effectiveStrengthForModality`, `computeModalityResult` (o
+número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) e
+`resolveModality(athletes, modality)` (gera os tempos e resolve o ranking pela
+`ResultsEngine`, retornando `{ id, result, position }` com `result` = tempo).
 
 ---
 
@@ -486,6 +502,19 @@ Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
 - **Database vazia** e **sem UI** — apenas a entidade e os helpers
   (`getModality`, `getModalitiesBySport`), conforme a diretriz de não criar
   dados de exemplo não solicitados.
+
+### Etapa 19 — Modalidade 100 m e modelo de resultado
+
+- Criada a modalidade **100 m rasos** (`MOD-ATL-100M`) do Atletismo (a pedido).
+- **Modelo de desempenho** (documentado na seção da entidade): Força efetiva =
+  Força − redutor de fadiga; **Tempo** = recorde (9,58 s) + (100 − Força efetiva)
+  × 0,05. O recorde é o **piso** de tempo.
+- **Resolução via `ResultsEngine`**: `resolveModality` gera o tempo de cada atleta
+  e ranqueia por **menor tempo**; o resultado exibido é o **tempo alcançado**
+  (ex.: `10.18 s`).
+- **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
+  (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
+- Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
 ---
 

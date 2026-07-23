@@ -37,7 +37,7 @@ A interface tem duas abas:
 - **`cities.js`** — entidade **Cidades**: database inicial com 10 cidades reais do Brasil (id, país, população/tamanho, infraestrutura esportiva). Vincula-se a países, clubes (cidade-sede) e atletas (cidade de nascimento). Regras em `PRINCIPIOS_CIDADES.md`. Ainda sem tela.
 - **`sports.js`** — entidade **Esportes**: database inicial com 6 esportes (id, nome, descrição, popularidade geral, ano de início da prática, país originário). Definirá como os atributos dos atletas são usados na simulação de resultados (lógica futura — ver `TODO.md`). Ainda sem tela.
 - **`resultsEngine.js`** — **engine de resolução de resultados** (`ResultsEngine`): módulo genérico que não conhece os esportes; expõe parâmetros de simulação (métrica, direção de vitória, agregação, unidade, precisão) e resolve o ranking de resultados numéricos. Ver `DOCUMENTACAO.md`.
-- **`modalities.js`** — entidade **Modalidades**: variações de prática de um esporte (id, nome, esporte primário, forma de resolução, popularidade geral e por país). Database ainda vazia; sem tela. Ver `TODO.md`.
+- **`modalities.js`** — entidade **Modalidades**: variações de prática de um esporte (id, nome, esporte primário, forma de resolução, modelo de desempenho, popularidade geral e por país). Já inclui os **100 m rasos** do Atletismo, com o cálculo de tempo (Força − fadiga → tempo, tendo o recorde 9,58 s como piso). Sem tela ainda. Ver `TODO.md`.
 
 Consulte **`DOCUMENTACAO.md`** (controle do projeto) e **`TODO.md`** (pendências).
 

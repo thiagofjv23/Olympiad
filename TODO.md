@@ -97,10 +97,17 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Popularidade por país da modalidade.** O campo `countryPopularity` faz
       parte da entidade, mas a **relação modalidade ↔ país** ainda **não foi
       feita** — construir depois.
-- [ ] **Popular a database de modalidades.** Hoje `MODALITIES` está vazia; criar
-      as modalidades quando solicitado (ex.: as do Atletismo), cada uma com sua
-      `resolution` (parâmetros da `ResultsEngine`).
-- [ ] **UI das modalidades.** Ainda não existe tela para modalidades.
+- [ ] **Popular a database de modalidades.** Já existe a **100 m rasos**; criar as
+      demais modalidades (ex.: outras provas do Atletismo) quando solicitado, cada
+      uma com sua `resolution` e `performance`.
+- [ ] **UI das modalidades e de resultados.** Ainda não há tela para modalidades
+      nem para exibir os resultados/tempos de uma etapa.
+- [ ] **Participação atleta ↔ etapa.** O `resolveModality` já resolve o ranking a
+      partir de uma lista de atletas; falta definir **quais** atletas (via clube)
+      disputam cada etapa e **aplicar a fadiga** após a etapa (hoje todos estão com
+      fatigue 100, então o redutor de fadiga não altera os tempos ainda).
+- [ ] **Modelos de desempenho por métrica.** O modelo atual cobre **tempo**
+      (100 m). Distância/altura/pontos precisarão de suas próprias fórmulas.
 
 ## Engine de resultados
 

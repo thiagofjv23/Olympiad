@@ -188,6 +188,28 @@ Regras a seguir sempre, salvo instrução em contrário:
     números prontos. Transformar atributos do atleta em um resultado numérico é
     outra camada (a criar), mantendo a engine genérica e sem conhecer entidades.
 
+### Modalidade 100 m — modelo de resultado
+
+19o. **O modelo de desempenho fica na modalidade, não na engine.** A modalidade
+    guarda `performance` (parâmetros) e as funções de cálculo (`computeModalityResult`,
+    etc.). Assim a engine continua genérica (só ranqueia) e cada modalidade define
+    como seus atributos viram um número.
+
+19p. **"Fadiga acumulada" = 100 − `fatigue`.** Como o stat `fatigue` começa em 100
+    (descansado) e cai com o uso, interpretei o "redutor de fadiga" pedido como
+    proporcional ao que já foi perdido (100 − fatigue). Assim, atleta descansado
+    (fatigue 100) não sofre redução — que é o comportamento esperado.
+
+19q. **Constantes do modelo escolhidas por mim** (`fatiguePenaltyPerPoint = 0.3`,
+    `secondsPerStrengthPoint = 0.05`). Calibrei para que a faixa de Força dos
+    atletas (~60–95) gere tempos de 100 m plausíveis (~9,8–11,6 s) e para que o
+    recorde (9,58 s) seja atingível só com Força efetiva 100. São valores de
+    balanceamento, fáceis de ajustar.
+
+19r. **O recorde (9,58 s) é o piso de tempo.** Interpretei "tempo mais alto já
+    registrado" como o melhor desempenho possível (o recorde não é superado): Força
+    efetiva 100 → 9,58 s, e qualquer valor menor gera tempos maiores (mais lentos).
+
 ---
 
 ## Processo
