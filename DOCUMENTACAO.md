@@ -33,6 +33,8 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
 | `DECISOES.md`       | Decisões tomadas por conta própria (o "porquê").                       |
 | `PRINCIPIOS_CIDADES.md` | Princípios de criação/geração de cidades.                          |
+| `DIARIO_DE_TRABALHO.md` | Registro do que foi implantado, por data (atualizar só ao fim do dia). |
+| `SUGESTOES_INICIO_DE_TRABALHO.md` | Pendências resumidas do dia anterior, da mais nova à mais antiga. |
 
 ### Princípio de arquitetura
 
