@@ -30,9 +30,15 @@
 
     <div id="days" class="calendar__days"></div>
 
-    <footer class="calendar__footer">
-      <button id="today" class="today-btn" type="button">Hoje</button>
-    </footer>
+    <section class="time-panel" aria-label="Passagem de tempo">
+      <p class="time-panel__label">Data atual</p>
+      <p id="current-date" class="time-panel__date" aria-live="polite"></p>
+      <div class="time-panel__actions">
+        <button id="advance-day" class="time-btn" type="button">+ 1 dia</button>
+        <button id="advance-week" class="time-btn" type="button">+ 1 semana</button>
+      </div>
+      <button id="go-current" class="today-btn" type="button">Ir para a data atual</button>
+    </section>
   </main>
 
   <script src="script.js"></script>

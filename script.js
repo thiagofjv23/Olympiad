@@ -1,85 +1,121 @@
-// Nomes dos meses em português.
+// Nomes dos meses e dias em português.
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
+const WEEKDAY_NAMES = [
+  "domingo", "segunda-feira", "terça-feira", "quarta-feira",
+  "quinta-feira", "sexta-feira", "sábado",
+];
 
-// O calendário inicia em 01/01/2026.
-const START_YEAR = 2026;
-const START_MONTH = 0; // 0 = Janeiro
+// -----------------------------------------------------------------------------
+// Sistema de passagem de tempo.
+// A unidade de tempo é o DIA. A simulação começa em 01/01/2026 e avança
+// somente quando os botões de passagem de tempo são acionados.
+// -----------------------------------------------------------------------------
+const START_DATE = new Date(2026, 0, 1); // 01/01/2026
 
-// Estado: mês atualmente exibido.
-let currentYear = START_YEAR;
-let currentMonth = START_MONTH;
+// "Agora" da simulação. Avança em dias.
+let currentDate = new Date(START_DATE);
 
+// Mês exibido no calendário (pode ser navegado sem alterar a data atual).
+let viewYear = currentDate.getFullYear();
+let viewMonth = currentDate.getMonth();
+
+// Elementos.
 const monthLabel = document.getElementById("month-label");
 const daysContainer = document.getElementById("days");
+const currentDateLabel = document.getElementById("current-date");
 const prevBtn = document.getElementById("prev");
 const nextBtn = document.getElementById("next");
-const todayBtn = document.getElementById("today");
+const advanceDayBtn = document.getElementById("advance-day");
+const advanceWeekBtn = document.getElementById("advance-week");
+const goCurrentBtn = document.getElementById("go-current");
 
-function isToday(year, month, day) {
-  const now = new Date();
+function sameDay(a, b) {
   return (
-    year === now.getFullYear() &&
-    month === now.getMonth() &&
-    day === now.getDate()
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
 }
 
-function render() {
-  monthLabel.textContent = `${MONTH_NAMES[currentMonth]} de ${currentYear}`;
+// Desenha a grade do mês em exibição, destacando a data atual da simulação.
+function renderCalendar() {
+  monthLabel.textContent = `${MONTH_NAMES[viewMonth]} de ${viewYear}`;
   daysContainer.innerHTML = "";
 
-  // Dia da semana em que o mês começa (0 = domingo).
-  const firstWeekday = new Date(currentYear, currentMonth, 1).getDay();
-  // Quantidade de dias no mês.
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-  // Células vazias antes do primeiro dia.
   for (let i = 0; i < firstWeekday; i++) {
     const empty = document.createElement("div");
     empty.className = "day day--empty";
     daysContainer.appendChild(empty);
   }
 
-  // Dias do mês.
   for (let day = 1; day <= daysInMonth; day++) {
     const cell = document.createElement("div");
     cell.className = "day";
     cell.textContent = String(day);
-    if (isToday(currentYear, currentMonth, day)) {
-      cell.classList.add("day--today");
+    if (sameDay(new Date(viewYear, viewMonth, day), currentDate)) {
+      cell.classList.add("day--current");
       cell.setAttribute("aria-current", "date");
     }
     daysContainer.appendChild(cell);
   }
 }
 
+// Atualiza o texto da data atual da simulação.
+function renderCurrentDate() {
+  const weekday = WEEKDAY_NAMES[currentDate.getDay()];
+  const day = String(currentDate.getDate()).padStart(2, "0");
+  const month = MONTH_NAMES[currentDate.getMonth()];
+  const year = currentDate.getFullYear();
+  currentDateLabel.textContent = `${weekday}, ${day} de ${month} de ${year}`;
+}
+
+function render() {
+  renderCalendar();
+  renderCurrentDate();
+}
+
+// Avança a passagem de tempo em N dias (unidade: dia).
+function advanceDays(days) {
+  currentDate.setDate(currentDate.getDate() + days);
+  // O calendário acompanha a data atual da simulação.
+  viewYear = currentDate.getFullYear();
+  viewMonth = currentDate.getMonth();
+  render();
+}
+
+// Navegação de meses (não altera a passagem de tempo).
 function changeMonth(delta) {
-  currentMonth += delta;
-  if (currentMonth < 0) {
-    currentMonth = 11;
-    currentYear--;
-  } else if (currentMonth > 11) {
-    currentMonth = 0;
-    currentYear++;
+  viewMonth += delta;
+  if (viewMonth < 0) {
+    viewMonth = 11;
+    viewYear--;
+  } else if (viewMonth > 11) {
+    viewMonth = 0;
+    viewYear++;
   }
-  render();
+  renderCalendar();
 }
 
-function goToToday() {
-  const now = new Date();
-  currentYear = now.getFullYear();
-  currentMonth = now.getMonth();
-  render();
+// Volta a visualização para o mês da data atual da simulação.
+function goToCurrent() {
+  viewYear = currentDate.getFullYear();
+  viewMonth = currentDate.getMonth();
+  renderCalendar();
 }
 
+// Eventos.
 prevBtn.addEventListener("click", () => changeMonth(-1));
 nextBtn.addEventListener("click", () => changeMonth(1));
-todayBtn.addEventListener("click", goToToday);
+advanceDayBtn.addEventListener("click", () => advanceDays(1));
+advanceWeekBtn.addEventListener("click", () => advanceDays(7));
+goCurrentBtn.addEventListener("click", goToCurrent);
 
-// Navegação pelo teclado (setas esquerda/direita).
 document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowLeft") changeMonth(-1);
   if (event.key === "ArrowRight") changeMonth(1);

@@ -109,16 +109,63 @@ body {
   visibility: hidden;
 }
 
-.day--today {
+.day--current {
   background: var(--today);
   color: #fff;
   font-weight: 600;
 }
 
-.calendar__footer {
-  margin-top: 16px;
+.time-panel {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.time-panel__label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.time-panel__date {
+  margin: 4px 0 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.time-panel__actions {
   display: flex;
+  gap: 10px;
   justify-content: center;
+  margin-bottom: 14px;
+}
+
+.time-btn {
+  flex: 1;
+  max-width: 150px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.time-btn:hover {
+  filter: brightness(1.08);
+}
+
+.time-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 .today-btn {
