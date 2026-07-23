@@ -1,0 +1,148 @@
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --border: #e2e4e8;
+  --text: #1f2430;
+  --muted: #9aa1ac;
+  --accent: #3b6cff;
+  --accent-soft: #e7edff;
+  --today: #3b6cff;
+  --radius: 12px;
+  --shadow: 0 8px 30px rgba(20, 30, 60, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.calendar {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.calendar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  text-align: center;
+  flex: 1;
+}
+
+.nav-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-btn:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.nav-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.calendar__weekdays,
+.calendar__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar__weekdays {
+  margin-bottom: 8px;
+}
+
+.calendar__weekdays span {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.day {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.day--empty {
+  visibility: hidden;
+}
+
+.day--today {
+  background: var(--today);
+  color: #fff;
+  font-weight: 600;
+}
+
+.calendar__footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.today-btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.today-btn:hover {
+  background: var(--accent-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161c;
+    --surface: #1e212a;
+    --border: #2c303b;
+    --text: #eceef2;
+    --muted: #7a828f;
+    --accent-soft: #23304f;
+  }
+}
