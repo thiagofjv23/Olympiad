@@ -489,6 +489,115 @@ button.day:not(.day--current):hover {
   font-weight: 600;
 }
 
+/* Atletas ---------------------------------------------------------------- */
+.athletes {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.athletes__select-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.athletes__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.athletes__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.athlete-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.athlete {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.athlete__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+/* Remove o marcador padrão do <summary>. */
+.athlete__summary::-webkit-details-marker {
+  display: none;
+}
+
+.athlete__summary::after {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.athlete[open] .athlete__summary::after {
+  transform: rotate(90deg);
+}
+
+.athlete__summary:hover {
+  background: var(--accent-soft);
+}
+
+.athlete__name {
+  font-weight: 600;
+}
+
+.athlete__brief {
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.athlete__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 12px;
+}
+
+.athlete__stats li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.athlete__stats li span {
+  color: var(--muted);
+}
+
 .stage-status {
   font-weight: 600;
   color: var(--muted);

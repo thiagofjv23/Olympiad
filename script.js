@@ -30,14 +30,31 @@ const advanceDayBtn = document.getElementById("advance-day");
 const advanceWeekBtn = document.getElementById("advance-week");
 const goCurrentBtn = document.getElementById("go-current");
 
-// Elementos — abas e campeonatos.
-const tabBtnCalendar = document.getElementById("tab-btn-calendar");
-const tabBtnChampionships = document.getElementById("tab-btn-championships");
+// Elementos — abas.
 const panelCalendar = document.getElementById("tab-calendar");
-const panelChampionships = document.getElementById("tab-championships");
+const TABS = {
+  calendar: {
+    btn: document.getElementById("tab-btn-calendar"),
+    panel: panelCalendar,
+  },
+  championships: {
+    btn: document.getElementById("tab-btn-championships"),
+    panel: document.getElementById("tab-championships"),
+  },
+  athletes: {
+    btn: document.getElementById("tab-btn-athletes"),
+    panel: document.getElementById("tab-athletes"),
+  },
+};
+
+// Elementos — campeonatos.
 const championshipSelect = document.getElementById("championship-select");
 const championshipDetails = document.getElementById("championship-details");
 const dayDetail = document.getElementById("day-detail");
+
+// Elementos — atletas.
+const athleteCountrySelect = document.getElementById("athlete-country-select");
+const athleteList = document.getElementById("athlete-list");
 
 function sameDay(a, b) {
   return (
@@ -221,15 +238,12 @@ function goToEvent(championshipId, stageNumber) {
 // Abas
 // -----------------------------------------------------------------------------
 function activateTab(tab) {
-  const isCalendar = tab === "calendar";
-
-  tabBtnCalendar.classList.toggle("tab--active", isCalendar);
-  tabBtnCalendar.setAttribute("aria-selected", String(isCalendar));
-  tabBtnChampionships.classList.toggle("tab--active", !isCalendar);
-  tabBtnChampionships.setAttribute("aria-selected", String(!isCalendar));
-
-  panelCalendar.classList.toggle("tab-panel--hidden", !isCalendar);
-  panelChampionships.classList.toggle("tab-panel--hidden", isCalendar);
+  for (const [name, { btn, panel }] of Object.entries(TABS)) {
+    const active = name === tab;
+    btn.classList.toggle("tab--active", active);
+    btn.setAttribute("aria-selected", String(active));
+    panel.classList.toggle("tab-panel--hidden", !active);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -328,6 +342,49 @@ function renderChampionship(id, highlightStage) {
 }
 
 // -----------------------------------------------------------------------------
+// Atletas
+// -----------------------------------------------------------------------------
+function populateAthleteCountrySelect() {
+  athleteCountrySelect.innerHTML = "";
+  for (const country of Object.values(COUNTRIES)) {
+    const option = document.createElement("option");
+    option.value = country.id;
+    option.textContent = country.name;
+    athleteCountrySelect.appendChild(option);
+  }
+}
+
+// Lista os atletas de um país. Cada atleta mostra nome, idade e força;
+// ao clicar, expande para os demais atributos.
+function renderAthletes(countryId) {
+  const list = ATHLETES.filter((athlete) => athlete.countryId === countryId);
+
+  if (list.length === 0) {
+    athleteList.innerHTML =
+      `<p class="athletes__empty">Nenhum atleta para este país.</p>`;
+    return;
+  }
+
+  athleteList.innerHTML = list
+    .map(
+      (athlete) => `
+        <details class="athlete">
+          <summary class="athlete__summary">
+            <span class="athlete__name">${getAthleteName(athlete)}</span>
+            <span class="athlete__brief">${athlete.age} anos · Força ${athlete.strength}</span>
+          </summary>
+          <ul class="athlete__stats">
+            <li><span>Força</span><strong>${athlete.strength}</strong></li>
+            <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
+            <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
+            <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
+          </ul>
+        </details>`
+    )
+    .join("");
+}
+
+// -----------------------------------------------------------------------------
 // Eventos
 // -----------------------------------------------------------------------------
 prevBtn.addEventListener("click", () => changeMonth(-1));
@@ -336,9 +393,11 @@ advanceDayBtn.addEventListener("click", () => advanceDays(1));
 advanceWeekBtn.addEventListener("click", () => advanceDays(7));
 goCurrentBtn.addEventListener("click", goToCurrent);
 
-tabBtnCalendar.addEventListener("click", () => activateTab("calendar"));
-tabBtnChampionships.addEventListener("click", () => activateTab("championships"));
+TABS.calendar.btn.addEventListener("click", () => activateTab("calendar"));
+TABS.championships.btn.addEventListener("click", () => activateTab("championships"));
+TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
+athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
 
 document.addEventListener("keydown", (event) => {
   if (panelCalendar.classList.contains("tab-panel--hidden")) return;
@@ -352,4 +411,8 @@ generateAthletes();
 
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);
+
+populateAthleteCountrySelect();
+renderAthletes(athleteCountrySelect.value);
+
 render();

@@ -22,7 +22,9 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
       todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
 
-## Próximo passo combinado
+## Atletas — UI
 
-- [ ] **Telas dos atletas.** A UI dos atletas é o próximo passo (este commit só
-      criou a entidade e o gerador, sem nenhuma tela).
+- [x] **Aba Atletas (lista por país).** Feita: seletor de país + lista de atletas
+      (nome, idade, Força) expansível para os demais atributos.
+- [ ] **Barras/visual dos atributos** (Força, Potencial, Preparação, Cansaço) —
+      hoje são apenas números.

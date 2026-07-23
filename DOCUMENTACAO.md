@@ -210,6 +210,17 @@ substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
   do exemplo (18–35), lógica de evolução de Força/Potencial e aplicação do
   Cansaço por etapa (depende do vínculo atleta ↔ etapa).
 
+### Etapa 7 — Aba Atletas (UI)
+
+- Adicionada a **terceira aba: Atletas** (ao lado de Calendário e Campeonatos).
+- **Seletor por país**: ao escolher o país, lista **todos os atletas daquele
+  país** (`ATHLETES` filtrado por `countryId`).
+- Cada atleta aparece inicialmente só com **nome, idade e Força**; é **clicável e
+  expande** (via `<details>`) para mostrar os demais atributos (Força, Potencial,
+  Preparação Física e Cansaço).
+- Sem novos dados: a tela apenas exibe os atletas já gerados no início da
+  simulação.
+
 ---
 
 ## 4. Referência de funções (`script.js`)
@@ -229,6 +240,8 @@ substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
 | `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (com status das etapas); destaca opcionalmente. |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
+| `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
+| `renderAthletes(countryId)`         | Lista os atletas do país (expansíveis para ver todos os dados). |
 
 ---
 
