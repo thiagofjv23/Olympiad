@@ -374,8 +374,10 @@ function renderAthletes(countryId) {
   }
 
   athleteList.innerHTML = list
-    .map(
-      (athlete) => `
+    .map((athlete) => {
+      const birthCity = getCity(athlete.birthCityId);
+      const birthPlace = birthCity ? birthCity.name : "—";
+      return `
         <details class="athlete">
           <summary class="athlete__summary">
             <span class="athlete__name">${getAthleteName(athlete)}</span>
@@ -386,9 +388,10 @@ function renderAthletes(countryId) {
             <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
             <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
             <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
+            <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
           </ul>
-        </details>`
-    )
+        </details>`;
+    })
     .join("");
 }
 
@@ -419,6 +422,9 @@ function renderClubs(countryId) {
     .map((club) => {
       const country = getCountry(club.countryId);
       const countryName = country ? country.name : club.countryId;
+      const ioc = country ? country.iocCode : club.countryId;
+      const city = getCity(club.cityId);
+      const cityName = city ? city.name : "—";
       const president = club.president || "—";
       const finances = club.finances != null ? club.finances : "—";
       const rivals = club.rivals.length > 0 ? club.rivals.join(", ") : "—";
@@ -426,11 +432,12 @@ function renderClubs(countryId) {
         <details class="club">
           <summary class="club__summary">
             <span class="club__name">${club.name}</span>
-            <span class="club__brief">${countryName} · Prestígio ${club.prestige}</span>
+            <span class="club__brief">${cityName}, ${ioc} · Prestígio ${club.prestige}</span>
           </summary>
           <ul class="club__stats">
             <li><span>ID</span><strong>${club.id}</strong></li>
             <li><span>País</span><strong>${countryName}</strong></li>
+            <li><span>Cidade</span><strong>${cityName}</strong></li>
             <li><span>Prestígio</span><strong>${club.prestige}/100</strong></li>
             <li><span>Ano de fundação</span><strong>${club.foundationYear}</strong></li>
             <li><span>Infraestrutura</span><strong>${club.infrastructureLevel}/100</strong></li>

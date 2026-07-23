@@ -323,6 +323,16 @@ das 10 cidades do Brasil.
   faixas de tamanho, influência da força olímpica) e a lista das cidades.
 - **Sem UI** — apenas a entidade/database e os vínculos. A UI é o próximo passo.
 
+### Etapa 12 — Cidades na UI de Atletas e Clubes
+
+- **Atletas**: o **local de nascimento** passou a aparecer **apenas ao expandir**
+  o atleta (nova linha "Local de nascimento").
+- **Clubes**: a **cidade-sede** passou a aparecer **ao lado do país** no resumo
+  (ex.: `Esporte Clube Pinheiros — São Paulo, BRA`) e também como linha "Cidade"
+  no expandir.
+- Registrado no `TODO.md` (apenas documentação, sem lógica): expandir o uso de
+  cidades para as **etapas de campeonatos** (cada etapa em uma cidade-sede).
+
 ---
 
 ## 4. Referência de funções (`script.js`)

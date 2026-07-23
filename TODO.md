@@ -70,3 +70,6 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       um gerador futuro poderia calcular `sportsInfrastructure` a partir da força
       olímpica + tamanho.
 - [ ] **UI das cidades.** Ainda não existe tela para cidades (próximo passo).
+- [ ] **Cidades nas etapas de campeonatos.** Expandir o uso de cidades para as
+      etapas (cada etapa acontecer em uma cidade-sede). **Apenas documentado por
+      enquanto — lógica ainda não implementada.**
