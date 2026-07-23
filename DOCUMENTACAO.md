@@ -22,8 +22,10 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `script.js`         | Lógica da UI: calendário, passagem de tempo, abas, cliques e detalhes.  |
 | `countries.js`      | **Entidade Países** (dados). Ex.: Brasil.                               |
 | `championships.js`  | **Entidade Campeonatos** (dados) + cálculo das etapas.                  |
+| `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
+| `TODO.md`           | Pendências e decisões temporárias.                                     |
 
 ### Princípio de arquitetura
 
@@ -34,7 +36,7 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `championships.js` → `script.js`.
+`countries.js` → `championships.js` → `athletes.js` → `script.js`.
 
 ---
 
@@ -84,6 +86,43 @@ Funções utilitárias:
   data de referência: retorna `true` ao **chegar no dia** da etapa ou depois.
 - `championshipProgress(championship, referenceDate)` — `{ done, total }` com o
   número de etapas já realizadas em relação a uma data.
+
+### Atletas — `athletes.js`
+
+Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
+
+| Campo                 | Descrição                                                        |
+| --------------------- | ---------------------------------------------------------------- |
+| `id`                  | Número sequencial (1, 2, 3, ...).                                |
+| `label`               | Nome base (`Atleta 1`, `Atleta 2`, ...).                         |
+| `countryId`           | País de origem (ver `countries.js`).                             |
+| `age`                 | Idade.                                                           |
+| `strength`            | **Força** (0–100).                                               |
+| `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
+| `physicalPreparation` | **Preparação Física** (0–100).                                   |
+| `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
+
+Nome exibido = `label` + código do COI do país, ex.: **`Atleta 1 (BRA)`**
+(via `getAthleteName(athlete)`).
+
+Regras de geração:
+
+- **Idade**: gerador suporta **12–40** (`ATHLETE_AGE_LIMITS`); no exemplo atual
+  gera **18–35** (`ATHLETE_GENERATION_CONFIG`).
+- **Força**: distribuição **normal** centrada na **força olímpica do país**
+  ajustada por uma curva de idade (pico em ~27 anos).
+- **Potencial**: força inicial + margem (também derivada da força olímpica);
+  **nunca menor que a Força** e no máximo 100.
+- **Preparação Física**: normal em torno de 60 (0–100).
+- **Cansaço**: começa em 100. `fatigueReductionForStage(athlete)` define quanto
+  cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**
+  (a aplicação por etapa depende da participação; ver `TODO.md`).
+
+Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
+substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
+
+> Números de teste (10 atletas, idade 18–35) e a lógica de evolução de
+> Força/Potencial estão registrados em `TODO.md`.
 
 ---
 
@@ -157,6 +196,19 @@ Funções utilitárias:
     ocorreu (laranja enquanto agendada).
 - A passagem de tempo (**+ 1 dia** / **+ 1 semana**) reavalia e **atualiza** essas
   visões automaticamente (`refreshChampionshipView`, `refreshDayDetail`).
+
+### Etapa 6 — Entidade Atletas e gerador de regens
+
+- Criado `athletes.js` com o **gerador de regens** e a entidade Atleta (atributos
+  descritos na seção 2).
+- **Integrado ao ecossistema**: ao **iniciar a simulação**, `generateAthletes()`
+  cria **10 atletas** (número de teste — ver `TODO.md`), todos do Brasil (único
+  país existente), com nome no formato `Atleta N (BRA)`.
+- **Sem telas ainda** — apenas a entidade e o gerador. A UI dos atletas é o
+  próximo passo.
+- Pendências registradas em `TODO.md`: quantidade de teste (10), faixa de idade
+  do exemplo (18–35), lógica de evolução de Força/Potencial e aplicação do
+  Cansaço por etapa (depende do vínculo atleta ↔ etapa).
 
 ---
 

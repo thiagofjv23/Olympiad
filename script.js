@@ -346,7 +346,10 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "ArrowRight") changeMonth(1);
 });
 
-// Inicialização.
+// Inicialização da simulação.
+// Gera os atletas da simulação (10 no momento — apenas para testes; ver TODO.md).
+generateAthletes();
+
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);
 render();

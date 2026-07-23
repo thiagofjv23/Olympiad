@@ -1,0 +1,135 @@
+// -----------------------------------------------------------------------------
+// Entidade: Atletas (Athletes) — gerador de "regens"
+// Relaciona-se com os países (countries.js) pela força olímpica e pelo COI.
+//
+// Cada atleta possui:
+//   - id                   : número sequencial (1, 2, 3, ...)
+//   - label                : nome base ("Atleta 1", "Atleta 2", ...)
+//   - countryId            : país de origem (ver countries.js)
+//   - age                  : idade
+//   - strength             : Força (0-100), baseada na força olímpica + idade
+//   - potential            : Potencial (0-100), teto de crescimento; nunca < Força
+//   - physicalPreparation  : Preparação Física (0-100)
+//   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
+//
+// O nome exibido combina o label com o código do COI do país,
+// por exemplo: "Atleta 1 (BRA)".
+// -----------------------------------------------------------------------------
+
+// Capacidade máxima do gerador (faixa de idade que ele consegue produzir).
+const ATHLETE_AGE_LIMITS = { min: 12, max: 40 };
+
+// Configuração de geração usada nos testes atuais.
+// TODO: `count` e a faixa de idade abaixo são apenas para testes — tornar
+// configuráveis/dinâmicos depois (ver TODO.md).
+const ATHLETE_GENERATION_CONFIG = {
+  count: 10, // quantidade gerada por simulação (apenas para testes)
+  minAge: 18, // faixa deste exemplo inicial (gerador suporta 12-40)
+  maxAge: 35,
+};
+
+// Idade de pico de rendimento — usada na curva de força por idade.
+const PEAK_AGE = 27;
+
+// Lista viva de atletas da simulação atual.
+let ATHLETES = [];
+
+// --- utilidades ---------------------------------------------------------------
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Amostra de uma distribuição normal (Box-Muller).
+function randomNormal(mean, stdDev) {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  return mean + z * stdDev;
+}
+
+// Fator de idade (0.6 a 1.0): máximo perto do pico, caindo nos extremos.
+function ageFactor(age) {
+  const penalty = Math.pow((age - PEAK_AGE) / 18, 2);
+  return clampNumber(1 - penalty * 0.5, 0.6, 1);
+}
+
+// --- geração de atributos -----------------------------------------------------
+
+// Força: distribuição normal centrada na força olímpica ajustada pela idade.
+function generateStrength(olympicStrength, age) {
+  const mean = olympicStrength * ageFactor(age);
+  return Math.round(clampNumber(randomNormal(mean, 8), 1, 100));
+}
+
+// Potencial: força inicial + margem de crescimento (também vinda da força
+// olímpica). Nunca menor que a força e no máximo 100.
+function generatePotential(olympicStrength, strength) {
+  const margin = Math.abs(randomNormal(olympicStrength * 0.15, 6));
+  return Math.round(clampNumber(strength + margin, strength, 100));
+}
+
+// Preparação Física (0-100).
+function generatePhysicalPreparation() {
+  return Math.round(clampNumber(randomNormal(60, 15), 0, 100));
+}
+
+// Nome exibido: "Atleta N (COI)".
+function getAthleteName(athlete) {
+  const country = getCountry(athlete.countryId);
+  const ioc = country ? country.iocCode : "???";
+  return `${athlete.label} (${ioc})`;
+}
+
+// Redução de Cansaço por etapa concluída: maior com a idade e menor quanto
+// melhor a Preparação Física (atleta mais preparado se cansa menos).
+// TODO: aplicar quando os atletas forem vinculados às etapas (ver TODO.md).
+function fatigueReductionForStage(athlete) {
+  const base = 4;
+  const ageEffect = (athlete.age / ATHLETE_AGE_LIMITS.max) * 6; // +idade => +redução
+  const prepRelief = (athlete.physicalPreparation / 100) * 5; // +preparo => -redução
+  return clampNumber(base + ageEffect - prepRelief, 1, 20);
+}
+
+// --- criação e geração --------------------------------------------------------
+
+function createAthlete(index, country) {
+  const age = randomInt(
+    ATHLETE_GENERATION_CONFIG.minAge,
+    ATHLETE_GENERATION_CONFIG.maxAge
+  );
+  const strength = generateStrength(country.olympicStrength, age);
+  const potential = generatePotential(country.olympicStrength, strength);
+
+  return {
+    id: index,
+    label: `Atleta ${index}`,
+    countryId: country.id,
+    age,
+    strength,
+    potential,
+    physicalPreparation: generatePhysicalPreparation(),
+    fatigue: 100, // Cansaço inicia sempre em 100%
+  };
+}
+
+// Gera `count` atletas do país informado e substitui a lista atual.
+// Chamado ao iniciar a simulação.
+function generateAthletes(
+  count = ATHLETE_GENERATION_CONFIG.count,
+  countryId = "BRA"
+) {
+  const country = getCountry(countryId);
+  const list = [];
+  for (let i = 1; i <= count; i++) {
+    list.push(createAthlete(i, country));
+  }
+  ATHLETES = list;
+  return list;
+}
