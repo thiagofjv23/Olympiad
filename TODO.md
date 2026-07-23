@@ -102,6 +102,14 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       números prontos; falta a lógica que **produz** o número de cada atleta a
       partir dos seus atributos (força, potencial, cansaço, etc.) para então
       entregar à engine.
-- [ ] **Possíveis extensões da engine** (a decidir): regras de desempate,
-      conversão desempenho→pontos, estrutura de rodadas/qualificação, modelo de
-      variância/aleatoriedade.
+### Extensões da engine (implantar uma por vez, nesta ordem a combinar)
+
+- [ ] **Regras de desempate.** Como resolver empates além de compartilhar posição
+      (ex.: melhor tentativa seguinte / countback, tempo de reação, sorteio).
+- [ ] **Conversão desempenho → pontos.** Tabela/fórmula para transformar um
+      resultado (tempo/distância) em pontos (útil para provas combinadas, p. ex.
+      decatlo).
+- [ ] **Rodadas/qualificação.** Estrutura de fases (eliminatórias, semifinais,
+      final) e critério de quem avança em cada rodada.
+- [ ] **Variância/aleatoriedade.** Parâmetros de dispersão (margem de acaso) na
+      resolução, para o favorito não vencer sempre.
