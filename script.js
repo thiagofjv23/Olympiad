@@ -18,6 +18,7 @@ const START_DATE = new Date(2026, 0, 1); // 01/01/2026
 let currentDate = new Date(START_DATE); // "agora" da simulação
 let viewYear = currentDate.getFullYear(); // mês exibido no calendário
 let viewMonth = currentDate.getMonth();
+let selectedDate = null; // dia clicado pelo usuário
 
 // Elementos — calendário.
 const monthLabel = document.getElementById("month-label");
@@ -36,6 +37,7 @@ const panelCalendar = document.getElementById("tab-calendar");
 const panelChampionships = document.getElementById("tab-championships");
 const championshipSelect = document.getElementById("championship-select");
 const championshipDetails = document.getElementById("championship-details");
+const dayDetail = document.getElementById("day-detail");
 
 function sameDay(a, b) {
   return (
@@ -63,8 +65,10 @@ function renderCalendar() {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const cellDate = new Date(viewYear, viewMonth, day);
-    const cell = document.createElement("div");
+    const cell = document.createElement("button");
+    cell.type = "button";
     cell.className = "day";
+    cell.addEventListener("click", () => selectDay(cellDate));
 
     const number = document.createElement("span");
     number.className = "day__number";
@@ -74,6 +78,10 @@ function renderCalendar() {
     if (sameDay(cellDate, currentDate)) {
       cell.classList.add("day--current");
       cell.setAttribute("aria-current", "date");
+    }
+
+    if (selectedDate && sameDay(cellDate, selectedDate)) {
+      cell.classList.add("day--selected");
     }
 
     // Marca as etapas de campeonatos que ocorrem nesta data.
@@ -130,6 +138,56 @@ function goToCurrent() {
   renderCalendar();
 }
 
+// Usuário clicou em um dia do calendário: marca o dia e exibe seus eventos.
+function selectDay(date) {
+  selectedDate = new Date(date);
+  renderCalendar();
+  renderDayDetail(date);
+}
+
+// Monta o painel de detalhes do dia clicado.
+function renderDayDetail(date) {
+  const stages = getStagesOnDate(date);
+  const heading = `<p class="day-detail__date">${formatDate(date)}</p>`;
+
+  if (stages.length === 0) {
+    dayDetail.innerHTML =
+      heading + `<p class="day-detail__empty">Não há evento neste dia.</p>`;
+    return;
+  }
+
+  const items = stages
+    .map(
+      (s) => `
+        <li>
+          <button type="button" class="event-item"
+                  data-championship="${s.championship.id}"
+                  data-stage="${s.stage.number}">
+            <span class="event-item__name">${s.championship.name}</span>
+            <span class="event-item__stage">Etapa ${s.stage.number}</span>
+          </button>
+        </li>`
+    )
+    .join("");
+
+  dayDetail.innerHTML =
+    heading +
+    `<p class="day-detail__label">Eventos neste dia</p><ul class="event-list">${items}</ul>`;
+
+  dayDetail.querySelectorAll(".event-item").forEach((button) => {
+    button.addEventListener("click", () =>
+      goToEvent(button.dataset.championship, Number(button.dataset.stage))
+    );
+  });
+}
+
+// Vai para a tela do evento na aba Campeonatos, destacando a etapa clicada.
+function goToEvent(championshipId, stageNumber) {
+  activateTab("championships");
+  championshipSelect.value = championshipId;
+  renderChampionship(championshipId, stageNumber);
+}
+
 // -----------------------------------------------------------------------------
 // Abas
 // -----------------------------------------------------------------------------
@@ -164,7 +222,7 @@ function populateChampionshipSelect() {
   }
 }
 
-function renderChampionship(id) {
+function renderChampionship(id, highlightStage) {
   const championship = CHAMPIONSHIPS[id];
   if (!championship) return;
 
@@ -173,7 +231,7 @@ function renderChampionship(id) {
   const stagesRows = championship.stages
     .map(
       (stage) => `
-        <tr>
+        <tr${stage.number === highlightStage ? ' class="stage-row--highlight" id="stage-row"' : ""}>
           <td>${stage.number}</td>
           <td>${formatDate(stage.date)}</td>
         </tr>`
@@ -223,6 +281,11 @@ function renderChampionship(id) {
       </table>
     </div>
   `;
+
+  if (highlightStage) {
+    const row = document.getElementById("stage-row");
+    if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 // -----------------------------------------------------------------------------

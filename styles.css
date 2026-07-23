@@ -146,6 +146,20 @@ body {
   font-size: 0.9rem;
   border-radius: 8px;
   color: var(--text);
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+button.day:not(.day--current):hover {
+  background: var(--accent-soft);
+}
+
+.day--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .day--empty {
@@ -191,6 +205,81 @@ body {
   height: 8px;
   border-radius: 50%;
   background: var(--event);
+}
+
+/* Detalhe do dia clicado -------------------------------------------------- */
+.day-detail:empty {
+  display: none;
+}
+
+.day-detail {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.day-detail__date {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.day-detail__label {
+  margin: 8px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.day-detail__empty {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--event);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.event-item:hover {
+  background: var(--accent-soft);
+}
+
+.event-item__name {
+  font-weight: 600;
+  text-align: left;
+}
+
+.event-item__stage {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 .time-panel {
@@ -376,6 +465,14 @@ body {
 .stages-table td:first-child {
   width: 60px;
   font-weight: 600;
+}
+
+.stage-row--highlight td {
+  background: var(--accent-soft);
+}
+
+.stage-row--highlight td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
