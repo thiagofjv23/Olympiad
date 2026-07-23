@@ -15,14 +15,11 @@ const WEEKDAY_NAMES = [
 // -----------------------------------------------------------------------------
 const START_DATE = new Date(2026, 0, 1); // 01/01/2026
 
-// "Agora" da simulação. Avança em dias.
-let currentDate = new Date(START_DATE);
-
-// Mês exibido no calendário (pode ser navegado sem alterar a data atual).
-let viewYear = currentDate.getFullYear();
+let currentDate = new Date(START_DATE); // "agora" da simulação
+let viewYear = currentDate.getFullYear(); // mês exibido no calendário
 let viewMonth = currentDate.getMonth();
 
-// Elementos.
+// Elementos — calendário.
 const monthLabel = document.getElementById("month-label");
 const daysContainer = document.getElementById("days");
 const currentDateLabel = document.getElementById("current-date");
@@ -32,6 +29,14 @@ const advanceDayBtn = document.getElementById("advance-day");
 const advanceWeekBtn = document.getElementById("advance-week");
 const goCurrentBtn = document.getElementById("go-current");
 
+// Elementos — abas e campeonatos.
+const tabBtnCalendar = document.getElementById("tab-btn-calendar");
+const tabBtnChampionships = document.getElementById("tab-btn-championships");
+const panelCalendar = document.getElementById("tab-calendar");
+const panelChampionships = document.getElementById("tab-championships");
+const championshipSelect = document.getElementById("championship-select");
+const championshipDetails = document.getElementById("championship-details");
+
 function sameDay(a, b) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -40,7 +45,9 @@ function sameDay(a, b) {
   );
 }
 
-// Desenha a grade do mês em exibição, destacando a data atual da simulação.
+// -----------------------------------------------------------------------------
+// Calendário
+// -----------------------------------------------------------------------------
 function renderCalendar() {
   monthLabel.textContent = `${MONTH_NAMES[viewMonth]} de ${viewYear}`;
   daysContainer.innerHTML = "";
@@ -55,18 +62,36 @@ function renderCalendar() {
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
+    const cellDate = new Date(viewYear, viewMonth, day);
     const cell = document.createElement("div");
     cell.className = "day";
-    cell.textContent = String(day);
-    if (sameDay(new Date(viewYear, viewMonth, day), currentDate)) {
+
+    const number = document.createElement("span");
+    number.className = "day__number";
+    number.textContent = String(day);
+    cell.appendChild(number);
+
+    if (sameDay(cellDate, currentDate)) {
       cell.classList.add("day--current");
       cell.setAttribute("aria-current", "date");
     }
+
+    // Marca as etapas de campeonatos que ocorrem nesta data.
+    const stagesHere = getStagesOnDate(cellDate);
+    if (stagesHere.length > 0) {
+      cell.classList.add("day--event");
+      const marker = document.createElement("span");
+      marker.className = "day__marker";
+      cell.appendChild(marker);
+      cell.title = stagesHere
+        .map((s) => `${s.championship.name} — Etapa ${s.stage.number}`)
+        .join("\n");
+    }
+
     daysContainer.appendChild(cell);
   }
 }
 
-// Atualiza o texto da data atual da simulação.
 function renderCurrentDate() {
   const weekday = WEEKDAY_NAMES[currentDate.getDay()];
   const day = String(currentDate.getDate()).padStart(2, "0");
@@ -80,16 +105,13 @@ function render() {
   renderCurrentDate();
 }
 
-// Avança a passagem de tempo em N dias (unidade: dia).
 function advanceDays(days) {
   currentDate.setDate(currentDate.getDate() + days);
-  // O calendário acompanha a data atual da simulação.
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
 }
 
-// Navegação de meses (não altera a passagem de tempo).
 function changeMonth(delta) {
   viewMonth += delta;
   if (viewMonth < 0) {
@@ -102,23 +124,127 @@ function changeMonth(delta) {
   renderCalendar();
 }
 
-// Volta a visualização para o mês da data atual da simulação.
 function goToCurrent() {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   renderCalendar();
 }
 
-// Eventos.
+// -----------------------------------------------------------------------------
+// Abas
+// -----------------------------------------------------------------------------
+function activateTab(tab) {
+  const isCalendar = tab === "calendar";
+
+  tabBtnCalendar.classList.toggle("tab--active", isCalendar);
+  tabBtnCalendar.setAttribute("aria-selected", String(isCalendar));
+  tabBtnChampionships.classList.toggle("tab--active", !isCalendar);
+  tabBtnChampionships.setAttribute("aria-selected", String(!isCalendar));
+
+  panelCalendar.classList.toggle("tab-panel--hidden", !isCalendar);
+  panelChampionships.classList.toggle("tab-panel--hidden", isCalendar);
+}
+
+// -----------------------------------------------------------------------------
+// Campeonatos
+// -----------------------------------------------------------------------------
+function formatDate(date) {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}/${date.getFullYear()}`;
+}
+
+function populateChampionshipSelect() {
+  championshipSelect.innerHTML = "";
+  for (const championship of Object.values(CHAMPIONSHIPS)) {
+    const option = document.createElement("option");
+    option.value = championship.id;
+    option.textContent = championship.name;
+    championshipSelect.appendChild(option);
+  }
+}
+
+function renderChampionship(id) {
+  const championship = CHAMPIONSHIPS[id];
+  if (!championship) return;
+
+  const country = getCountry(championship.countryId);
+
+  const stagesRows = championship.stages
+    .map(
+      (stage) => `
+        <tr>
+          <td>${stage.number}</td>
+          <td>${formatDate(stage.date)}</td>
+        </tr>`
+    )
+    .join("");
+
+  const countryBlock = country
+    ? `
+      <div class="detail-card">
+        <h3>País</h3>
+        <p class="detail-card__title">${country.name} <span class="detail-card__id">(${country.id})</span></p>
+        <ul class="detail-list">
+          <li><span>População</span><strong>${country.population.toLocaleString("pt-BR")}</strong></li>
+          <li>
+            <span>Força Olímpica</span>
+            <strong>${country.olympicStrength}/100</strong>
+          </li>
+        </ul>
+        <div class="strength-bar" role="img" aria-label="Força olímpica ${country.olympicStrength} de 100">
+          <div class="strength-bar__fill" style="width: ${country.olympicStrength}%"></div>
+        </div>
+      </div>`
+    : `<div class="detail-card"><h3>País</h3><p>País não encontrado.</p></div>`;
+
+  championshipDetails.innerHTML = `
+    <div class="detail-card">
+      <h3>Campeonato</h3>
+      <p class="detail-card__title">${championship.name}</p>
+      <p class="detail-card__id">ID: ${championship.id}</p>
+      <ul class="detail-list">
+        <li><span>Participantes</span><strong>${championship.participants}</strong></li>
+        <li><span>Eventos</span><strong>${championship.events.length}</strong></li>
+        <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
+        <li><span>Etapas</span><strong>${championship.stages.length}</strong></li>
+      </ul>
+    </div>
+
+    ${countryBlock}
+
+    <div class="detail-card">
+      <h3>Etapas</h3>
+      <table class="stages-table">
+        <thead>
+          <tr><th>Etapa</th><th>Data</th></tr>
+        </thead>
+        <tbody>${stagesRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// -----------------------------------------------------------------------------
+// Eventos
+// -----------------------------------------------------------------------------
 prevBtn.addEventListener("click", () => changeMonth(-1));
 nextBtn.addEventListener("click", () => changeMonth(1));
 advanceDayBtn.addEventListener("click", () => advanceDays(1));
 advanceWeekBtn.addEventListener("click", () => advanceDays(7));
 goCurrentBtn.addEventListener("click", goToCurrent);
 
+tabBtnCalendar.addEventListener("click", () => activateTab("calendar"));
+tabBtnChampionships.addEventListener("click", () => activateTab("championships"));
+championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
+
 document.addEventListener("keydown", (event) => {
+  if (panelCalendar.classList.contains("tab-panel--hidden")) return;
   if (event.key === "ArrowLeft") changeMonth(-1);
   if (event.key === "ArrowRight") changeMonth(1);
 });
 
+// Inicialização.
+populateChampionshipSelect();
+renderChampionship(championshipSelect.value);
 render();

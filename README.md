@@ -17,6 +17,20 @@ Calendário mensal simples em HTML, CSS e JavaScript (sem dependências).
 - A data atual da simulação é destacada no calendário, que **acompanha** a passagem do tempo (vira mês/ano automaticamente).
 - **Ir para a data atual**: retorna a visualização ao mês da data simulada, caso você tenha navegado para outro mês.
 
+## Abas
+
+A interface tem duas abas:
+
+- **Calendário** — o calendário com passagem de tempo; as datas de etapas dos campeonatos aparecem marcadas (ponto laranja) nos dias correspondentes.
+- **Campeonatos** — mostra o campeonato selecionado, com um seletor para futuros campeonatos.
+
+## Entidades (dados)
+
+- **`countries.js`** — entidade **Países**. Cada país tem `id`, `nome`, `população` e um rating de **Força Olímpica** (0–100). Já inclui o **Brasil** (`BRA`).
+- **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), `eventos`, `modalidades`, `competidores` e `etapas`.
+  - Campeonato inicial: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil, 0 participantes.
+  - **10 etapas**, sempre no **segundo sábado de cada mês**, começando no segundo sábado de janeiro/2026.
+
 ## Como usar
 
 Abra o arquivo `index.html` em qualquer navegador.
