@@ -123,8 +123,13 @@ mudada se você preferir outro caminho.
     (7 metrópoles + 3 grandes). Documentadas em `PRINCIPIOS_CIDADES.md`.
 
 19d. **Cidade de nascimento do atleta é sorteada** entre as cidades do país do
-    atleta, no momento da geração (não há peso por população ainda — dá para
-    refinar depois).
+    atleta, no momento da geração.
+
+19e. **Pesos por tamanho de cidade escolhidos por mim** (`CITY_SIZE_WEIGHTS`:
+    pequena 1, média 2, grande 4, metrópole 8), usados no sorteio ponderado da
+    cidade de nascimento. Escolhi progressão que dobra a cada faixa para que
+    cidades maiores concentrem claramente mais atletas; são valores de
+    balanceamento, fáceis de ajustar.
 
 ---
 

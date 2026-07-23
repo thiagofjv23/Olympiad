@@ -36,6 +36,20 @@ function citySizeFromPopulation(population) {
   return "pequena";
 }
 
+// Peso de cada tamanho de cidade. Usado, por exemplo, para sortear a cidade de
+// nascimento dos atletas: quanto maior a cidade, maior a chance (proporção).
+const CITY_SIZE_WEIGHTS = {
+  pequena: 1,
+  "média": 2,
+  grande: 4,
+  "metrópole": 8,
+};
+
+// Retorna o peso de um tamanho de cidade (1 se desconhecido).
+function citySizeWeight(size) {
+  return CITY_SIZE_WEIGHTS[size] || 1;
+}
+
 const CITIES = {
   "CID-SAO-PAULO": {
     id: "CID-SAO-PAULO",

@@ -106,7 +106,7 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
-| `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país. |
+| `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
 
 Nome exibido = `label` + código do COI do país, ex.: **`Atleta 1 (BRA)`**
 (via `getAthleteName(athlete)`).
@@ -332,6 +332,17 @@ das 10 cidades do Brasil.
   no expandir.
 - Registrado no `TODO.md` (apenas documentação, sem lógica): expandir o uso de
   cidades para as **etapas de campeonatos** (cada etapa em uma cidade-sede).
+
+### Etapa 13 — Local de nascimento ponderado pelo tamanho da cidade
+
+- O gerador de atletas passou a sortear a cidade de nascimento **proporcional ao
+  tamanho da cidade**: cada tamanho tem um peso (`CITY_SIZE_WEIGHTS` em
+  `cities.js` — pequena 1, média 2, grande 4, metrópole 8), então cidades maiores
+  concentram mais atletas.
+- Verificado com amostra grande: metrópoles (~11,8% cada) recebem o dobro das
+  cidades grandes (~5,9% cada).
+- Registrado no `TODO.md` (apenas documentação, sem lógica): **organizador/ordenador**
+  nas telas de Clubes e Atletas (por prestígio, local, etc.).
 
 ---
 

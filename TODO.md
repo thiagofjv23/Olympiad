@@ -62,6 +62,13 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       clubes, com valores iniciais aproximados, e exibido na aba Clubes. O **uso**
       do prestígio está na seção de prioridade alta, no topo deste arquivo.
 
+## Interface — organização/ordenação
+
+- [ ] **Organizador/ordenador nas telas de Clubes e Atletas.** Permitir ordenar
+      as listas por diferentes critérios (ex.: **prestígio**, **local/cidade**,
+      idade, força, etc.). **Apenas documentado por enquanto — lógica ainda não
+      implementada.**
+
 ## Cidades
 
 - [ ] **10 cidades por país é número de teste.** Hoje cada país implantado tem só

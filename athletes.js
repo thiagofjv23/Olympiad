@@ -100,12 +100,24 @@ function fatigueReductionForStage(athlete) {
 
 // --- criação e geração --------------------------------------------------------
 
-// Sorteia a cidade de nascimento entre as cidades do país. Retorna null se o
-// país ainda não tiver cidades cadastradas.
+// Sorteia a cidade de nascimento entre as cidades do país, ponderando pelo
+// tamanho da cidade: quanto maior a cidade, maior a proporção de atletas nela
+// nascidos. Retorna null se o país ainda não tiver cidades cadastradas.
 function randomBirthCityId(countryId) {
   const cities = getCitiesByCountry(countryId);
   if (cities.length === 0) return null;
-  return cities[randomInt(0, cities.length - 1)].id;
+
+  const totalWeight = cities.reduce(
+    (sum, city) => sum + citySizeWeight(city.size),
+    0
+  );
+
+  let pick = Math.random() * totalWeight;
+  for (const city of cities) {
+    pick -= citySizeWeight(city.size);
+    if (pick < 0) return city.id;
+  }
+  return cities[cities.length - 1].id;
 }
 
 function createAthlete(index, country) {
