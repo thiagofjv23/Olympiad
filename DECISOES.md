@@ -11,6 +11,17 @@ mudada se você preferir outro caminho.
 
 ---
 
+## Diretrizes permanentes (recebidas do usuário)
+
+Regras a seguir sempre, salvo instrução em contrário:
+
+- **Não criar exemplos/dados que não foram solicitados.** Ao criar uma entidade
+  ou módulo, implementar apenas o que foi pedido; **não** preencher com dados de
+  exemplo (registros fictícios, presets, casos de teste embutidos) sem o usuário
+  pedir. Quando faltar dado, perguntar ou deixar vazio — não inventar.
+
+---
+
 ## Arquitetura e stack
 
 1. **Site estático (HTML + CSS + JS puro), sem framework e sem build.**
@@ -158,6 +169,24 @@ mudada se você preferir outro caminho.
     esportes conhecidos (Atletismo é o do campeonato) e a `generalPopularity` é uma
     aproximação de balanceamento, fácil de recalibrar. Anos e origens seguem fatos
     razoavelmente estabelecidos da codificação moderna de cada esporte.
+
+### Engine de resultados
+
+19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias
+    funções/constantes globais soltas. Dá "cara de módulo" e evita poluir o escopo
+    global com muitos nomes.
+
+19l. **Sem direção padrão por métrica.** Não assumi que "tempo = menor vence": a
+    direção (`ORDERS`) é sempre um parâmetro explícito, porque o usuário destacou
+    que o tempo pode ser ordenado nos dois sentidos conforme a prova.
+
+19m. **Empates dividem a posição (ranking de competição: 1, 2, 2, 4)** e resultados
+    ausentes (`null`, ex.: DNF) vão sempre por último, independentemente da direção.
+    São convenções padrão de esporte; fáceis de trocar se necessário.
+
+19n. **A engine só resolve, não gera.** Decidi que este módulo apenas **ranqueia**
+    números prontos. Transformar atributos do atleta em um resultado numérico é
+    outra camada (a criar), mantendo a engine genérica e sem conhecer entidades.
 
 ---
 

@@ -91,3 +91,17 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Expandir a database de esportes** e revisar dados (popularidade é
       aproximada).
 - [ ] **UI dos esportes.** Ainda não existe tela para esportes.
+
+## Engine de resultados
+
+- [ ] **Ligar esporte ↔ engine.** Definir, para cada esporte/prova, o objeto de
+      parâmetros da `ResultsEngine` (métrica, direção, agregação, precisão). A
+      engine é genérica; falta a camada que traduz cada esporte para esses
+      parâmetros.
+- [ ] **Gerar resultados a partir dos atributos.** A engine só **resolve** (ranqueia)
+      números prontos; falta a lógica que **produz** o número de cada atleta a
+      partir dos seus atributos (força, potencial, cansaço, etc.) para então
+      entregar à engine.
+- [ ] **Possíveis extensões da engine** (a decidir): regras de desempate,
+      conversão desempenho→pontos, estrutura de rodadas/qualificação, modelo de
+      variância/aleatoriedade.

@@ -26,6 +26,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
+| `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
@@ -41,8 +42,8 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `cities.js` → `sports.js` → `championships.js` → `athletes.js`
-→ `clubs.js` → `script.js`.
+`countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
+`championships.js` → `athletes.js` → `clubs.js` → `script.js`.
 
 ---
 
@@ -210,6 +211,31 @@ Funções utilitárias: `getSport(id)` e `getAllSports()`.
 Conjunto inicial (6 esportes): Atletismo (o do nosso campeonato), Natação,
 Futebol, Basquete, Vôlei e Ginástica Artística. Popularidade é aproximada; lista
 a ser ampliada.
+
+### Engine de resultados — `resultsEngine.js`
+
+Módulo **genérico e independente** (`ResultsEngine`): **não conhece esportes**
+nem outras entidades. Contém só os **parâmetros de simulação** e funções puras
+para, dados resultados numéricos, decidir a ordem/posições. Cada esporte/prova
+(no futuro) monta um objeto de parâmetros com estas constantes e entrega números
+à engine.
+
+Parâmetros expostos:
+
+| Grupo          | Valores                                                            |
+| -------------- | ----------------------------------------------------------------- |
+| `METRICS`      | `TIME`, `DISTANCE`, `HEIGHT`, `POINTS` (o que é medido).           |
+| `ORDERS`       | `ASCENDING` (menor vence, ex.: tempo), `DESCENDING` (maior vence). |
+| `AGGREGATIONS` | `SINGLE`, `BEST`, `SUM`, `AVERAGE` (como combinar tentativas).     |
+| `UNITS`        | Unidade padrão por métrica (informativo).                         |
+
+Funções principais: `resolveResults(competitors, params)` (ranking com posições,
+empates compartilham posição, resultados `null`/DNF por último), `aggregateValues`,
+`isBetterResult`, `compareResults`, `roundToPrecision` e validadores
+(`isValidOrder`, `isValidAggregation`, `isValidMetric`).
+
+Objeto `params`: `{ order, aggregation?, metric?, precision? }`.
+Competidores: `{ id, values: number[] }` ou `{ id, value }`.
 
 ---
 
@@ -417,6 +443,20 @@ a ser ampliada.
 - **Sem UI e sem novas mecânicas** — apenas a entidade/database, carregada no
   ecossistema. A lógica de **como o esporte afeta o uso dos atributos na simulação
   de resultados** fica registrada no `TODO.md`.
+
+### Etapa 17 — Engine de resolução de resultados
+
+- Criado `resultsEngine.js` (`ResultsEngine`), módulo **genérico** que **não
+  conhece os esportes** — só parâmetros de simulação e funções puras de resolução.
+- **Parâmetros**: métricas (tempo, distância, altura, pontos), direção de vitória
+  (menor vence / maior vence), agregação (único, melhor, soma, média), unidades e
+  precisão. Pensado a partir das provas de atletismo (nosso foco).
+- **Funções**: `resolveResults` gera o ranking com posições (empates dividem a
+  posição; `null`/DNF por último), além de agregação, comparação e validação.
+- **Verificado**: corrida por tempo (menor vence), salto por melhor tentativa
+  (maior vence), soma de pontos, empates e DNF — todos corretos.
+- **Sem exemplos embutidos** e sem tocar em outros módulos, conforme a diretriz
+  registrada no `DECISOES.md`.
 
 ---
 
