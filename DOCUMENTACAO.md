@@ -79,6 +79,11 @@ Funções utilitárias:
   mês, sempre no 2º sábado.
 - `getStagesOnDate(date)` — retorna as etapas (de qualquer campeonato) que caem
   em uma data. Usada para marcar o calendário e listar eventos do dia.
+- `isStageDone(stage, referenceDate)` — **lógica de realização** da etapa. Lê a
+  data da própria etapa (dinâmico, sem datas fixas/hardcoded) e a compara com a
+  data de referência: retorna `true` ao **chegar no dia** da etapa ou depois.
+- `championshipProgress(championship, referenceDate)` — `{ done, total }` com o
+  número de etapas já realizadas em relação a uma data.
 
 ---
 
@@ -136,6 +141,23 @@ Funções utilitárias:
 - O dia clicado recebe um contorno de seleção (`day--selected`), sem interferir
   no destaque da data atual da simulação.
 
+### Etapa 5 — Lógica de realização das etapas (evento ocorrido)
+
+- Cada etapa é realizada **no dia destacado** correspondente. As datas **não são
+  hardcoded**: a lógica (`isStageDone`) lê a data da própria etapa, então
+  campeonatos futuros podem ter etapas em datas iguais ou diferentes, conforme o
+  evento, sem alterar código.
+- **Ao chegar** na data de realização (ou passar dela), a etapa passa a
+  **Realizada** — com um **tick positivo (✓)**. Antes disso fica **Agendada**.
+- Onde aparece o status (tudo relativo à data atual da simulação, `currentDate`):
+  - **Aba Campeonatos**: nova coluna **Status** na tabela de etapas (✓ Realizada /
+    Agendada) e resumo **Etapas realizadas: N / total**.
+  - **Detalhe do dia** (aba Calendário): cada evento mostra ✓ Realizada / Agendada.
+  - **Marcador no calendário**: fica **verde** quando a etapa daquele dia já
+    ocorreu (laranja enquanto agendada).
+- A passagem de tempo (**+ 1 dia** / **+ 1 semana**) reavalia e **atualiza** essas
+  visões automaticamente (`refreshChampionshipView`, `refreshDayDetail`).
+
 ---
 
 ## 4. Referência de funções (`script.js`)
@@ -152,7 +174,9 @@ Funções utilitárias:
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato; opcionalmente destaca a etapa.  |
+| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (com status das etapas); destaca opcionalmente. |
+| `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
+| `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 
 ---
 

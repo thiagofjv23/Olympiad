@@ -88,11 +88,16 @@ function renderCalendar() {
     const stagesHere = getStagesOnDate(cellDate);
     if (stagesHere.length > 0) {
       cell.classList.add("day--event");
+      const allDone = stagesHere.every((s) => isStageDone(s.stage, currentDate));
       const marker = document.createElement("span");
-      marker.className = "day__marker";
+      marker.className = allDone ? "day__marker day__marker--done" : "day__marker";
       cell.appendChild(marker);
       cell.title = stagesHere
-        .map((s) => `${s.championship.name} — Etapa ${s.stage.number}`)
+        .map(
+          (s) =>
+            `${s.championship.name} — Etapa ${s.stage.number}` +
+            (isStageDone(s.stage, currentDate) ? " (realizada)" : "")
+        )
         .join("\n");
     }
 
@@ -118,6 +123,23 @@ function advanceDays(days) {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
+  // O status das etapas depende da data atual: atualiza as visões que o exibem.
+  refreshChampionshipView();
+  refreshDayDetail();
+}
+
+// Re-renderiza o campeonato atualmente selecionado (mantém a data em dia).
+function refreshChampionshipView() {
+  if (championshipSelect.value) {
+    renderChampionship(championshipSelect.value);
+  }
+}
+
+// Re-renderiza o detalhe do dia aberto, se houver um dia selecionado.
+function refreshDayDetail() {
+  if (selectedDate) {
+    renderDayDetail(selectedDate);
+  }
 }
 
 function changeMonth(delta) {
@@ -157,17 +179,24 @@ function renderDayDetail(date) {
   }
 
   const items = stages
-    .map(
-      (s) => `
+    .map((s) => {
+      const done = isStageDone(s.stage, currentDate);
+      const status = done
+        ? `<span class="event-item__status event-item__status--done">✓ Realizada</span>`
+        : `<span class="event-item__status">Agendada</span>`;
+      return `
         <li>
           <button type="button" class="event-item"
                   data-championship="${s.championship.id}"
                   data-stage="${s.stage.number}">
             <span class="event-item__name">${s.championship.name}</span>
-            <span class="event-item__stage">Etapa ${s.stage.number}</span>
+            <span class="event-item__meta">
+              <span class="event-item__stage">Etapa ${s.stage.number}</span>
+              ${status}
+            </span>
           </button>
-        </li>`
-    )
+        </li>`;
+    })
     .join("");
 
   dayDetail.innerHTML =
@@ -227,15 +256,25 @@ function renderChampionship(id, highlightStage) {
   if (!championship) return;
 
   const country = getCountry(championship.countryId);
+  const progress = championshipProgress(championship, currentDate);
 
   const stagesRows = championship.stages
-    .map(
-      (stage) => `
-        <tr${stage.number === highlightStage ? ' class="stage-row--highlight" id="stage-row"' : ""}>
+    .map((stage) => {
+      const done = isStageDone(stage, currentDate);
+      const status = done
+        ? `<span class="stage-status stage-status--done">✓ Realizada</span>`
+        : `<span class="stage-status">Agendada</span>`;
+      const rowAttrs =
+        stage.number === highlightStage
+          ? ' class="stage-row--highlight" id="stage-row"'
+          : "";
+      return `
+        <tr${rowAttrs}>
           <td>${stage.number}</td>
           <td>${formatDate(stage.date)}</td>
-        </tr>`
-    )
+          <td>${status}</td>
+        </tr>`;
+    })
     .join("");
 
   const countryBlock = country
@@ -265,7 +304,7 @@ function renderChampionship(id, highlightStage) {
         <li><span>Participantes</span><strong>${championship.participants}</strong></li>
         <li><span>Eventos</span><strong>${championship.events.length}</strong></li>
         <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
-        <li><span>Etapas</span><strong>${championship.stages.length}</strong></li>
+        <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
       </ul>
     </div>
 
@@ -275,7 +314,7 @@ function renderChampionship(id, highlightStage) {
       <h3>Etapas</h3>
       <table class="stages-table">
         <thead>
-          <tr><th>Etapa</th><th>Data</th></tr>
+          <tr><th>Etapa</th><th>Data</th><th>Status</th></tr>
         </thead>
         <tbody>${stagesRows}</tbody>
       </table>

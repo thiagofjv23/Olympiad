@@ -72,3 +72,24 @@ function getStagesOnDate(date) {
   }
   return result;
 }
+
+// Reduz uma data a ano/mês/dia (meia-noite), para comparar por dia.
+function toDayStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+// Lógica de realização de uma etapa (NÃO usa datas fixas/hardcoded):
+// a etapa é considerada REALIZADA ao chegar no dia da sua data de realização
+// ou em qualquer dia posterior, comparando com a data de referência
+// (normalmente a data atual da simulação).
+function isStageDone(stage, referenceDate) {
+  return toDayStart(referenceDate) >= toDayStart(stage.date);
+}
+
+// Situação de um campeonato em relação a uma data: quantas etapas já ocorreram.
+function championshipProgress(championship, referenceDate) {
+  const done = championship.stages.filter((stage) =>
+    isStageDone(stage, referenceDate)
+  ).length;
+  return { done, total: championship.stages.length };
+}
