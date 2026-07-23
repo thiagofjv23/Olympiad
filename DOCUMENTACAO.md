@@ -24,10 +24,12 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `championships.js`  | **Entidade Campeonatos** (dados) + cálculo das etapas.                  |
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
+| `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
 | `DECISOES.md`       | Decisões tomadas por conta própria (o "porquê").                       |
+| `PRINCIPIOS_CIDADES.md` | Princípios de criação/geração de cidades.                          |
 
 ### Princípio de arquitetura
 
@@ -38,7 +40,8 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `championships.js` → `athletes.js` → `clubs.js` → `script.js`.
+`countries.js` → `cities.js` → `championships.js` → `athletes.js` → `clubs.js`
+→ `script.js`.
 
 ---
 
@@ -103,6 +106,7 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
+| `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país. |
 
 Nome exibido = `label` + código do COI do país, ex.: **`Atleta 1 (BRA)`**
 (via `getAthleteName(athlete)`).
@@ -138,6 +142,7 @@ competição por meio de um clube (mecânica ainda **não** implementada; ver
 | `id`                  | Identificador único (ex.: `CLB-PINHEIROS`).                     |
 | `name`                | Nome do clube.                                                  |
 | `countryId`           | País do clube (ver `countries.js`).                            |
+| `cityId`              | Cidade-sede do clube (ver `cities.js`).                        |
 | `president`           | Presidente — **ainda não utilizado** (ver `TODO.md`).          |
 | `foundationYear`      | Ano de fundação.                                               |
 | `infrastructureLevel` | Nível de infraestrutura (0–100), definido considerando a força olímpica do país. |
@@ -151,6 +156,28 @@ Conjunto inicial (10 clubes, todos do Brasil — único país existente): Pinhei
 Sogipa, Grêmio Náutico União, Minas Tênis Clube, Flamengo, Vasco da Gama,
 Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto de
 **teste**, a ser revisado e ampliado.
+
+### Cidades — `cities.js`
+
+Database inicial (objeto `CITIES`) de cidades reais. **Relaciona-se com países,
+clubes e atletas**: é o país da cidade, a sede dos clubes e a cidade de
+nascimento dos atletas.
+
+| Campo                  | Descrição                                                       |
+| ---------------------- | --------------------------------------------------------------- |
+| `id`                   | Identificador único (ex.: `CID-SAO-PAULO`).                    |
+| `name`                 | Nome da cidade.                                                 |
+| `countryId`            | País da cidade (ver `countries.js`).                           |
+| `populationEstimate`   | População estimada (base para o tamanho).                      |
+| `size`                 | Tamanho **derivado** da população: pequena / média / grande / metrópole. |
+| `sportsInfrastructure` | Infraestrutura esportiva (0–100), influenciada pela força olímpica do país. |
+
+Funções utilitárias: `getCity(id)`, `getCitiesByCountry(countryId)` e
+`citySizeFromPopulation(pop)`.
+
+As **regras de criação** (10 cidades por país no início, faixas de tamanho,
+influência da força olímpica) estão em **`PRINCIPIOS_CIDADES.md`**, junto da lista
+das 10 cidades do Brasil.
 
 ---
 
@@ -282,6 +309,19 @@ Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto d
 - Criado o documento **`DECISOES.md`**, que registra as decisões tomadas por conta
   própria durante o projeto (ex.: unificar o CSS de Atletas/Clubes, usar
   `<details>`, manter todos os clubes no Brasil, etc.).
+
+### Etapa 11 — Entidade Cidades (database inicial)
+
+- Criado `cities.js` com a entidade Cidade e uma **database inicial de 10 cidades
+  reais do Brasil** (sem gerador), com `size` derivado da população e
+  `sportsInfrastructure` (0–100) influenciada pela força olímpica do país.
+- **Vínculos criados**:
+  - **Clube → cidade**: adicionado `cityId` a cada clube (cidade-sede).
+  - **Atleta → cidade**: adicionado `birthCityId` (cidade de nascimento),
+    sorteado entre as cidades do país na geração.
+- Criado **`PRINCIPIOS_CIDADES.md`** com as regras (10 cidades por país no início,
+  faixas de tamanho, influência da força olímpica) e a lista das cidades.
+- **Sem UI** — apenas a entidade/database e os vínculos. A UI é o próximo passo.
 
 ---
 

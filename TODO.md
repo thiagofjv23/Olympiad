@@ -61,3 +61,12 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [x] **Atributo de Prestígio do clube.** Criado: `prestige` (0-100) em todos os
       clubes, com valores iniciais aproximados, e exibido na aba Clubes. O **uso**
       do prestígio está na seção de prioridade alta, no topo deste arquivo.
+
+## Cidades
+
+- [ ] **10 cidades por país é número de teste.** Hoje cada país implantado tem só
+      **10 cidades** (`cities.js`); ampliar depois (ver `PRINCIPIOS_CIDADES.md`).
+- [ ] **Gerador de cidades (opcional).** Hoje as cidades são uma database à mão;
+      um gerador futuro poderia calcular `sportsInfrastructure` a partir da força
+      olímpica + tamanho.
+- [ ] **UI das cidades.** Ainda não existe tela para cidades (próximo passo).

@@ -11,6 +11,7 @@
 //   - potential            : Potencial (0-100), teto de crescimento; nunca < Força
 //   - physicalPreparation  : Preparação Física (0-100)
 //   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
+//   - birthCityId          : cidade de nascimento (ver cities.js)
 //
 // O nome exibido combina o label com o código do COI do país,
 // por exemplo: "Atleta 1 (BRA)".
@@ -99,6 +100,14 @@ function fatigueReductionForStage(athlete) {
 
 // --- criação e geração --------------------------------------------------------
 
+// Sorteia a cidade de nascimento entre as cidades do país. Retorna null se o
+// país ainda não tiver cidades cadastradas.
+function randomBirthCityId(countryId) {
+  const cities = getCitiesByCountry(countryId);
+  if (cities.length === 0) return null;
+  return cities[randomInt(0, cities.length - 1)].id;
+}
+
 function createAthlete(index, country) {
   const age = randomInt(
     ATHLETE_GENERATION_CONFIG.minAge,
@@ -111,6 +120,7 @@ function createAthlete(index, country) {
     id: index,
     label: `Atleta ${index}`,
     countryId: country.id,
+    birthCityId: randomBirthCityId(country.id),
     age,
     strength,
     potential,

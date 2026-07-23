@@ -109,6 +109,23 @@ mudada se você preferir outro caminho.
     força olímpica do Brasil (78), níveis de infraestrutura e prestígio dos clubes,
     população. Foram definidos "a olho" para termos dados plausíveis para teste.
 
+19a. **Cidades: as 10 primeiras do Brasil = as 10 mais populosas.** Interpretei
+    "as 10 primeiras cidades" como as principais/mais populosas, garantindo que as
+    sedes dos clubes (São Paulo, Rio, Belo Horizonte, Porto Alegre) estivessem
+    incluídas.
+
+19b. **`size` da cidade é derivado da população, não digitado à mão.** Guardo a
+    `populationEstimate` e calculo o tamanho por faixas (`citySizeFromPopulation`),
+    para manter a categoria coerente com a população.
+
+19c. **Faixas de tamanho escolhidas por mim** (metrópole ≥ 2.000.000; grande
+    500.000–2.000.000; etc.), calibradas para dar variedade já nas 10 primeiras
+    (7 metrópoles + 3 grandes). Documentadas em `PRINCIPIOS_CIDADES.md`.
+
+19d. **Cidade de nascimento do atleta é sorteada** entre as cidades do país do
+    atleta, no momento da geração (não há peso por população ainda — dá para
+    refinar depois).
+
 ---
 
 ## Processo

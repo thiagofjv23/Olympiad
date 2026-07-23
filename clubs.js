@@ -12,6 +12,7 @@
 //   - id                  : identificador único
 //   - name                : nome do clube
 //   - countryId           : país do clube (ver countries.js)
+//   - cityId              : cidade-sede do clube (ver cities.js)
 //   - president           : presidente — ainda não utilizado (ver TODO.md)
 //   - foundationYear      : ano de fundação
 //   - infrastructureLevel : nível de infraestrutura (0-100), definido
@@ -32,6 +33,7 @@ const CLUBS = {
     id: "CLB-PINHEIROS",
     name: "Esporte Clube Pinheiros",
     countryId: "BRA",
+    cityId: "CID-SAO-PAULO",
     president: null,
     foundationYear: 1899,
     infrastructureLevel: 90,
@@ -43,6 +45,7 @@ const CLUBS = {
     id: "CLB-SOGIPA",
     name: "Sociedade de Ginástica Porto Alegre (Sogipa)",
     countryId: "BRA",
+    cityId: "CID-PORTO-ALEGRE",
     president: null,
     foundationYear: 1867,
     infrastructureLevel: 85,
@@ -54,6 +57,7 @@ const CLUBS = {
     id: "CLB-GNU",
     name: "Grêmio Náutico União",
     countryId: "BRA",
+    cityId: "CID-PORTO-ALEGRE",
     president: null,
     foundationYear: 1906,
     infrastructureLevel: 80,
@@ -65,6 +69,7 @@ const CLUBS = {
     id: "CLB-MINAS",
     name: "Minas Tênis Clube",
     countryId: "BRA",
+    cityId: "CID-BELO-HORIZONTE",
     president: null,
     foundationYear: 1935,
     infrastructureLevel: 88,
@@ -76,6 +81,7 @@ const CLUBS = {
     id: "CLB-FLAMENGO",
     name: "Clube de Regatas do Flamengo",
     countryId: "BRA",
+    cityId: "CID-RIO-DE-JANEIRO",
     president: null,
     foundationYear: 1895,
     infrastructureLevel: 82,
@@ -87,6 +93,7 @@ const CLUBS = {
     id: "CLB-VASCO",
     name: "Club de Regatas Vasco da Gama",
     countryId: "BRA",
+    cityId: "CID-RIO-DE-JANEIRO",
     president: null,
     foundationYear: 1898,
     infrastructureLevel: 74,
@@ -98,6 +105,7 @@ const CLUBS = {
     id: "CLB-BOTAFOGO",
     name: "Botafogo de Futebol e Regatas",
     countryId: "BRA",
+    cityId: "CID-RIO-DE-JANEIRO",
     president: null,
     foundationYear: 1894,
     infrastructureLevel: 70,
@@ -109,6 +117,7 @@ const CLUBS = {
     id: "CLB-FLUMINENSE",
     name: "Fluminense Football Club",
     countryId: "BRA",
+    cityId: "CID-RIO-DE-JANEIRO",
     president: null,
     foundationYear: 1902,
     infrastructureLevel: 72,
@@ -120,6 +129,7 @@ const CLUBS = {
     id: "CLB-CORINTHIANS",
     name: "Sport Club Corinthians Paulista",
     countryId: "BRA",
+    cityId: "CID-SAO-PAULO",
     president: null,
     foundationYear: 1910,
     infrastructureLevel: 78,
@@ -131,6 +141,7 @@ const CLUBS = {
     id: "CLB-PAULISTANO",
     name: "Clube Atlético Paulistano",
     countryId: "BRA",
+    cityId: "CID-SAO-PAULO",
     president: null,
     foundationYear: 1900,
     infrastructureLevel: 68,
