@@ -138,6 +138,13 @@ mudada se você preferir outro caminho.
     balanceamento: mantêm a cidade como uma influência perceptível, porém menor
     que idade e força olímpica do país. Fáceis de recalibrar.
 
+19g. **Curva de crescimento por idade linear, plena até 18 e nula a partir de 32.**
+    Escolhi `GROWTH_FULL_AGE = 18` e `GROWTH_END_AGE = 32` para que o gap
+    Força↔Potencial seja máximo na base da faixa gerada e zere na maturidade
+    esportiva típica de provas de velocidade. A queda linear é a forma mais
+    simples que reproduz "jovem cresce muito, veterano já no teto"; os dois
+    limites são de balanceamento e fáceis de ajustar.
+
 ---
 
 ## Processo

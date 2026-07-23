@@ -40,6 +40,12 @@ const NEUTRAL_CITY_INFRA = 50;
 const MAX_CITY_STRENGTH_BONUS = 10; // pontos de Força no melhor/pior caso
 const MAX_CITY_POTENTIAL_BONUS = 8; // pontos extras no teto de Potencial
 
+// Crescimento por idade: quanto mais jovem o atleta, maior a distância entre
+// Força e Potencial (mais espaço para evoluir). Com o passar da idade essa
+// distância diminui, até os mais velhos que já atingiram o potencial (gap ~0).
+const GROWTH_FULL_AGE = 18; // até esta idade, margem de crescimento plena
+const GROWTH_END_AGE = 32; // a partir desta idade, potencial já atingido (gap ~0)
+
 // Lista viva de atletas da simulação atual.
 let ATHLETES = [];
 
@@ -74,6 +80,14 @@ function cityInfraFactor(sportsInfrastructure) {
   return (sportsInfrastructure - NEUTRAL_CITY_INFRA) / NEUTRAL_CITY_INFRA;
 }
 
+// Fator de crescimento por idade (1 a 0): 1 até GROWTH_FULL_AGE (jovem, margem
+// plena), caindo linearmente até 0 em GROWTH_END_AGE (potencial já atingido).
+function growthFactor(age) {
+  if (age <= GROWTH_FULL_AGE) return 1;
+  if (age >= GROWTH_END_AGE) return 0;
+  return (GROWTH_END_AGE - age) / (GROWTH_END_AGE - GROWTH_FULL_AGE);
+}
+
 // --- geração de atributos -----------------------------------------------------
 
 // Força: distribuição normal centrada na força olímpica ajustada pela idade,
@@ -84,12 +98,15 @@ function generateStrength(olympicStrength, age, cityInfra) {
   return Math.round(clampNumber(randomNormal(mean, 8), 1, 100));
 }
 
-// Potencial: força inicial + margem de crescimento (vinda da força olímpica),
-// acrescida de um bônus conforme a infraestrutura da cidade (melhor infra =
-// maior teto de crescimento). Nunca menor que a força e no máximo 100.
-function generatePotential(olympicStrength, strength, cityInfra) {
+// Potencial: força inicial + margem de crescimento. A margem vem da força
+// olímpica e da infraestrutura da cidade, e é então escalada pela idade
+// (`growthFactor`): jovens têm margem grande (Força bem abaixo do Potencial);
+// os mais velhos têm margem pequena ou nula (já perto/no Potencial).
+// Nunca menor que a força e no máximo 100.
+function generatePotential(olympicStrength, strength, cityInfra, age) {
   const cityBonus = cityInfraFactor(cityInfra) * MAX_CITY_POTENTIAL_BONUS;
-  const margin = Math.abs(randomNormal(olympicStrength * 0.15, 6)) + cityBonus;
+  const baseMargin = Math.abs(randomNormal(olympicStrength * 0.15, 6)) + cityBonus;
+  const margin = Math.max(0, baseMargin) * growthFactor(age);
   return Math.round(clampNumber(strength + margin, strength, 100));
 }
 
@@ -149,7 +166,12 @@ function createAthlete(index, country) {
   const cityInfra = birthCity ? birthCity.sportsInfrastructure : NEUTRAL_CITY_INFRA;
 
   const strength = generateStrength(country.olympicStrength, age, cityInfra);
-  const potential = generatePotential(country.olympicStrength, strength, cityInfra);
+  const potential = generatePotential(
+    country.olympicStrength,
+    strength,
+    cityInfra,
+    age
+  );
 
   return {
     id: index,

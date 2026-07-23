@@ -118,9 +118,10 @@ Regras de geração:
 - **Força**: distribuição **normal** centrada na **força olímpica do país**
   ajustada por uma curva de idade (pico em ~27 anos) **e pela infraestrutura
   esportiva da cidade de nascimento** (ver abaixo).
-- **Potencial**: força inicial + margem (também derivada da força olímpica),
-  **acrescida de um bônus pela infraestrutura da cidade**; **nunca menor que a
-  Força** e no máximo 100.
+- **Potencial**: força inicial + margem (derivada da força olímpica e da
+  infraestrutura da cidade), **escalada pela idade**: jovens têm margem grande
+  (Força bem abaixo do Potencial) e os mais velhos margem pequena ou nula (já
+  perto/no Potencial). **Nunca menor que a Força** e no máximo 100.
 - **Influência da cidade de nascimento**: a `sportsInfrastructure` da cidade
   (0–100) desloca a média de Força e o teto de Potencial em relação a uma infra
   neutra (50). Constantes em `athletes.js`: `MAX_CITY_STRENGTH_BONUS` (±10 na
@@ -367,6 +368,21 @@ das 10 cidades do Brasil.
 - **Verificado** com amostra grande: a Força e o Potencial médios crescem de forma
   monotônica com a infraestrutura da cidade (Rio, infra 92 → ~83,1 / ~96,7;
   Manaus, infra 68 → ~78,3 / ~91,4).
+
+### Etapa 15 — Distância Força↔Potencial depende da idade
+
+- O Potencial passou a considerar a **idade**: a margem de crescimento (distância
+  entre Força e Potencial) é **escalada por um fator de idade** (`growthFactor`).
+- **Lógica** (em `athletes.js`):
+  - `growthFactor(age)` = **1** até `GROWTH_FULL_AGE` (18 anos, margem plena),
+    caindo **linearmente** até **0** em `GROWTH_END_AGE` (32 anos).
+  - `margem = max(0, margemBase(forçaOlímpica, cidade)) × growthFactor(idade)`, e
+    `potencial = clamp(força + margem, força, 100)`.
+  - Assim: **jovens** têm Força bem abaixo do Potencial; conforme envelhecem, ficam
+    **mais próximos** do Potencial; e a partir de 32 anos **já o atingiram**
+    (Potencial = Força).
+- **Verificado** com amostra grande: gap médio Potencial−Força cai de ~15,5 (18
+  anos) para ~1,15 (31 anos) e chega a 0 a partir dos 32 (100% já no potencial).
 
 ---
 
