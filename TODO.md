@@ -35,8 +35,8 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       `athletes.js`), mas por ora **todos nascem com Atletismo**. Depois, sortear
       entre os esportes (provavelmente ponderando por popularidade). Estender a
       ligação também para **modalidades** (modalidade favorita/praticada).
-- [ ] **Esporte favorito na UI de Atletas.** O campo `favoriteSportId` ainda
-      **não aparece** na tela; exibir no expandir do atleta depois.
+- [x] **Esporte favorito na UI de Atletas.** Feito: exibido como linha "Esporte
+      favorito" ao expandir o atleta (`<details>`).
 
 ## Atletas — UI
 

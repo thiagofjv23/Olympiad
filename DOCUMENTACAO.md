@@ -529,10 +529,12 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   `INITIAL_FAVORITE_SPORT_ID` em `athletes.js`.
 - Helper de resolução `getAthleteFavoriteSport(athlete)` (retorna o objeto do
   esporte), no mesmo estilo de `getAthleteName`.
-- **Sem UI ainda** — apenas o campo, a atribuição na geração e o helper.
-  Variar o esporte favorito entre os regens fica registrado no `TODO.md`.
+- **UI**: o **esporte favorito** aparece como nova linha ao expandir o atleta
+  (`<details>`), abaixo de "Local de nascimento", via `getAthleteFavoriteSport`.
+- Variar o esporte favorito entre os regens fica registrado no `TODO.md`.
 - **Verificado**: `generateAthletes` produz atletas com
-  `favoriteSportId === "SPT-ATLETISMO"` e o helper resolve para "Atletismo".
+  `favoriteSportId === "SPT-ATLETISMO"` e o helper resolve para "Atletismo";
+  em navegador headless a linha "Esporte favorito: Atletismo" surge no expandir.
 
 ---
 

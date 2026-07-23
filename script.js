@@ -377,6 +377,8 @@ function renderAthletes(countryId) {
     .map((athlete) => {
       const birthCity = getCity(athlete.birthCityId);
       const birthPlace = birthCity ? birthCity.name : "—";
+      const favoriteSport = getAthleteFavoriteSport(athlete);
+      const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
       return `
         <details class="athlete">
           <summary class="athlete__summary">
@@ -389,6 +391,7 @@ function renderAthletes(countryId) {
             <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
             <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
+            <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
           </ul>
         </details>`;
     })
