@@ -26,6 +26,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
+| `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
 | `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
@@ -43,7 +44,7 @@ sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
-`championships.js` → `athletes.js` → `clubs.js` → `script.js`.
+`modalities.js` → `championships.js` → `athletes.js` → `clubs.js` → `script.js`.
 
 ---
 
@@ -236,6 +237,23 @@ empates compartilham posição, resultados `null`/DNF por último), `aggregateVa
 
 Objeto `params`: `{ order, aggregation?, metric?, precision? }`.
 Competidores: `{ id, values: number[] }` ou `{ id, value }`.
+
+### Modalidades — `modalities.js`
+
+Entidade **ligada a um esporte** (`sportId`), usada em esportes com mais de uma
+variação de prática (ex.: Atletismo → 100 m, salto em distância, etc.). A
+**database começa vazia** (nenhuma modalidade foi solicitada ainda).
+
+| Campo               | Descrição                                                        |
+| ------------------- | ---------------------------------------------------------------- |
+| `id`                | Identificador único.                                             |
+| `name`              | Nome da modalidade.                                              |
+| `sportId`           | Esporte primário (ver `sports.js`).                             |
+| `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (ex.: `{ metric, order, aggregation, precision }`). |
+| `generalPopularity` | Popularidade geral da modalidade **dentro do esporte** (0–100).  |
+| `countryPopularity` | Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
+
+Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
 
 ---
 
@@ -457,6 +475,17 @@ Competidores: `{ id, values: number[] }` ou `{ id, value }`.
   (maior vence), soma de pontos, empates e DNF — todos corretos.
 - **Sem exemplos embutidos** e sem tocar em outros módulos, conforme a diretriz
   registrada no `DECISOES.md`.
+
+### Etapa 18 — Entidade Modalidades (só a estrutura)
+
+- Criado `modalities.js` com a entidade Modalidade, **ligada a um esporte**
+  (`sportId`) e com a **forma de resolução** apontando para os parâmetros da
+  `ResultsEngine`.
+- Campos: `id`, `name`, `sportId`, `resolution`, `generalPopularity` e
+  `countryPopularity` (este último com a relação a fazer depois).
+- **Database vazia** e **sem UI** — apenas a entidade e os helpers
+  (`getModality`, `getModalitiesBySport`), conforme a diretriz de não criar
+  dados de exemplo não solicitados.
 
 ---
 

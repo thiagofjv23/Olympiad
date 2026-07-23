@@ -92,6 +92,16 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       aproximada).
 - [ ] **UI dos esportes.** Ainda não existe tela para esportes.
 
+## Modalidades
+
+- [ ] **Popularidade por país da modalidade.** O campo `countryPopularity` faz
+      parte da entidade, mas a **relação modalidade ↔ país** ainda **não foi
+      feita** — construir depois.
+- [ ] **Popular a database de modalidades.** Hoje `MODALITIES` está vazia; criar
+      as modalidades quando solicitado (ex.: as do Atletismo), cada uma com sua
+      `resolution` (parâmetros da `ResultsEngine`).
+- [ ] **UI das modalidades.** Ainda não existe tela para modalidades.
+
 ## Engine de resultados
 
 - [ ] **Ligar esporte ↔ engine.** Definir, para cada esporte/prova, o objeto de
