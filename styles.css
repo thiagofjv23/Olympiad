@@ -743,6 +743,60 @@ button.day:not(.day--current):hover {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
+/* Resultados de uma etapa ------------------------------------------------- */
+.stage-results:empty {
+  display: none;
+}
+
+.stage-results {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.stage-results__title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stage-results__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.results-table th,
+.results-table td {
+  text-align: left;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.results-table td:first-child {
+  width: 44px;
+  font-weight: 600;
+}
+
+.results-table td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14161c;

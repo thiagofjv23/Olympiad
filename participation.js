@@ -1,8 +1,9 @@
 // -----------------------------------------------------------------------------
 // Participação atleta ↔ etapa
-// Define QUAIS atletas disputam cada etapa de um campeonato — a ponte que faltava
-// entre atletas (via clube/contrato) e as etapas. Com os participantes definidos,
-// é possível desgastá-los (fadiga) e, no futuro, resolver os resultados.
+// Define QUAIS atletas disputam cada etapa de um campeonato — a ponte entre
+// atletas (via clube/contrato) e as etapas. Com os participantes definidos,
+// resolve o RESULTADO da etapa (via modalidade + ResultsEngine) e desgasta os
+// participantes (fadiga).
 //
 // REGRA DE TESTE (temporária): cada clube inscreve TODOS os seus atletas em
 // TODAS as etapas. Ou seja, os participantes de uma etapa são todos os atletas
@@ -32,33 +33,63 @@ function getStageParticipantCount(championship, stage) {
   return getStageParticipants(championship, stage).length;
 }
 
-// --- aplicação da fadiga por participação -------------------------------------
-// A fadiga de uma etapa deve ser aplicada UMA única vez, quando a etapa é
-// realizada. Guardamos as etapas já processadas para não desgastar de novo a
-// cada passagem de tempo/re-render.
-const _fatiguedStages = new Set();
+// Modalidade (prova) que uma etapa disputa. Por ora, a primeira modalidade do
+// campeonato; na falta, a primeira modalidade do esporte do campeonato.
+// TODO: modalidade por etapa (cada etapa uma prova diferente) — ver TODO.md.
+function getStageModality(championship, stage) {
+  if (championship.modalities && championship.modalities.length > 0) {
+    const modality = getModality(championship.modalities[0]);
+    if (modality) return modality;
+  }
+  const sportModalities = getModalitiesBySport(championship.sportId);
+  return sportModalities.length > 0 ? sportModalities[0] : null;
+}
+
+// --- resolução de resultados e fadiga por etapa -------------------------------
+// Uma etapa é processada UMA única vez, ao ser realizada: (1) resolve-se o
+// resultado com a fadiga ATUAL dos participantes (antes desta etapa) e trava-se
+// o resultado; (2) então os participantes se cansam por esta etapa. Guardar os
+// resultados evita recalcular com a fadiga futura (um resultado é histórico).
+const _stageResults = new Map(); // stageKey -> [{ id, result, position }]
 
 function stageKey(championship, stage) {
   return `${championship.id}#${stage.number}`;
 }
 
-// Percorre todos os campeonatos e, para cada etapa JÁ REALIZADA até a data de
-// referência e ainda não processada, aplica o desgaste de participação aos seus
-// participantes (individualmente) e a marca como processada. Chamado após a
-// passagem de tempo. Avança apenas para frente (o tempo não retrocede).
-function applyParticipationFatigue(referenceDate) {
+// Processa uma etapa (idempotente): resolve o resultado e desgasta os
+// participantes. Retorna o resultado (ranking) da etapa.
+function processStage(championship, stage) {
+  const key = stageKey(championship, stage);
+  if (_stageResults.has(key)) return _stageResults.get(key);
+
+  const participants = getStageParticipants(championship, stage);
+  const modality = getStageModality(championship, stage);
+  // Resultado com a fadiga atual (acumulada das etapas anteriores, não desta).
+  const results = modality ? resolveModality(participants, modality) : [];
+  _stageResults.set(key, results);
+  // Depois de competir, os participantes se cansam por esta etapa.
+  applyStageFatigueToParticipants(participants);
+  return results;
+}
+
+// Processa todas as etapas JÁ REALIZADAS (em ordem) e ainda não processadas.
+// Chamado após a passagem de tempo. O tempo só anda para frente.
+function processRealizedStages(referenceDate) {
   for (const championship of Object.values(CHAMPIONSHIPS)) {
     for (const stage of championship.stages) {
       if (!isStageDone(stage, referenceDate)) continue;
-      const key = stageKey(championship, stage);
-      if (_fatiguedStages.has(key)) continue;
-      applyStageFatigueToParticipants(getStageParticipants(championship, stage));
-      _fatiguedStages.add(key);
+      processStage(championship, stage);
     }
   }
 }
 
-// Zera o controle de etapas já desgastadas (ex.: ao reiniciar a simulação).
+// Resultado já resolvido de uma etapa ([{ id, result, position }]) ou null se a
+// etapa ainda não foi realizada/processada.
+function getStageResult(championship, stage) {
+  return _stageResults.get(stageKey(championship, stage)) || null;
+}
+
+// Zera os resultados processados (ex.: ao reiniciar a simulação).
 function resetParticipation() {
-  _fatiguedStages.clear();
+  _stageResults.clear();
 }

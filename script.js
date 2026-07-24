@@ -149,8 +149,9 @@ function advanceDays(days) {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
-  // Etapas realizadas nesse avanço desgastam seus participantes (uma vez cada).
-  applyParticipationFatigue(currentDate);
+  // Etapas realizadas nesse avanço têm seu resultado resolvido e desgastam os
+  // participantes (uma vez cada). Ver participation.js.
+  processRealizedStages(currentDate);
   // Status de etapas e situação de contratos dependem da data atual: atualiza
   // as visões que os exibem (contratos podem ter expirado/entrado em vigor;
   // a fadiga dos participantes pode ter mudado).
@@ -309,6 +310,9 @@ function renderChampionship(id, highlightStage) {
       const status = done
         ? `<span class="stage-status stage-status--done">✓ Realizada</span>`
         : `<span class="stage-status">Agendada</span>`;
+      const resultsCell = done
+        ? `<button type="button" class="stage-result-link link-button" data-stage="${stage.number}">Ver</button>`
+        : `<span class="stage-status">—</span>`;
       const rowAttrs =
         stage.number === highlightStage
           ? ' class="stage-row--highlight" id="stage-row"'
@@ -318,6 +322,7 @@ function renderChampionship(id, highlightStage) {
           <td>${stage.number}</td>
           <td>${formatDate(stage.date)}</td>
           <td>${status}</td>
+          <td>${resultsCell}</td>
         </tr>`;
     })
     .join("");
@@ -359,17 +364,60 @@ function renderChampionship(id, highlightStage) {
       <h3>Etapas</h3>
       <table class="stages-table">
         <thead>
-          <tr><th>Etapa</th><th>Data</th><th>Status</th></tr>
+          <tr><th>Etapa</th><th>Data</th><th>Status</th><th>Resultados</th></tr>
         </thead>
         <tbody>${stagesRows}</tbody>
       </table>
+      <div id="stage-results" class="stage-results"></div>
     </div>
   `;
+
+  championshipDetails.querySelectorAll(".stage-result-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      const stage = championship.stages.find(
+        (s) => s.number === Number(button.dataset.stage)
+      );
+      if (stage) renderStageResults(championship, stage);
+    });
+  });
 
   if (highlightStage) {
     const row = document.getElementById("stage-row");
     if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+}
+
+// Mostra a classificação de uma etapa realizada (posição, atleta e resultado).
+function renderStageResults(championship, stage) {
+  const panel = document.getElementById("stage-results");
+  if (!panel) return;
+
+  const modality = getStageModality(championship, stage);
+  const modalityName = modality ? modality.name : "—";
+  const results = getStageResult(championship, stage);
+  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number} · ${modalityName}</h4>`;
+
+  if (!results || results.length === 0) {
+    panel.innerHTML =
+      heading + `<p class="stage-results__empty">Sem participantes nesta etapa.</p>`;
+    return;
+  }
+
+  const rows = results
+    .map((entry) => {
+      const athlete = ATHLETES.find((a) => a.id === entry.id);
+      const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
+      const value = formatModalityResult(entry.result, modality);
+      return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
+    })
+    .join("");
+
+  panel.innerHTML =
+    heading +
+    `<table class="results-table">
+      <thead><tr><th>Pos.</th><th>Atleta</th><th>Resultado</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // -----------------------------------------------------------------------------
@@ -621,9 +669,9 @@ generateAthletes();
 // temporário só para as telas terem dados — substituir pelo fluxo real depois.
 seedTestContracts(ATHLETES, currentDate);
 
-// Aplica a fadiga de etapas já realizadas na data inicial (nenhuma em 01/01/2026;
-// robustez caso a data de início mude). Ver participation.js.
-applyParticipationFatigue(currentDate);
+// Resolve/desgasta as etapas já realizadas na data inicial (nenhuma em
+// 01/01/2026; robustez caso a data de início mude). Ver participation.js.
+processRealizedStages(currentDate);
 
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);

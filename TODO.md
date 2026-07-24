@@ -139,14 +139,20 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Popular a database de modalidades.** Já existe a **100 m rasos**; criar as
       demais modalidades (ex.: outras provas do Atletismo) quando solicitado, cada
       uma com sua `resolution` e `performance`.
-- [ ] **UI das modalidades e de resultados.** Ainda não há tela para modalidades
-      nem para exibir os resultados/tempos de uma etapa.
+- [x] **UI de resultados de uma etapa.** Feito: na aba Campeonatos, a etapa
+      realizada tem o link "Ver" que abre a classificação (posição, atleta,
+      resultado). Falta ainda a **UI das modalidades** em si (lista/detalhe das
+      provas).
+- [ ] **Modalidade por etapa.** Hoje todas as etapas do campeonato disputam a
+      **mesma** modalidade (a primeira de `championship.modalities`,
+      `getStageModality`). Depois, permitir que cada etapa seja uma prova
+      diferente (várias modalidades ao longo do campeonato).
 - [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
       `participation.js`: `getStageParticipants` define quem disputa cada etapa
-      (regra de teste "todos os contratados via clube") e a fadiga é aplicada aos
-      participantes a cada etapa realizada. Falta **resolver o resultado**
-      (`resolveModality`) e a **UI de resultados**, além da mecânica real de
-      cadastro (prioridade média).
+      (regra de teste "todos os contratados via clube"), o **resultado é resolvido
+      e travado** ao realizar a etapa (`processStage` + `resolveModality`) e a
+      fadiga é aplicada aos participantes. Falta só a mecânica **real** de cadastro
+      (prioridade média).
 - [ ] **Modelos de desempenho por métrica.** O modelo atual cobre **tempo**
       (100 m). Distância/altura/pontos precisarão de suas próprias fórmulas.
 

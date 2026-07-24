@@ -45,7 +45,7 @@ const CHAMPIONSHIPS = {
     countryId: "BRA",
     sportId: "SPT-ATLETISMO", // esporte disputado (ver sports.js)
     events: [],
-    modalities: [],
+    modalities: ["MOD-ATL-100M"], // provas disputadas (ver modalities.js)
     competitors: [],
     // 10 etapas, sempre no segundo sábado de cada mês, começando em janeiro/2026.
     stages: buildMonthlyStages(2026, 0, 10),

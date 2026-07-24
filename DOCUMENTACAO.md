@@ -89,8 +89,9 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `stages`      | Etapas — `{ number, date }`.                           |
 
 Campeonato cadastrado: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil,
-esporte **Atletismo** (`SPT-ATLETISMO`), 0 participantes, **10 etapas**. Todo
-novo campeonato deve informar o seu `sportId`.
+esporte **Atletismo** (`SPT-ATLETISMO`), modalidade **100 m rasos**
+(`MOD-ATL-100M`), 0 participantes, **10 etapas**. Todo novo campeonato deve
+informar o seu `sportId` (e a(s) modalidade(s) disputada(s)).
 
 Funções utilitárias:
 
@@ -263,16 +264,22 @@ Funções:
 
 - `getStageParticipants(championship, stage)` — atletas participantes da etapa
   (regra de teste acima); `getStageParticipantCount(...)` retorna a quantidade.
-- `applyParticipationFatigue(referenceDate)` — para cada etapa **já realizada** e
-  ainda não processada, aplica o desgaste aos participantes
-  (`applyStageFatigueToParticipants`) **uma única vez** (controle interno
-  `_fatiguedStages`, para não desgastar de novo a cada avanço de tempo). Chamado
-  em `advanceDays` (e na inicialização). `resetParticipation()` zera o controle.
+- `getStageModality(championship, stage)` — a prova disputada (por ora, a
+  primeira modalidade do campeonato; senão, a primeira do esporte).
+- `processStage(championship, stage)` / `processRealizedStages(referenceDate)` —
+  processam cada etapa **realizada** e ainda não processada, **uma única vez**:
+  (1) **resolvem o resultado** com a fadiga atual dos participantes (via
+  `resolveModality`) e o **travam**; (2) aplicam a fadiga da etapa aos
+  participantes. Chamado em `advanceDays` (e na inicialização).
+- `getStageResult(championship, stage)` — o resultado travado da etapa
+  (`[{ id, result, position }]`) ou `null` se ainda não realizada.
+  `resetParticipation()` zera os resultados processados.
 
-Efeito visível: ao avançar o tempo além da data de uma etapa, os participantes
-ficam mais cansados (menor `fatigue`) — o que, pelo modelo da modalidade, deixa
-os tempos (ex.: 100 m) **mais lentos**. Ainda **sem UI de resultados** (ver
-`TODO.md`).
+Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
+etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
+antes do desgaste daquela etapa). Efeito: etapas seguintes tendem a ficar mais
+lentas conforme os atletas acumulam cansaço. A **UI** exibe a classificação na
+aba Campeonatos (ver seção 4 e Etapa 26).
 
 ### Cidades — `cities.js`
 
@@ -621,6 +628,25 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 26 — Resultados das etapas (resolução + UI)
+
+- **Modalidade do campeonato**: o `CNA-2026` passou a listar a prova disputada em
+  `modalities` (`MOD-ATL-100M`). `getStageModality` escolhe a prova da etapa.
+- **Resolução do resultado** (`participation.js`): ao realizar uma etapa,
+  `processStage` resolve o ranking dos participantes (`resolveModality`) com a
+  **fadiga de então** e **trava** o resultado (`_stageResults`), antes de aplicar
+  a fadiga daquela etapa. Um resultado é **histórico** — não muda depois.
+- **Ordem correta**: `processRealizedStages` processa as etapas **em ordem**, então
+  cada etapa usa a fadiga acumulada das anteriores; as seguintes tendem a ficar
+  mais lentas.
+- **UI** (aba Campeonatos): a tabela de etapas ganhou a coluna **Resultados** com
+  o link **"Ver"** nas etapas realizadas; ao clicar, `renderStageResults` mostra a
+  **classificação** (posição, atleta, resultado — ex.: `9.73 s`), com empates
+  compartilhando posição.
+- **Verificado** (navegador headless): etapa realizada tem "Ver"; a classificação
+  sai ordenada por tempo, empates dividem a posição (10.03 s → 3º e 3º), nº de
+  resultados = nº de participantes; etapa futura não tem "Ver"; sem erros de JS.
+
 ### Etapa 25 — Campeonato ↔ esporte e Participação atleta ↔ etapa
 
 - **Campeonato ↔ esporte**: novo campo **`sportId`** na entidade Campeonato
@@ -758,7 +784,8 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (com status das etapas); destaca opcionalmente. |
+| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (etapas com status e link "Ver" de resultados); destaca opcionalmente. |
+| `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |

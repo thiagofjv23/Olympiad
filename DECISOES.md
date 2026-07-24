@@ -270,10 +270,33 @@ Regras a seguir sempre, salvo instrução em contrário:
     clubes do país do campeonato; quem não tem clube (agente livre) não é inscrito
     por ninguém, então não disputa. Coerente com o elo de contratos que já temos.
 
-19ah. **Fadiga por etapa aplicada uma única vez, controlada por `_fatiguedStages`.**
+19ah. **Etapa processada uma única vez, controlada por `_stageResults`.**
     Como "etapa realizada" é derivado da data (reavaliado a cada avanço de tempo),
-    guardo quais etapas já desgastaram os participantes para não reaplicar a cada
-    `advanceDays`/re-render. O tempo só anda para frente, então um Set basta.
+    guardo as etapas já processadas (resultado travado) para não resolver/desgastar
+    de novo a cada `advanceDays`/re-render. O tempo só anda para frente, então o
+    Map de resultados basta como marcador de "já processada".
+
+### Resultados das etapas
+
+19ai. **Resultado travado no momento da realização (histórico).** Como a fadiga
+    muda ao longo do tempo, recalcular um resultado passado daria um valor
+    diferente (errado). Por isso resolvo e **guardo** o resultado quando a etapa é
+    realizada; depois ele não muda.
+
+19aj. **Resolvo o resultado ANTES de aplicar a fadiga da própria etapa.** O atleta
+    corre com a fadiga que trouxe (acumulada das etapas anteriores) e só então se
+    cansa por esta. `processRealizedStages` processa as etapas em ordem, garantindo
+    o acúmulo correto.
+
+19ak. **Modalidade da etapa = a primeira do campeonato (`getStageModality`).**
+    Como só há uma modalidade (100 m) e o campeonato agora a referencia, cada etapa
+    usa a primeira modalidade do campeonato. Modalidade por etapa fica para depois
+    (registrado no `TODO.md`).
+
+19al. **UI de resultados na aba Campeonatos (coluna "Ver").** Coloquei a
+    classificação junto da tabela de etapas — é o lugar natural do campeonato.
+    Só aparece "Ver" nas etapas realizadas; ao clicar, mostra posição/atleta/
+    resultado (empates dividem a posição, como na engine).
 
 ### Engine de resultados
 
