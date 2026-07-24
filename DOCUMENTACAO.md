@@ -346,9 +346,15 @@ Funções:
 - `isValidContractDuration(years)`, `contractEndDate(startDate, years)`,
   `getContract(id)`, `getAllContracts()`, `resetContracts()`.
 - `seedTestContracts(athletes, referenceDate)` — **povoamento de TESTE**
-  (temporário): assina cada atleta a um clube aleatório do seu país, com duração
+  (temporário): assina cada atleta a um clube do seu país **sorteado ponderando
+  pelo nível de infraestrutura** (mais infraestrutura → mais atletas; menos
+  infraestrutura → menos atletas), via `pickClubByInfrastructure`, com duração
   anual sorteada. Só para dar dados às telas; será substituído pelo fluxo real de
   contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
+- `pickClubByInfrastructure(clubs)` — sorteia um clube de uma lista **ponderando
+  pelo `infrastructureLevel`** (mesmo estilo do sorteio ponderado da cidade de
+  nascimento em `athletes.js`); cai para sorteio uniforme se a soma dos pesos for
+  0. Usado pelo `seedTestContracts` para a distribuição inicial dos regens.
 
 **UI:** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do `<details>`
 do clube) que revela os atletas contratados — cada item com o **nome** (clicável,
@@ -887,6 +893,28 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 38 — Distribuição inicial de regens ponderada pela infraestrutura
+
+- **Distribuição inicial** dos atletas entre os clubes (no seed de teste de
+  contratos) passou a **ponderar pelo nível de infraestrutura** do clube: quanto
+  **maior** o `infrastructureLevel`, **mais** atletas o clube recebe; quanto
+  **menor**, **menos**. Antes o clube era sorteado de forma **uniforme**.
+- **Lógica** (em `contracts.js`): novo helper `pickClubByInfrastructure(clubs)`
+  faz um **sorteio ponderado** pelo `infrastructureLevel` (mesmo estilo de
+  `randomBirthCityId` em `athletes.js`: soma dos pesos + varredura). A chance de
+  um clube receber o atleta é **proporcional à sua infraestrutura** — infra 90
+  vs. 68 dá ~1,3× mais atletas. Cai para sorteio **uniforme** se a soma dos pesos
+  for 0 (todas as infra zeradas). `seedTestContracts` usa o helper no lugar do
+  sorteio uniforme; a fração de agentes livres (`TEST_FREE_AGENT_RATE`, 25%) e a
+  duração anual sorteada seguem iguais.
+- **Escopo**: só `contracts.js` (helper novo + a chamada) e a documentação. As
+  entidades Atleta/Clube **não** foram tocadas; continua sendo dado de **teste**.
+- **Verificado**: amostra grande (100 mil atletas) confere as fatias observadas
+  com as esperadas (`infra ÷ Σinfra`) e a distribuição é **monotônica** (infra
+  maior → mais atletas: Pinheiros 90 → ~11,4% > Paulistano 68 → ~8,6%); a fração
+  de agentes livres fica ~25%; carga real (100 atletas) em navegador headless sem
+  erros de JS, com o clube de maior infraestrutura à frente.
 
 ### Etapa 37 — Ranking de Marcas (melhor marca da temporada)
 

@@ -251,6 +251,18 @@ Regras a seguir sempre, salvo instrução em contrário:
     vazia. Para a feature ser demonstrável, deixo uma fração livre. É dado de
     TESTE, fácil de ajustar/remover quando vier o fluxo real.
 
+19cc. **Distribuição inicial dos regens ponderada pela infraestrutura do clube.**
+    A pedido, o clube que recebe cada atleta no seed deixou de ser sorteado de
+    forma **uniforme** e passou a ser **ponderado pelo `infrastructureLevel`**:
+    quanto maior a infraestrutura, mais atletas o clube recebe (e vice-versa).
+    Modelei como um **sorteio ponderado** (`pickClubByInfrastructure`), no mesmo
+    estilo já usado para a cidade de nascimento (`randomBirthCityId`), com a chance
+    **proporcional à infraestrutura** — simples, sem constantes novas de
+    balanceamento (a própria escala 0–100 da infra já é o peso). Guardei um
+    fallback para sorteio uniforme se a soma dos pesos for 0, para nunca travar.
+    Continua **isolado no seed de TESTE**: a distribuição real (quem cada clube
+    assina, por prestígio/finanças) segue pendente no `TODO.md`.
+
 ### Campeonato ↔ esporte e Participação
 
 19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato

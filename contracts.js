@@ -174,7 +174,34 @@ function resetContracts() {
 // terem tanto atletas contratados quanto agentes livres para mostrar).
 const TEST_FREE_AGENT_RATE = 0.25;
 
-// Assina a maioria dos atletas a um clube ALEATÓRIO do seu país, com duração
+// Sorteia um clube dentre uma lista PONDERANDO pelo NÍVEL DE INFRAESTRUTURA:
+// quanto maior a infraestrutura do clube, maior a chance de ele receber o
+// atleta — ou seja, clubes mais estruturados recebem MAIS atletas e os menos
+// estruturados recebem MENOS. Segue o mesmo estilo do sorteio ponderado da
+// cidade de nascimento (randomBirthCityId em athletes.js). Retorna null se a
+// lista estiver vazia; se a soma dos pesos for 0 (todas as infra zeradas), cai
+// para um sorteio uniforme.
+function pickClubByInfrastructure(clubs) {
+  if (clubs.length === 0) return null;
+
+  const clubWeight = (club) => Math.max(0, club.infrastructureLevel || 0);
+  const totalWeight = clubs.reduce((sum, club) => sum + clubWeight(club), 0);
+
+  if (totalWeight <= 0) {
+    return clubs[Math.floor(Math.random() * clubs.length)];
+  }
+
+  let pick = Math.random() * totalWeight;
+  for (const club of clubs) {
+    pick -= clubWeight(club);
+    if (pick < 0) return club;
+  }
+  return clubs[clubs.length - 1];
+}
+
+// Assina a maioria dos atletas a um clube do seu país — sorteado PONDERANDO pelo
+// NÍVEL DE INFRAESTRUTURA do clube (mais infraestrutura → mais atletas; menos
+// infraestrutura → menos atletas), via pickClubByInfrastructure — com duração
 // anual sorteada (1, 2 ou 3 anos), começando na data de referência; uma fração
 // (TEST_FREE_AGENT_RATE) fica como agente livre. É um povoamento de TESTE, só
 // para dar dados às telas enquanto o fluxo real de contratação não existe. Deve
@@ -186,7 +213,7 @@ function seedTestContracts(athletes, referenceDate) {
     if (Math.random() < TEST_FREE_AGENT_RATE) continue; // fica agente livre
     const clubs = getClubsByCountry(athlete.countryId);
     if (clubs.length === 0) continue;
-    const club = clubs[Math.floor(Math.random() * clubs.length)];
+    const club = pickClubByInfrastructure(clubs);
     const duration =
       CONTRACT_DURATIONS[Math.floor(Math.random() * CONTRACT_DURATIONS.length)];
     signContract(athlete.id, club.id, referenceDate, duration);

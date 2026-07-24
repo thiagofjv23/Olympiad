@@ -47,10 +47,12 @@ Ao chegar o término, há dois caminhos:
   contrato, além de uma seção de **Agentes livres**; a aba Atletas mostra o clube
   atual de cada atleta. As telas são **reativas à passagem de tempo**.
 - **Dados de teste**: para as telas terem o que mostrar, `seedTestContracts`
-  assina, no início da simulação, a maioria dos atletas a um clube aleatório do
-  país (com duração anual sorteada), deixando uma fração (`TEST_FREE_AGENT_RATE`,
-  hoje 25%) como **agente livre**. É **temporário** — não é um fluxo real; será
-  substituído pelas regras de contratação.
+  assina, no início da simulação, a maioria dos atletas a um clube do país
+  **sorteado ponderando pelo nível de infraestrutura** (clubes mais estruturados
+  recebem mais atletas; menos estruturados, menos — via
+  `pickClubByInfrastructure`), com duração anual sorteada, deixando uma fração
+  (`TEST_FREE_AGENT_RATE`, hoje 25%) como **agente livre**. É **temporário** — não
+  é um fluxo real; será substituído pelas regras de contratação.
 - A **quem/como** os clubes assinam e a **decisão de renovar** (lógica do clube)
   ainda **não** existem — este módulo apenas oferece as operações do elo e um
   povoamento de teste. Ver `TODO.md`.

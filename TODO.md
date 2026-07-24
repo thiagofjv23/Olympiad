@@ -166,10 +166,11 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       término e "renovado"**; nova lista de **agentes livres** na aba Clubes; e as
       abas Clubes/Atletas são **reativas à passagem de tempo** (contratos
       expiram/entram em vigor e as telas se atualizam).
-- [ ] **Substituir os contratos de TESTE.** `seedTestContracts` (assinatura
-      aleatória no início, deixando ~25% como agentes livres via
-      `TEST_FREE_AGENT_RATE`) é temporário, só para as telas terem dados. Trocar
-      pelo fluxo real de contratação.
+- [ ] **Substituir os contratos de TESTE.** `seedTestContracts` (assinatura no
+      início a um clube sorteado **ponderando pela infraestrutura** — mais infra,
+      mais atletas — via `pickClubByInfrastructure`, deixando ~25% como agentes
+      livres via `TEST_FREE_AGENT_RATE`) é temporário, só para as telas terem
+      dados. Trocar pelo fluxo real de contratação.
 - [ ] **Assinaturas iniciais / quem assina quem.** Definir como os clubes montam
       elenco no início e ao longo do tempo (regras de contratação — provavelmente
       ligadas a prestígio e finanças), substituindo o seeding de teste.
