@@ -70,7 +70,11 @@ const clubList = document.getElementById("club-list");
 const freeAgentsEl = document.getElementById("free-agents");
 
 // Elementos — rankings.
+const rankingTypeSelect = document.getElementById("ranking-type-select");
 const rankingContent = document.getElementById("ranking-content");
+// Modalidade exibida no ranking de marcas. Por ora só existe a dos 100 m; quando
+// houver mais modalidades, um seletor escolherá qual mostrar (ver TODO.md).
+const MARKS_DISPLAY_MODALITY_ID = "MOD-ATL-100M";
 
 function sameDay(a, b) {
   return (
@@ -731,31 +735,49 @@ function renderFreeAgents(countryId) {
 }
 
 // -----------------------------------------------------------------------------
-// Rankings (UI) — apenas LÊ o motor de ranking (ranking.js) e exibe.
+// Rankings (UI) — apenas LÊ os motores (ranking.js / marksRanking.js) e exibe.
 // Nada de cálculo aqui: é só um indicador visual do que o sistema fez.
-// Colunas: posição, atleta, clube, etapas disputadas na temporada, pontos.
+// Ao abrir a aba, o jogador escolhe qual ranking ver (pontos ou marcas).
 // -----------------------------------------------------------------------------
+
+// Nome de exibição do atleta (com fallback) — usado pelos rankings.
+function rankingAthleteName(athleteId) {
+  const athlete = ATHLETES.find((a) => a.id === athleteId);
+  return athlete ? getAthleteName(athlete) : `Atleta ${athleteId}`;
+}
+
+// Despacha para o ranking escolhido no seletor (ou mostra a instrução inicial).
 function renderRanking() {
+  const type = rankingTypeSelect.value;
+  if (type === "points") {
+    renderPointsRanking();
+  } else if (type === "marks") {
+    renderMarksRanking(MARKS_DISPLAY_MODALITY_ID);
+  } else {
+    rankingContent.innerHTML = `<p class="ranking-hint">Escolha um ranking acima para visualizar.</p>`;
+  }
+}
+
+// Ranking de PONTOS da temporada: posição, atleta, clube, etapas disputadas, pontos.
+function renderPointsRanking() {
   const season = currentDate.getFullYear();
   const ranking = getSeasonRanking();
 
   if (ranking.length === 0) {
     rankingContent.innerHTML = `
-      <h2 class="ranking-title">Ranking — Temporada ${season}</h2>
+      <h2 class="ranking-title">Ranking de Pontos — Temporada ${season}</h2>
       <p class="ranking-empty">Nenhuma etapa disputada nesta temporada ainda.</p>`;
     return;
   }
 
   const rows = ranking
     .map((entry) => {
-      const athlete = ATHLETES.find((a) => a.id === entry.athleteId);
-      const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.athleteId}`;
       const club = getAthleteClub(entry.athleteId, currentDate);
       const clubName = club ? club.name : "Agente livre";
       return `
         <tr>
           <td>${entry.position}</td>
-          <td>${name}</td>
+          <td>${rankingAthleteName(entry.athleteId)}</td>
           <td>${clubName}</td>
           <td>${entry.stages}</td>
           <td>${entry.points}</td>
@@ -764,14 +786,72 @@ function renderRanking() {
     .join("");
 
   rankingContent.innerHTML = `
-    <h2 class="ranking-title">Ranking — Temporada ${season}</h2>
+    <h2 class="ranking-title">Ranking de Pontos — Temporada ${season}</h2>
     <p class="ranking-hint">Pontuação por etapa conforme a categoria do campeonato (maiores valem mais).</p>
-    <table class="stages-table ranking-table">
+    <table class="stages-table ranking-table points-table">
       <thead>
         <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Etapas</th><th>Pontos</th></tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
+}
+
+// Ranking de MARCAS de uma modalidade: só a MELHOR marca do atleta na temporada.
+// Colunas: posição, atleta, clube, data (clicável) e marca. Ao clicar na data,
+// mostra data + campeonato + etapa em que a marca foi alcançada. Genérico: serve
+// qualquer modalidade (usa a ordem e o formatador da própria modalidade).
+function renderMarksRanking(modalityId) {
+  const season = currentDate.getFullYear();
+  const modality = getModality(modalityId);
+  const modalityName = modality ? modality.name : modalityId;
+  const ranking = getSeasonMarksRanking(modalityId);
+
+  if (ranking.length === 0) {
+    rankingContent.innerHTML = `
+      <h2 class="ranking-title">Ranking de Marcas — ${modalityName} · Temporada ${season}</h2>
+      <p class="ranking-empty">Nenhuma marca registrada nesta temporada ainda.</p>`;
+    return;
+  }
+
+  const rows = ranking
+    .map((entry) => {
+      const club = getAthleteClub(entry.athleteId, currentDate);
+      const clubName = club ? club.name : "Agente livre";
+      const markText = modality
+        ? formatModalityResult(entry.value, modality)
+        : String(entry.value);
+      return `
+        <tr>
+          <td>${entry.position}</td>
+          <td>${rankingAthleteName(entry.athleteId)}</td>
+          <td>${clubName}</td>
+          <td><button type="button" class="link-button mark-date" data-champ="${entry.championshipId}" data-stage="${entry.stageNumber}" data-date="${formatDate(entry.date)}">${formatDate(entry.date)}</button></td>
+          <td>${markText}</td>
+        </tr>`;
+    })
+    .join("");
+
+  rankingContent.innerHTML = `
+    <h2 class="ranking-title">Ranking de Marcas — ${modalityName} · Temporada ${season}</h2>
+    <p class="ranking-hint">Melhor marca de cada atleta na temporada. Clique na data para ver onde foi alcançada.</p>
+    <table class="stages-table ranking-table marks-table">
+      <thead>
+        <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Data</th><th>Marca</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div id="mark-detail" class="mark-detail" aria-live="polite"></div>`;
+
+  rankingContent.querySelectorAll(".mark-date").forEach((button) => {
+    button.addEventListener("click", () => {
+      const champ = CHAMPIONSHIPS[button.dataset.champ];
+      const champName = champ ? champ.name : button.dataset.champ;
+      const detail = document.getElementById("mark-detail");
+      if (detail) {
+        detail.textContent = `Marca alcançada em ${button.dataset.date} — ${champName}, Etapa ${button.dataset.stage}.`;
+      }
+    });
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -788,6 +868,7 @@ TABS.championships.btn.addEventListener("click", () => activateTab("championship
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
 TABS.rankings.btn.addEventListener("click", () => activateTab("rankings"));
+rankingTypeSelect.addEventListener("change", () => renderRanking());
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
 clubCountrySelect.addEventListener("change", (e) => renderClubs(e.target.value));

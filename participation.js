@@ -104,8 +104,10 @@ function processStage(championship, stage) {
   // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos desta etapa).
   const results = modality ? resolveModality(participants, modality) : [];
   _stageResults.set(key, results);
-  // Ranking: soma os pontos desta etapa (conforme a tier do campeonato).
+  // Ranking de pontos: soma os pontos desta etapa (conforme a tier do campeonato).
   recordStageForRanking(championship, results);
+  // Ranking de marcas: registra a melhor marca de cada atleta na modalidade.
+  recordStageMarks(championship, stage, modality, results);
   // Depois de competir: os participantes se cansam (fadiga) e ganham ritmo (forma).
   applyStageFatigueToParticipants(participants);
   applyRaceRitmoToParticipants(participants);
@@ -123,9 +125,12 @@ function processStage(championship, stage) {
 function processDay(date) {
   // Virada de ano: encerra a temporada anterior e começa uma nova.
   if (date.getMonth() === 0 && date.getDate() === 1) {
-    // Ranking: arquiva a temporada que terminou (histórico) e zera o acúmulo.
-    archiveSeason(date.getFullYear() - 1);
+    // Rankings: arquiva a temporada que terminou (pontos e marcas) e zera.
+    const endedYear = date.getFullYear() - 1;
+    archiveSeason(endedYear);
     resetRankingSeason();
+    archiveMarksSeason(endedYear);
+    resetMarksSeason();
     // Ritmo: todos recomeçam o ano com forma baixa.
     for (const athlete of ATHLETES) resetSeasonRitmo(athlete);
   }

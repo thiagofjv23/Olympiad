@@ -94,6 +94,12 @@
     <!-- ABA: Rankings -->
     <section id="tab-rankings" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-rankings">
       <div class="rankings">
+        <label class="rankings__select-label" for="ranking-type-select">Ranking</label>
+        <select id="ranking-type-select" class="rankings__select">
+          <option value="" disabled selected>Escolha um ranking…</option>
+          <option value="points">Ranking de Pontos</option>
+          <option value="marks">Ranking de Marcas</option>
+        </select>
         <div id="ranking-content" class="ranking-content"></div>
       </div>
     </section>
@@ -113,6 +119,7 @@
   <script src="contracts.js"></script>
   <script src="eligibility.js"></script>
   <script src="ranking.js"></script>
+  <script src="marksRanking.js"></script>
   <script src="participation.js"></script>
   <script src="script.js"></script>
 </body>

@@ -27,7 +27,8 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
 | `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
 | `eligibility.js`    | **Travas de inscrição** — quem pode disputar por país/região/estado/cidade. |
-| `ranking.js`        | **Sistema de Ranking** (cálculo) — pontos por atleta conforme a tier.   |
+| `ranking.js`        | **Ranking de Pontos** (cálculo) — pontos por atleta conforme a tier.    |
+| `marksRanking.js`   | **Ranking de Marcas** (cálculo) — melhor marca por atleta/modalidade.   |
 | `regions.js`        | **Entidade Regiões** — nível país → **região** → estado → cidade.       |
 | `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
@@ -56,16 +57,16 @@ Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
 `resultsEngine.js` → `modalities.js` → `competitionCategories.js` →
 `championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
-`eligibility.js` → `ranking.js` → `participation.js` → `script.js`.
-(`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade referencia o
-estado e o estado referencia a região; `championships.js` já vem depois de
-`regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos geográficos a
-partir da geografia; `competitionCategories.js` vem antes de `championships.js`,
-pois o campeonato referencia a categoria; `contracts.js` vem depois de
-`athletes.js`, `clubs.js` e `championships.js` porque referencia `getClub` e
-`toDayStart`; `eligibility.js` e `ranking.js` vêm antes de `participation.js`
-(que aplica a trava e registra pontos); `participation.js` vem por último, pois
-usa atletas, clubes, contratos e etapas.)
+`eligibility.js` → `ranking.js` → `marksRanking.js` → `participation.js` →
+`script.js`. (`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade
+referencia o estado e o estado referencia a região; `championships.js` já vem
+depois de `regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
+geográficos a partir da geografia; `competitionCategories.js` vem antes de
+`championships.js`, pois o campeonato referencia a categoria; `contracts.js` vem
+depois de `athletes.js`, `clubs.js` e `championships.js` porque referencia
+`getClub` e `toDayStart`; `eligibility.js`, `ranking.js` e `marksRanking.js` vêm
+antes de `participation.js` (que aplica a trava e registra pontos/marcas);
+`participation.js` vem por último, pois usa atletas, clubes, contratos e etapas.)
 
 ---
 
@@ -390,11 +391,13 @@ Funções:
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
   (1) **resolve o resultado** com a fadiga atual dos participantes (via
   `resolveModality`) e o **trava**; (2) **soma os pontos** ao ranking
-  (`recordStageForRanking`, conforme a tier); (3) aplica a fadiga da etapa aos
+  (`recordStageForRanking`, conforme a tier) e **registra as marcas**
+  (`recordStageMarks`, melhor por atleta); (3) aplica a fadiga da etapa aos
   participantes.
 - `processDay(date)` — processa **um dia**: (0) na virada de ano **encerra a
-  temporada** — arquiva o ranking (`archiveSeason`) e o zera (`resetRankingSeason`)
-  — e reinicia o **ritmo** de todos (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
+  temporada** — arquiva os rankings de pontos e marcas (`archiveSeason` /
+  `archiveMarksSeason`) e os zera — e reinicia o **ritmo** de todos
+  (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
   participantes se **cansam** e **ganham ritmo**; (2) os demais **descansam**
   (recuperam Cansaço com `applyRestDay` e **perdem ritmo** com `applyRestDayRitmo`).
   Quem competiu no dia não descansa nesse dia. Chamado **dia a dia** por
@@ -457,6 +460,29 @@ do campeonato: **maiores valem mais** (a categoria dá a base do campeão via
   posterior** (ainda não consumido — ver `TODO.md`). Consulta:
   `getRankingHistory(year)`, `getRankingHistoryYears()`. `resetRanking()` limpa
   tudo.
+
+### Ranking de Marcas — `marksRanking.js`
+
+Para cada **modalidade**, guarda a **melhor marca** de cada atleta na **temporada**
+e monta o ranking da melhor para a pior marca. "Melhor" depende da modalidade (a
+`resolution.order` da ResultsEngine): nos 100 m (tempo) a **menor** marca é a
+melhor. É um **template genérico**: funciona para **qualquer** modalidade
+(indexado por `modalityId`, usando a ordem e o formatador da própria modalidade).
+Também é **só cálculo** — a UI só lê e exibe.
+
+De cada melhor marca guarda-se **onde/quando** foi alcançada (`date`,
+`championshipId`, `stageNumber`), para a UI detalhar ao clicar na data.
+
+- `recordStageMarks(championship, stage, modality, results)` — registra as marcas
+  de uma etapa, mantendo só a **melhor** por atleta (via `isBetterResult`). Chamado
+  por `processStage`.
+- `getSeasonMarksRanking(modalityId)` → `[{ position, athleteId, value, date,
+  championshipId, stageNumber }]`, ordenado por marca (empate na marca compartilha
+  posição). `getModalitiesWithMarks()` lista as modalidades com marcas.
+- **Temporada / histórico**: na virada de ano, `processDay` chama
+  `archiveMarksSeason(anoQueTerminou)` (snapshot por modalidade em `MARKS_HISTORY`)
+  e `resetMarksSeason()`. Histórico **salvo para uso posterior** (ver `TODO.md`).
+  Consulta: `getMarksHistory(year)`. `resetMarks()` limpa tudo.
 
 Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
 etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
@@ -862,6 +888,27 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 37 — Ranking de Marcas (melhor marca da temporada)
+
+- **Motor** (`marksRanking.js`, novo, separado da UI): por **modalidade**, guarda
+  a **melhor marca** de cada atleta na temporada (via `isBetterResult`, respeitando
+  a ordem da modalidade) e monta o ranking. **Template genérico** — serve qualquer
+  modalidade; implementado/exibido para os **100 m**.
+- **Registro por etapa**: `processStage` chama `recordStageMarks` (guarda também
+  data, campeonato e etapa de cada melhor marca).
+- **UI** (mesma aba Rankings): ao abrir, o jogador vê **só o seletor** para
+  escolher **Pontos** ou **Marcas**. O ranking de marcas mostra **posição, atleta,
+  clube, data (clicável) e marca**; clicar na data revela **data + campeonato +
+  etapa** em que a marca foi alcançada. `renderRanking` virou um **dispatcher**
+  (`renderPointsRanking` / `renderMarksRanking(modalityId)`).
+- **Temporada/histórico**: na virada de ano, as marcas são arquivadas
+  (`MARKS_HISTORY`) e zeradas — salvas para uso posterior (ver `TODO.md`).
+- **Verificado** (navegador headless): melhor marca por atleta (1 entrada cada),
+  ordenado do melhor para o pior (menor tempo primeiro), empate na marca
+  compartilha posição; ao abrir a aba só aparece o seletor; a tabela de marcas tem
+  as colunas certas e o clique na data mostra "…em dd/mm/aaaa — Campeonato X,
+  Etapa N"; virada de ano arquiva as marcas e zera; sem erros de JS.
+
 ### Etapa 36 — Sistema de Ranking + aba Rankings
 
 - **Motor de cálculo** (`ranking.js`, novo), **separado da UI**: acumula **pontos
@@ -1224,7 +1271,9 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderClubAthletes(clubId, container)` | Lista os atletas contratados (nome clicável + duração/término/renovado). |
 | `renderFreeAgents(countryId)`       | Lista os agentes livres do país (nomes clicáveis).              |
 | `refreshClubView()` / `refreshAthleteView()` | Reavaliam as abas Clubes/Atletas após a passagem de tempo. |
-| `renderRanking()`                   | Desenha a aba Rankings (lê `getSeasonRanking()`; posição/atleta/clube/etapas/pontos). |
+| `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
+| `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
+| `renderMarksRanking(modalityId)`    | Ranking de marcas de uma modalidade (posição/atleta/clube/data clicável/marca). |
 
 ---
 

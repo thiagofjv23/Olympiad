@@ -166,8 +166,13 @@ porte, mais pontos vale a vitória.
   **somam** ao longo do ano (ranking de **atleta**, por temporada). A aba Rankings
   mostra posição, atleta, clube, etapas disputadas e pontos, e **atualiza a cada
   etapa**.
-- **Histórico**: ao virar o ano, o ranking da temporada é **arquivado** (salvo
-  para uso posterior) e um novo começa.
+- **Ranking de MARCAS** (além do de pontos): por modalidade, guarda a **melhor
+  marca** de cada atleta na temporada (ver `marksRanking.js`). Na aba Rankings, o
+  jogador escolhe ver **Pontos** ou **Marcas**; o de marcas mostra posição, atleta,
+  clube, data (clicável → campeonato/etapa) e a marca. É um **template genérico**
+  por modalidade (implementado para os 100 m).
+- **Histórico**: ao virar o ano, os rankings da temporada (pontos e marcas) são
+  **arquivados** (salvos para uso posterior) e novos começam.
 
 Ainda **a definir** (registrado no `TODO.md`):
 

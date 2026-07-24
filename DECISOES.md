@@ -468,6 +468,33 @@ Regras a seguir sempre, salvo instrução em contrário:
     de guardar para uso futuro** (hall da fama, recordes, all-time...), ainda não
     consumido — registrado no `TODO.md`.
 
+### Ranking de Marcas
+
+19bx. **Módulo próprio (`marksRanking.js`), genérico por modalidade.** Separei do
+    ranking de pontos: as marcas dependem da modalidade (métrica, ordem, formato),
+    então o módulo é indexado por `modalityId` e usa a `resolution.order` e o
+    `formatModalityResult` da própria modalidade. Assim serve **qualquer**
+    modalidade; exibimos a dos 100 m. UI separada do cálculo (a tela só lê).
+
+19by. **Só a MELHOR marca da temporada por atleta.** A pedido, cada atleta aparece
+    uma vez, com a sua melhor marca do ano (via `ResultsEngine.isBetterResult`,
+    respeitando a direção da modalidade). Guardo junto a data/campeonato/etapa da
+    marca, para a UI detalhar ao clicar na data.
+
+19bz. **UI: escolha do ranking ao abrir a aba.** A pedido, ao abrir Rankings só
+    aparece o seletor (Pontos/Marcas); o ranking só é desenhado após a escolha.
+    `renderRanking` virou dispatcher. A data da marca é um link que revela
+    "data — campeonato, etapa" num detalhe abaixo da tabela (padrão do "Ver" das
+    etapas).
+
+19ca. **Modalidade exibida fixa nos 100 m por ora.** Só existe uma modalidade;
+    `MARKS_DISPLAY_MODALITY_ID` aponta para ela. Um seletor de modalidade fica para
+    quando houver mais de uma (registrado no `TODO.md`).
+
+19cb. **Marcas também arquivadas por temporada (`MARKS_HISTORY`).** Mesmo princípio
+    do ranking de pontos: na virada de ano, arquivo e zero. Guardado para uso
+    posterior (ver `TODO.md`).
+
 ### Travas de idade e de cota por clube
 
 19bo. **Idade e cota como campos do campeonato + helpers (genéricos).** Modelei as

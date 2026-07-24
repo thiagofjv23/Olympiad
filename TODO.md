@@ -80,11 +80,18 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       temporada; a aba mostra posição, atleta, clube, etapas e pontos, atualizando
       a cada etapa. **Distribuição por posição** é um **placeholder** (decaimento
       harmônico `base / posição`) — definir a curva definitiva e possível corte.
+- [x] **Ranking de marcas por temporada.** Feito (`marksRanking.js` + aba
+      Rankings): por modalidade, só a **melhor marca** do atleta na temporada;
+      ordenado por marca, com posição, atleta, clube, data (clicável → campeonato/
+      etapa) e a marca. **Template genérico** por modalidade; exibido para os 100 m.
+- [ ] **Seletor de modalidade no ranking de marcas.** Hoje o ranking de marcas
+      mostra a única modalidade existente (100 m, `MARKS_DISPLAY_MODALITY_ID` em
+      `script.js`). Quando houver mais modalidades, adicionar um seletor.
 - [x] **Histórico de temporada salvo para uso posterior.** DECISÃO: ao virar o ano,
-      o ranking da temporada é arquivado em `RANKING_HISTORY` (`ranking.js`). **Fica
-      guardado de propósito para uso futuro** — ainda **não é consumido** por
-      nenhuma tela/mecânica. Usos posteriores a definir: histórico/hall da fama,
-      recordes, evolução de carreira, rankings all-time, etc.
+      os rankings da temporada (pontos em `RANKING_HISTORY`, marcas em
+      `MARKS_HISTORY`) são arquivados. **Ficam guardados de propósito para uso
+      futuro** — ainda **não consumidos** por nenhuma tela/mecânica. Usos a definir:
+      histórico/hall da fama, recordes, evolução de carreira, rankings all-time, etc.
 - [ ] **Ranking de clube/país e índices.** Hoje o ranking é só de **atleta**.
       Faltam ranking de **clube**/**país**, os **índices** (marcas que classificam
       para categorias maiores) e o **consumo do histórico** arquivado.

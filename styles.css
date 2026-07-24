@@ -393,14 +393,31 @@ button.day:not(.day--current):hover {
   margin: 0 0 14px;
 }
 
-.ranking-table td:nth-child(4),
-.ranking-table td:nth-child(5),
-.ranking-table th:nth-child(4),
-.ranking-table th:nth-child(5) {
+/* Pontos: Etapas (4) e Pontos (5) alinhados à direita. */
+.points-table td:nth-child(4),
+.points-table th:nth-child(4),
+.points-table td:nth-child(5),
+.points-table th:nth-child(5) {
   text-align: right;
 }
 
-.championships__select-label {
+/* Marcas: só a Marca (5) à direita; a Data (4) fica à esquerda. */
+.marks-table td:nth-child(5),
+.marks-table th:nth-child(5) {
+  text-align: right;
+}
+
+.mark-detail:not(:empty) {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.championships__select-label,
+.rankings__select-label {
   display: block;
   font-size: 0.72rem;
   font-weight: 600;
@@ -410,7 +427,8 @@ button.day:not(.day--current):hover {
   margin-bottom: 6px;
 }
 
-.championships__select {
+.championships__select,
+.rankings__select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
