@@ -238,7 +238,7 @@ Regras de geração:
 Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
 substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
 
-> Números de teste (10 atletas, idade 18–35) e a lógica de evolução de
+> Números de teste (100 atletas, idade 18–35) e a lógica de evolução de
 > Força/Potencial estão registrados em `TODO.md`.
 
 ### Clubes — `clubs.js`
@@ -761,6 +761,18 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 33 — 100 atletas por simulação
+
+- Aumentado o número de atletas gerados no início de **10 → 100**
+  (`ATHLETE_GENERATION_CONFIG.count` em `athletes.js`), para sustentar um
+  **calendário maior** de competições.
+- **Distribuição** entre clubes e agentes livres continua pelo seed de teste
+  (`seedTestContracts`): cada atleta assina um clube aleatório do seu país e
+  ~25% ficam **agentes livres** — sem mudanças na lógica, só mais atletas.
+- **Verificado** (navegador headless): 100 atletas gerados, ~71 contratados
+  espalhados por **todos os 10 clubes** e ~29 agentes livres; sem erros de JS.
+- Continua sendo **número de teste** (ver `TODO.md`).
 
 ### Etapa 32 — UI de regiões e estados
 

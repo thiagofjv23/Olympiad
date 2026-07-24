@@ -69,10 +69,11 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 
 ## Atletas (regens)
 
-- [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos **10**
+- [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos **100**
       atletas ao iniciar a simulação (`ATHLETE_GENERATION_CONFIG.count` em
-      `athletes.js`). Esse número é apenas para nossos testes — depois precisará
-      mudar (provavelmente derivado dos campeonatos/países/vagas).
+      `athletes.js`), distribuídos entre clubes e agentes livres pelo seed de
+      teste. Esse número é apenas para nossos testes — depois precisará mudar
+      (provavelmente derivado dos campeonatos/países/vagas).
 - [ ] **Faixa de idade do exemplo inicial.** O gerador suporta **12–40 anos**
       (`ATHLETE_AGE_LIMITS`), mas neste exemplo geramos só **18–35**
       (`ATHLETE_GENERATION_CONFIG.minAge/maxAge`). Rever depois.

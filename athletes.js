@@ -36,7 +36,7 @@ const INITIAL_FAVORITE_SPORT_ID = "SPT-ATLETISMO";
 // TODO: `count` e a faixa de idade abaixo são apenas para testes — tornar
 // configuráveis/dinâmicos depois (ver TODO.md).
 const ATHLETE_GENERATION_CONFIG = {
-  count: 10, // quantidade gerada por simulação (apenas para testes)
+  count: 100, // quantidade gerada por simulação (apenas para testes)
   minAge: 18, // faixa deste exemplo inicial (gerador suporta 12-40)
   maxAge: 35,
 };
