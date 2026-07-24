@@ -75,10 +75,19 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 - [ ] **Origem do atleta = cidade de nascimento.** A trava usa `birthCityId`.
       Depois, avaliar se a elegibilidade deveria considerar também
       **representação** (cidade do clube) além do nascimento.
-- [ ] **Ranking: distribuição de pontos.** Cada categoria vale `rankingPoints`
-      (base do campeão); falta **repartir por posição** (1º, 2º, 3º...), definir
-      **onde os pontos se acumulam** (atleta/clube/país/temporada) e os **índices**
-      (marcas que classificam para categorias maiores).
+- [x] **Ranking de atletas por temporada.** Feito (`ranking.js` + aba Rankings):
+      pontos por etapa conforme a tier (maiores valem mais), acumulados na
+      temporada; a aba mostra posição, atleta, clube, etapas e pontos, atualizando
+      a cada etapa. **Distribuição por posição** é um **placeholder** (decaimento
+      harmônico `base / posição`) — definir a curva definitiva e possível corte.
+- [x] **Histórico de temporada salvo para uso posterior.** DECISÃO: ao virar o ano,
+      o ranking da temporada é arquivado em `RANKING_HISTORY` (`ranking.js`). **Fica
+      guardado de propósito para uso futuro** — ainda **não é consumido** por
+      nenhuma tela/mecânica. Usos posteriores a definir: histórico/hall da fama,
+      recordes, evolução de carreira, rankings all-time, etc.
+- [ ] **Ranking de clube/país e índices.** Hoje o ranking é só de **atleta**.
+      Faltam ranking de **clube**/**país**, os **índices** (marcas que classificam
+      para categorias maiores) e o **consumo do histórico** arquivado.
 - [ ] **Pesos de etapa e final.** As etapas do campeonato (hoje 10, todas iguais)
       poderão ter **pesos diferentes** e **valer pontos** para uma **final** na
       **última etapa** (temporada acumulada, decidida no fim).

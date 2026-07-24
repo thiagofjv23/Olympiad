@@ -49,6 +49,10 @@ const TABS = {
     btn: document.getElementById("tab-btn-clubs"),
     panel: document.getElementById("tab-clubs"),
   },
+  rankings: {
+    btn: document.getElementById("tab-btn-rankings"),
+    panel: document.getElementById("tab-rankings"),
+  },
 };
 
 // Elementos — campeonatos.
@@ -64,6 +68,9 @@ const athleteList = document.getElementById("athlete-list");
 const clubCountrySelect = document.getElementById("club-country-select");
 const clubList = document.getElementById("club-list");
 const freeAgentsEl = document.getElementById("free-agents");
+
+// Elementos — rankings.
+const rankingContent = document.getElementById("ranking-content");
 
 function sameDay(a, b) {
   return (
@@ -162,6 +169,7 @@ function advanceDays(days) {
   refreshDayDetail();
   refreshClubView();
   refreshAthleteView();
+  renderRanking(); // o ranking muda a cada etapa resolvida na passagem de tempo
 }
 
 // Re-renderiza o campeonato atualmente selecionado (mantém a data em dia).
@@ -723,6 +731,50 @@ function renderFreeAgents(countryId) {
 }
 
 // -----------------------------------------------------------------------------
+// Rankings (UI) — apenas LÊ o motor de ranking (ranking.js) e exibe.
+// Nada de cálculo aqui: é só um indicador visual do que o sistema fez.
+// Colunas: posição, atleta, clube, etapas disputadas na temporada, pontos.
+// -----------------------------------------------------------------------------
+function renderRanking() {
+  const season = currentDate.getFullYear();
+  const ranking = getSeasonRanking();
+
+  if (ranking.length === 0) {
+    rankingContent.innerHTML = `
+      <h2 class="ranking-title">Ranking — Temporada ${season}</h2>
+      <p class="ranking-empty">Nenhuma etapa disputada nesta temporada ainda.</p>`;
+    return;
+  }
+
+  const rows = ranking
+    .map((entry) => {
+      const athlete = ATHLETES.find((a) => a.id === entry.athleteId);
+      const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.athleteId}`;
+      const club = getAthleteClub(entry.athleteId, currentDate);
+      const clubName = club ? club.name : "Agente livre";
+      return `
+        <tr>
+          <td>${entry.position}</td>
+          <td>${name}</td>
+          <td>${clubName}</td>
+          <td>${entry.stages}</td>
+          <td>${entry.points}</td>
+        </tr>`;
+    })
+    .join("");
+
+  rankingContent.innerHTML = `
+    <h2 class="ranking-title">Ranking — Temporada ${season}</h2>
+    <p class="ranking-hint">Pontuação por etapa conforme a categoria do campeonato (maiores valem mais).</p>
+    <table class="stages-table ranking-table">
+      <thead>
+        <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Etapas</th><th>Pontos</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// -----------------------------------------------------------------------------
 // Eventos
 // -----------------------------------------------------------------------------
 prevBtn.addEventListener("click", () => changeMonth(-1));
@@ -735,6 +787,7 @@ TABS.calendar.btn.addEventListener("click", () => activateTab("calendar"));
 TABS.championships.btn.addEventListener("click", () => activateTab("championships"));
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
+TABS.rankings.btn.addEventListener("click", () => activateTab("rankings"));
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
 clubCountrySelect.addEventListener("change", (e) => renderClubs(e.target.value));
@@ -765,5 +818,7 @@ renderAthletes(athleteCountrySelect.value);
 
 populateClubCountrySelect();
 renderClubs(clubCountrySelect.value);
+
+renderRanking();
 
 render();

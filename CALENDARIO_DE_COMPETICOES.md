@@ -151,18 +151,29 @@ de Inscrição"** (aba Campeonatos).
 
 ---
 
-## 4. Ranking (pontos)
+## 4. Ranking (pontos) — **implementado**
 
 Cada categoria vale um total de **pontos de ranking** (`rankingPoints`) — a coluna
-"Ranking" da tabela. A leitura atual é: **base de pontos do campeão** da
-competição; quanto maior o porte, mais pontos valem a vitória.
+"Ranking" da tabela — lido como a **base de pontos do campeão**; quanto maior o
+porte, mais pontos vale a vitória.
+
+**Como funciona** (ver `ranking.js` e a aba **Rankings**):
+
+- **Por posição**: o campeão leva a base cheia e as posições seguintes levam
+  frações (placeholder: decaimento harmônico `base / posição`). Ex.: Nacional
+  (300) → 1º 300, 2º 150, 3º 100…; Regional (20) → 1º 20…
+- **Por temporada**: os pontos de **todas** as competições que o atleta disputa se
+  **somam** ao longo do ano (ranking de **atleta**, por temporada). A aba Rankings
+  mostra posição, atleta, clube, etapas disputadas e pontos, e **atualiza a cada
+  etapa**.
+- **Histórico**: ao virar o ano, o ranking da temporada é **arquivado** (salvo
+  para uso posterior) e um novo começa.
 
 Ainda **a definir** (registrado no `TODO.md`):
 
-- **Distribuição por posição**: como os `rankingPoints` se repartem entre 1º, 2º,
-  3º... (tabela/curva de pontuação).
-- **Ranking acumulado**: onde os pontos se somam (ranking de atleta? de clube? por
-  país? por temporada?).
+- **Curva de pontuação definitiva** (hoje é o placeholder harmônico) e eventual
+  **corte** (só os N primeiros pontuam).
+- **Ranking de clube/país** (hoje só de atleta) e **uso do histórico** arquivado.
 - **Índices**: marcas mínimas que classificam um atleta para categorias maiores.
 
 ---

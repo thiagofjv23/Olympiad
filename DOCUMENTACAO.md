@@ -27,6 +27,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
 | `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
 | `eligibility.js`    | **Travas de inscrição** — quem pode disputar por país/região/estado/cidade. |
+| `ranking.js`        | **Sistema de Ranking** (cálculo) — pontos por atleta conforme a tier.   |
 | `regions.js`        | **Entidade Regiões** — nível país → **região** → estado → cidade.       |
 | `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
@@ -55,15 +56,16 @@ Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
 `resultsEngine.js` → `modalities.js` → `competitionCategories.js` →
 `championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
-`eligibility.js` → `participation.js` → `script.js`. (`regions.js`/`states.js`
-vêm antes de `cities.js`, pois a cidade referencia o estado e o estado referencia
-a região; `championships.js` já vem depois de `regions.js`/`states.js`/`cities.js`
-porque **gera** os campeonatos geográficos a partir da geografia;
-`competitionCategories.js` vem antes de `championships.js`, pois o campeonato
-referencia a categoria; `contracts.js` vem depois de `athletes.js`, `clubs.js` e
-`championships.js` porque referencia `getClub` e `toDayStart`; `eligibility.js`
-vem antes de `participation.js` (que aplica a trava); `participation.js` vem por
-último, pois usa atletas, clubes, contratos e etapas.)
+`eligibility.js` → `ranking.js` → `participation.js` → `script.js`.
+(`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade referencia o
+estado e o estado referencia a região; `championships.js` já vem depois de
+`regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos geográficos a
+partir da geografia; `competitionCategories.js` vem antes de `championships.js`,
+pois o campeonato referencia a categoria; `contracts.js` vem depois de
+`athletes.js`, `clubs.js` e `championships.js` porque referencia `getClub` e
+`toDayStart`; `eligibility.js` e `ranking.js` vêm antes de `participation.js`
+(que aplica a trava e registra pontos); `participation.js` vem por último, pois
+usa atletas, clubes, contratos e etapas.)
 
 ---
 
@@ -387,9 +389,12 @@ Funções:
   primeira modalidade do campeonato; senão, a primeira do esporte).
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
   (1) **resolve o resultado** com a fadiga atual dos participantes (via
-  `resolveModality`) e o **trava**; (2) aplica a fadiga da etapa aos participantes.
-- `processDay(date)` — processa **um dia**: (0) na virada de ano reinicia o
-  **ritmo** de todos (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
+  `resolveModality`) e o **trava**; (2) **soma os pontos** ao ranking
+  (`recordStageForRanking`, conforme a tier); (3) aplica a fadiga da etapa aos
+  participantes.
+- `processDay(date)` — processa **um dia**: (0) na virada de ano **encerra a
+  temporada** — arquiva o ranking (`archiveSeason`) e o zera (`resetRankingSeason`)
+  — e reinicia o **ritmo** de todos (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
   participantes se **cansam** e **ganham ritmo**; (2) os demais **descansam**
   (recuperam Cansaço com `applyRestDay` e **perdem ritmo** com `applyRestDayRitmo`).
   Quem competiu no dia não descansa nesse dia. Chamado **dia a dia** por
@@ -426,6 +431,32 @@ Funções:
   travas de atleta (geográfica + idade)?
 - `getChampionshipEligibleAthletes(championship)` — todos os elegíveis (geografia +
   idade); usado na UI para "Atletas elegíveis".
+
+### Sistema de Ranking — `ranking.js`
+
+Acumula **pontos por atleta** ao longo da **temporada** (ano-calendário), a partir
+dos resultados das etapas. A pontuação de cada etapa depende da **categoria/tier**
+do campeonato: **maiores valem mais** (a categoria dá a base do campeão via
+`rankingPoints`), menores valem menos. É **só cálculo** — a UI (aba Rankings) só
+**lê** e exibe.
+
+- **Distribuição por posição** (`pointsForPosition(base, position)`): modelo
+  **placeholder** de decaimento **harmônico** — campeão leva a base cheia e as
+  posições seguintes levam frações (`base / posição`, arredondado). Ex.: Nacional
+  (base 300) → 1º 300, 2º 150, 3º 100…; Estadual (40) → 1º 40…; Regional (20) →
+  1º 20… Fácil de recalibrar (ver `TODO.md`/`DECISOES.md`).
+- **Acúmulo**: `recordStageForRanking(championship, results)` soma os pontos e conta
+  **+1 etapa** para cada atleta com resultado. Chamado **uma vez por etapa** por
+  `processStage` (participation.js).
+- **Ranking corrente**: `getSeasonRanking()` → `[{ position, athleteId, points,
+  stages }]`, ordenado por pontos (desempate: mais etapas, depois id); empates em
+  pontos **compartilham** posição.
+- **Temporada / histórico**: na virada de ano, `processDay` chama
+  `archiveSeason(anoQueTerminou)` (snapshot em `RANKING_HISTORY`) e
+  `resetRankingSeason()` (zera o acúmulo). O histórico é **salvo para uso
+  posterior** (ainda não consumido — ver `TODO.md`). Consulta:
+  `getRankingHistory(year)`, `getRankingHistoryYears()`. `resetRanking()` limpa
+  tudo.
 
 Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
 etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
@@ -831,6 +862,25 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 36 — Sistema de Ranking + aba Rankings
+
+- **Motor de cálculo** (`ranking.js`, novo), **separado da UI**: acumula **pontos
+  por atleta** na temporada conforme a **tier** do campeonato (maiores valem mais).
+  Distribuição por posição é um **placeholder harmônico** (`base / posição`).
+- **Atualização por etapa**: `processStage` chama `recordStageForRanking` ao
+  resolver cada etapa — o ranking reflete cada etapa assim que ela ocorre.
+- **Temporada e histórico**: na virada de ano (`processDay`), o ranking é
+  **arquivado** (`RANKING_HISTORY`) e zerado. O histórico é **salvo para uso
+  posterior** (decisão registrada no `TODO.md`; ainda não consumido).
+- **Nova aba Rankings** (UI, `renderRanking` em `script.js`): tabela com
+  **posição, atleta, clube, etapas disputadas na temporada e pontos**. A UI só
+  **lê** `getSeasonRanking()` — nenhum cálculo na tela.
+- **Verificado** (navegador headless): pontos escalam por tier (Nacional 300 >
+  Estadual 40 > Regional 20 no 1º lugar), o ranking acumula e é monotônico
+  (posição pior → menos pontos), a aba mostra as 5 colunas; ao cruzar a virada de
+  ano, a temporada é arquivada (campeão de 2026 salvo no histórico) e a nova
+  temporada zera; sem erros de JS.
+
 ### Etapa 35 — Mais travas de inscrição (idade e cota por clube) + UI de Regras
 
 - **Trava de idade** (`ageRestriction { minAge, maxAge }`): mecanismo criado em
@@ -1174,6 +1224,7 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderClubAthletes(clubId, container)` | Lista os atletas contratados (nome clicável + duração/término/renovado). |
 | `renderFreeAgents(countryId)`       | Lista os agentes livres do país (nomes clicáveis).              |
 | `refreshClubView()` / `refreshAthleteView()` | Reavaliam as abas Clubes/Atletas após a passagem de tempo. |
+| `renderRanking()`                   | Desenha a aba Rankings (lê `getSeasonRanking()`; posição/atleta/clube/etapas/pontos). |
 
 ---
 

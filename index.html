@@ -21,6 +21,9 @@
       <button id="tab-btn-clubs" class="tab" role="tab" aria-selected="false" aria-controls="tab-clubs" type="button">
         Clubes
       </button>
+      <button id="tab-btn-rankings" class="tab" role="tab" aria-selected="false" aria-controls="tab-rankings" type="button">
+        Rankings
+      </button>
     </nav>
 
     <!-- ABA: Calendário -->
@@ -87,6 +90,13 @@
         <div id="free-agents" class="free-agents"></div>
       </div>
     </section>
+
+    <!-- ABA: Rankings -->
+    <section id="tab-rankings" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-rankings">
+      <div class="rankings">
+        <div id="ranking-content" class="ranking-content"></div>
+      </div>
+    </section>
   </div>
 
   <script src="countries.js"></script>
@@ -102,6 +112,7 @@
   <script src="clubs.js"></script>
   <script src="contracts.js"></script>
   <script src="eligibility.js"></script>
+  <script src="ranking.js"></script>
   <script src="participation.js"></script>
   <script src="script.js"></script>
 </body>

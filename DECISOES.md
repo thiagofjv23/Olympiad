@@ -444,6 +444,30 @@ Regras a seguir sempre, salvo instrução em contrário:
     **evidencia a trava**: a categoria, o lugar da abrangência e a contagem de
     atletas elegíveis pelo escopo.
 
+### Sistema de Ranking
+
+19bt. **Motor de ranking separado da UI (`ranking.js` × aba Rankings).** A pedido,
+    o cálculo (acúmulo de pontos, ordenação, arquivamento) fica todo em
+    `ranking.js`; a aba só **lê** `getSeasonRanking()` e desenha. Assim a UI é um
+    indicador visual do que o sistema fez, sem lógica duplicada.
+
+19bu. **Distribuição de pontos por decaimento harmônico (placeholder).** Escolhi
+    `pontos = base / posição` (base = `rankingPoints` da categoria): campeão leva a
+    base cheia, 2º metade, 3º um terço... É simples, sempre positivo, monotônico e
+    escala pela tier (categoria maior → mais pontos). É um **placeholder** de
+    balanceamento (fácil trocar por tabela/curva), registrado no `TODO.md`. Todos
+    os participantes pontuam (sem corte por ora).
+
+19bv. **Temporada = ano-calendário; empates em pontos compartilham posição.**
+    Segui a mesma noção de temporada do ritmo (reset em 1º/jan). O ranking usa
+    ranking de competição (1, 2, 2, 4) para empates em pontos, como a
+    `ResultsEngine`. Desempate de ordenação: mais etapas, depois id.
+
+19bw. **Histórico de temporada salvo para uso POSTERIOR (a pedido).** Na virada de
+    ano, arquivo o ranking em `RANKING_HISTORY` antes de zerar. **Decisão explícita
+    de guardar para uso futuro** (hall da fama, recordes, all-time...), ainda não
+    consumido — registrado no `TODO.md`.
+
 ### Travas de idade e de cota por clube
 
 19bo. **Idade e cota como campos do campeonato + helpers (genéricos).** Modelei as

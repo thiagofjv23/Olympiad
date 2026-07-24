@@ -104,6 +104,8 @@ function processStage(championship, stage) {
   // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos desta etapa).
   const results = modality ? resolveModality(participants, modality) : [];
   _stageResults.set(key, results);
+  // Ranking: soma os pontos desta etapa (conforme a tier do campeonato).
+  recordStageForRanking(championship, results);
   // Depois de competir: os participantes se cansam (fadiga) e ganham ritmo (forma).
   applyStageFatigueToParticipants(participants);
   applyRaceRitmoToParticipants(participants);
@@ -111,16 +113,20 @@ function processStage(championship, stage) {
 }
 
 // Processa UM dia da simulação:
-//   0) na virada de ano (1º de janeiro), reinicia o RITMO de todos para o piso
-//      de temporada (forma baixa no início do ano);
+//   0) na virada de ano (1º de janeiro), ENCERRA a temporada: arquiva o ranking
+//      (histórico) e o zera, e reinicia o RITMO de todos para o piso de temporada;
 //   1) as etapas que ocorrem NESTE dia são resolvidas; seus participantes se
 //      cansam e GANHAM ritmo (via processStage);
 //   2) todos os demais atletas DESCANSAM: recuperam Cansaço e PERDEM ritmo (forma
 //      esfriando) — quem competiu hoje não descansa hoje.
 // Chamado dia a dia por `advanceDays`. O tempo só anda para frente.
 function processDay(date) {
-  // Virada de ano: nova temporada começa com ritmo baixo para todos.
+  // Virada de ano: encerra a temporada anterior e começa uma nova.
   if (date.getMonth() === 0 && date.getDate() === 1) {
+    // Ranking: arquiva a temporada que terminou (histórico) e zera o acúmulo.
+    archiveSeason(date.getFullYear() - 1);
+    resetRankingSeason();
+    // Ritmo: todos recomeçam o ano com forma baixa.
     for (const athlete of ATHLETES) resetSeasonRitmo(athlete);
   }
 
