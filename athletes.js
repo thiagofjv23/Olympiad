@@ -11,7 +11,7 @@
 //   - potential            : Potencial (0-100), teto de crescimento; nunca < Força
 //   - physicalPreparation  : Preparação Física (0-100)
 //   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
-//   - ritmo                : Ritmo/forma (0-100). Começa BAIXO no início do ano,
+//   - ritmo                : Ritmo/forma (0-100). Começa INTERMEDIÁRIO no ano,
 //                            sobe ao competir e cai em dias parado. Modifica a
 //                            resolução de resultados. Inicial, ganho e queda
 //                            dependem da Preparação Física.
@@ -225,10 +225,10 @@ function applyStageFatigueToParticipants(participants) {
 // de habilidade) e do Cansaço (energia de curto prazo), o ritmo é uma forma de
 // médio prazo, construída ao longo da temporada.
 //
-// Todos começam o ANO com ritmo BAIXO e evoluem competindo. Os TRÊS parâmetros
-// abaixo dependem da Preparação Física (atleta mais preparado entra em forma
-// mais fácil e a perde mais devagar):
-//   - ritmo INICIAL: base baixa + um acréscimo conforme o preparo.
+// Todos começam o ANO com ritmo INTERMEDIÁRIO e evoluem competindo. Os TRÊS
+// parâmetros abaixo dependem da Preparação Física (atleta mais preparado entra
+// em forma mais fácil e a perde mais devagar):
+//   - ritmo INICIAL: base intermediária + um acréscimo conforme o preparo.
 //   - GANHO por prova: fecha uma fração do que falta para a forma plena (100);
 //     mais preparo => fração maior (entra em forma mais rápido).
 //   - QUEDA por dia parado: perde uma fração do ritmo atual; mais preparo =>
@@ -239,14 +239,14 @@ function applyStageFatigueToParticipants(participants) {
 // nenhuma variável anterior.)
 // -----------------------------------------------------------------------------
 
-const RITMO_INITIAL_BASE = 5; // ritmo mínimo no início do ano (preparo 0)
-const RITMO_INITIAL_PREP_RANGE = 15; // + até isso conforme o preparo (=> 5..20)
+const RITMO_INITIAL_BASE = 45; // ritmo mínimo no início do ano (preparo 0)
+const RITMO_INITIAL_PREP_RANGE = 25; // + até isso conforme o preparo (=> 45..70)
 const RITMO_GAIN_PCT_MIN = 0.15; // ganho por prova: fração do gap até 100 (preparo 0)
 const RITMO_GAIN_PCT_MAX = 0.35; // ganho por prova (preparo 100)
 const RITMO_DROP_PCT_MIN = 0.005; // queda por dia parado: fração do ritmo (preparo 100)
 const RITMO_DROP_PCT_MAX = 0.02; // queda por dia parado (preparo 0)
 
-// Ritmo inicial (baixo), maior quanto melhor a Preparação Física.
+// Ritmo inicial (intermediário), maior quanto melhor a Preparação Física.
 function initialRitmo(physicalPreparation) {
   return clampNumber(
     RITMO_INITIAL_BASE + (physicalPreparation / 100) * RITMO_INITIAL_PREP_RANGE,

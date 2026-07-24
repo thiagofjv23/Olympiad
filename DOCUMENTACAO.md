@@ -122,7 +122,7 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
-| `ritmo`               | **Ritmo/forma** (0–100). Começa **baixo** no início do ano, **sobe** ao competir e **cai** parado. **Modifica a resolução de resultados** (redutor de forma). Inicial/ganho/queda dependem da Preparação Física. |
+| `ritmo`               | **Ritmo/forma** (0–100). Começa **intermediário** no início do ano, **sobe** ao competir e **cai** parado. **Modifica a resolução de resultados** (redutor de forma). Inicial/ganho/queda dependem da Preparação Física. |
 | `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
 | `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — a ligação do atleta com um esporte. Todo regen recebe um ao ser gerado; neste início, **todos têm Atletismo** (`SPT-ATLETISMO`). |
 
@@ -165,9 +165,9 @@ Regras de geração:
     `participation.js` (`processDay`).
 - **Ritmo/forma** (`ritmo`, 0–100): forma de **médio prazo** (temporada), separada
   da Força (teto de habilidade) e do Cansaço (energia de curto prazo). Começa
-  **baixo** no início do ano e sobe competindo. Os **três** parâmetros dependem da
-  **Preparação Física** (constantes em `athletes.js`):
-  - **Inicial** (`initialRitmo`): base baixa (5) + até +15 pelo preparo (→ 5–20).
+  **intermediário** no início do ano e sobe competindo. Os **três** parâmetros
+  dependem da **Preparação Física** (constantes em `athletes.js`):
+  - **Inicial** (`initialRitmo`): base intermediária (45) + até +25 pelo preparo (→ 45–70).
   - **Ganho por prova** (`applyRaceRitmo`): fecha uma **fração do que falta para
     100** (`ritmoGainPctForRace`, 15–35% conforme o preparo — mais preparo entra
     em forma mais rápido).
