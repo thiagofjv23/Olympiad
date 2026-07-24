@@ -23,8 +23,8 @@ A interface tem duas abas:
 
 - **Calendário** — o calendário com passagem de tempo; as datas de etapas dos campeonatos aparecem marcadas (ponto laranja) nos dias correspondentes.
 - **Campeonatos** — mostra o campeonato selecionado, com um seletor para futuros campeonatos.
-- **Atletas** — seletor por país; lista os atletas daquele país (nome, idade e Força), com clique para expandir e ver todos os atributos.
-- **Clubes** — seletor por país; lista os clubes daquele país (nome, país e prestígio), com clique para expandir e ver as demais informações.
+- **Atletas** — seletor por país; lista os atletas daquele país (nome, idade e Força), com clique para expandir e ver todos os atributos (incluindo o **Clube atual**, ou "Agente livre").
+- **Clubes** — seletor por país; lista os clubes daquele país (nome, país e prestígio), com clique para expandir e ver as demais informações. No detalhe do clube há o link **"Atletas do clube"**, que mostra os atletas contratados (nomes clicáveis que levam ao perfil do atleta).
 
 ## Entidades (dados)
 
@@ -34,7 +34,7 @@ A interface tem duas abas:
   - **10 etapas**, sempre no **segundo sábado de cada mês**, começando no segundo sábado de janeiro/2026.
 - **`athletes.js`** — entidade **Atletas** + gerador de "regens" (nome, país/COI, idade, Força, Potencial, Preparação Física, Cansaço e **esporte favorito**). Ao iniciar a simulação, gera 10 atletas (número de teste — ver `TODO.md`). Todo regen nasce com um esporte favorito (ver `sports.js`); neste início, todos com Atletismo.
 - **`clubs.js`** — entidade **Clubes**: database inicial com 10 clubes reais de tradição no atletismo (id, país, cidade-sede, presidente, ano de fundação, nível de infraestrutura, prestígio, finanças e rivais). Sem gerador e ainda sem tela; os clubes inscreverão atletas nas competições (mecânica futura — ver `TODO.md`).
-- **`contracts.js`** — entidade **Contratos**: o **elo Atleta ↔ Clube**. O vínculo se dá por contrato de duração anual (1, 2 ou 3 anos), estipulada no início; ao término, o clube pode renovar ou o contrato expira e o atleta vai para o **pool de agentes livres**. Situação (ativo/encerrado) derivada das datas. Só a estrutura, **sem tela ainda** (próximo passo). Regras em `PRINCIPIOS_CONTRATOS.md`.
+- **`contracts.js`** — entidade **Contratos**: o **elo Atleta ↔ Clube**. O vínculo se dá por contrato de duração anual (1, 2 ou 3 anos), estipulada no início; ao término, o clube pode renovar ou o contrato expira e o atleta vai para o **pool de agentes livres**. Situação (ativo/encerrado) derivada das datas. As telas de Clubes/Atletas já exibem o elo (atletas do clube / clube do atleta); no início a lista é povoada com contratos de **teste** (`seedTestContracts`), a serem substituídos pelo fluxo real. Regras em `PRINCIPIOS_CONTRATOS.md`.
 - **`cities.js`** — entidade **Cidades**: database inicial com 10 cidades reais do Brasil (id, país, população/tamanho, infraestrutura esportiva). Vincula-se a países, clubes (cidade-sede) e atletas (cidade de nascimento). Regras em `PRINCIPIOS_CIDADES.md`. Ainda sem tela.
 - **`sports.js`** — entidade **Esportes**: database inicial com 6 esportes (id, nome, descrição, popularidade geral, ano de início da prática, país originário). Definirá como os atributos dos atletas são usados na simulação de resultados (lógica futura — ver `TODO.md`). Ainda sem tela.
 - **`resultsEngine.js`** — **engine de resolução de resultados** (`ResultsEngine`): módulo genérico que não conhece os esportes; expõe parâmetros de simulação (métrica, direção de vitória, agregação, unidade, precisão) e resolve o ranking de resultados numéricos. Ver `DOCUMENTACAO.md`.

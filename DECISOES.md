@@ -215,6 +215,22 @@ Regras a seguir sempre, salvo instrução em contrário:
     criados em runtime (não uma database à mão), usei um contador com prefixo, no
     estilo dos demais ids legíveis do projeto.
 
+19x. **Contratos de TESTE no início (`seedTestContracts`), a seu pedido.** Para as
+    telas terem o que mostrar, assino cada atleta a um clube aleatório do país com
+    duração anual sorteada. É temporário e está isolado numa função marcada como
+    teste — o fluxo real de contratação (quem assina quem, renovar/expirar por
+    decisão do clube) substitui isso depois. Registrado no `TODO.md`.
+
+19y. **"Perfil do atleta" reaproveita a aba Atletas (não criei tela nova).** Como
+    não existe uma tela de perfil dedicada, `goToAthlete` troca para a aba Atletas,
+    seleciona o país e abre/rola até o cartão do atleta (destaque), no mesmo padrão
+    do `goToEvent`. Evita duplicar UI e respeita "não mexer em outra coisa".
+
+19z. **Clube do atleta exibido é derivado do contrato ativo, não guardado.** Na
+    aba Atletas, a linha "Clube atual" vem de `getAthleteClub(id, currentDate)`;
+    sem contrato ativo, "Agente livre". Mantém uma só fonte de verdade (o
+    contrato) e não altera a entidade Atleta.
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias

@@ -168,3 +168,22 @@ function resetContracts() {
   _nextContractId = 1;
   return CONTRACTS;
 }
+
+// --- povoamento de TESTE (temporário) ----------------------------------------
+// Assina cada atleta a um clube ALEATÓRIO do seu país, com duração anual
+// sorteada (1, 2 ou 3 anos), começando na data de referência. É um vínculo de
+// TESTE, só para dar dados às telas enquanto o fluxo real de contratação não
+// existe. Deve ser substituído depois pelas regras de contratação (prestígio,
+// finanças, decisão do clube etc. — ver TODO.md).
+function seedTestContracts(athletes, referenceDate) {
+  resetContracts();
+  for (const athlete of athletes) {
+    const clubs = getClubsByCountry(athlete.countryId);
+    if (clubs.length === 0) continue;
+    const club = clubs[Math.floor(Math.random() * clubs.length)];
+    const duration =
+      CONTRACT_DURATIONS[Math.floor(Math.random() * CONTRACT_DURATIONS.length)];
+    signContract(athlete.id, club.id, referenceDate, duration);
+  }
+  return CONTRACTS;
+}

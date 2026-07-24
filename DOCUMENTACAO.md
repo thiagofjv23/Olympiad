@@ -227,9 +227,16 @@ Funções:
   **agentes livres** (sem contrato ativo).
 - `isValidContractDuration(years)`, `contractEndDate(startDate, years)`,
   `getContract(id)`, `getAllContracts()`, `resetContracts()`.
+- `seedTestContracts(athletes, referenceDate)` — **povoamento de TESTE**
+  (temporário): assina cada atleta a um clube aleatório do seu país, com duração
+  anual sorteada. Só para dar dados às telas; será substituído pelo fluxo real de
+  contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
 
-**Sem UI ainda** — apenas a estrutura/mecânica. A tela que mostra os vínculos ao
-jogador é o próximo passo (ver `TODO.md`).
+**UI (parcial):** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do
+`<details>` do clube) que revela os atletas contratados, cada nome clicável e
+levando ao **perfil do atleta**; a aba **Atletas** mostra o **Clube atual** de
+cada atleta (ou "Agente livre"). Ver a seção 4 e a Etapa 23. Uma tela mais
+completa de contratos (durações, término, agentes livres) segue no `TODO.md`.
 
 ### Cidades — `cities.js`
 
@@ -578,6 +585,28 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 23 — UI dos contratos: atletas do clube e clube do atleta
+
+- **Aba Clubes**: dentro do `<details>` de cada clube, um link **"Atletas do
+  clube"** (`toggleClubAthletes`) revela os **atletas contratados** (contratos
+  ativos na data atual). Cada nome é **clicável** (`renderClubAthletes`) e leva
+  ao **perfil do atleta**.
+- **Perfil do atleta**: não há tela separada — reaproveitei a aba Atletas.
+  `goToAthlete` troca para a aba, seleciona o país do atleta e **abre/rola** até
+  o cartão dele (destaque `athlete--highlight`), no mesmo espírito de `goToEvent`.
+- **Aba Atletas**: nova linha **"Clube atual"** no cartão, derivada do contrato
+  ativo (`getAthleteClub`); sem contrato, mostra **"Agente livre"**.
+- **Dados**: como `CONTRACTS` nasce vazia, adicionei `seedTestContracts` (em
+  `contracts.js`), chamado no início (`script.js`), que assina cada atleta a um
+  clube aleatório do país — **vínculo de TESTE**, a ser trocado pelo fluxo real.
+- **Escopo respeitado**: mexi só no que é do item — `script.js` (UI), `styles.css`
+  (estilos dos novos elementos), `contracts.js` (seeding de teste) e a
+  documentação. Entidades Atleta/Clube **não** foram alteradas.
+- **Verificado** (navegador headless): abrir clube → "Atletas do clube" lista os
+  nomes → clicar cai no perfil com o "Clube atual" correto (bate com o clube de
+  origem); clube sem elenco mostra "Nenhum atleta contratado."; o link recolhe;
+  sem erros de JS.
+
 ### Etapa 22 — Contratos: o elo Atleta ↔ Clube (estrutura)
 
 - Criado `contracts.js` com a entidade **Contrato**, que **liga atletas a clubes**.
@@ -652,9 +681,12 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
-| `renderAthletes(countryId)`         | Lista os atletas do país (expansíveis para ver todos os dados). |
+| `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
+| `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |
 | `populateClubCountrySelect()`       | Preenche o seletor de países da aba Clubes.                     |
-| `renderClubs(countryId)`            | Lista os clubes do país (expansíveis para ver todos os dados).  |
+| `renderClubs(countryId)`            | Lista os clubes do país (inclui o link "Atletas do clube").     |
+| `toggleClubAthletes(button)`        | Mostra/esconde a lista de atletas contratados do clube.         |
+| `renderClubAthletes(clubId, container)` | Preenche a lista com os atletas contratados (nomes clicáveis). |
 
 ---
 

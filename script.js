@@ -363,8 +363,10 @@ function populateAthleteCountrySelect() {
 }
 
 // Lista os atletas de um país. Cada atleta mostra nome, idade e força;
-// ao clicar, expande para os demais atributos.
-function renderAthletes(countryId) {
+// ao clicar, expande para os demais atributos (inclui o clube atual).
+// Se `highlightAthleteId` for informado, o atleta correspondente já vem aberto
+// e a visualização rola até ele (usado ao vir da tela de Clubes).
+function renderAthletes(countryId, highlightAthleteId) {
   const list = ATHLETES.filter((athlete) => athlete.countryId === countryId);
 
   if (list.length === 0) {
@@ -379,8 +381,13 @@ function renderAthletes(countryId) {
       const birthPlace = birthCity ? birthCity.name : "—";
       const favoriteSport = getAthleteFavoriteSport(athlete);
       const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
+      // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
+      // ativo, o atleta é um agente livre.
+      const club = getAthleteClub(athlete.id, currentDate);
+      const clubName = club ? club.name : "Agente livre";
+      const highlight = athlete.id === highlightAthleteId;
       return `
-        <details class="athlete">
+        <details class="athlete${highlight ? " athlete--highlight" : ""}"${highlight ? " open id=\"athlete-card\"" : ""}>
           <summary class="athlete__summary">
             <span class="athlete__name">${getAthleteName(athlete)}</span>
             <span class="athlete__brief">${athlete.age} anos · Força ${athlete.strength}</span>
@@ -392,10 +399,26 @@ function renderAthletes(countryId) {
             <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
             <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
+            <li><span>Clube atual</span><strong>${clubName}</strong></li>
           </ul>
         </details>`;
     })
     .join("");
+
+  if (highlightAthleteId != null) {
+    const card = document.getElementById("athlete-card");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+// Vai para o perfil do atleta na aba Atletas: seleciona o país do atleta e
+// abre/destaca o seu cartão. Usado pelos links "Atletas do clube".
+function goToAthlete(athleteId) {
+  const athlete = ATHLETES.find((a) => a.id === athleteId);
+  if (!athlete) return;
+  activateTab("athletes");
+  athleteCountrySelect.value = athlete.countryId;
+  renderAthletes(athlete.countryId, athleteId);
 }
 
 // -----------------------------------------------------------------------------
@@ -448,9 +471,56 @@ function renderClubs(countryId) {
             <li><span>Finanças</span><strong>${finances}</strong></li>
             <li><span>Rivais</span><strong>${rivals}</strong></li>
           </ul>
+          <div class="club__roster">
+            <button type="button" class="club__athletes-toggle link-button" data-club="${club.id}" aria-expanded="false">
+              Atletas do clube
+            </button>
+            <ul class="club__athletes" data-club-list="${club.id}" hidden></ul>
+          </div>
         </details>`;
     })
     .join("");
+
+  clubList.querySelectorAll(".club__athletes-toggle").forEach((button) => {
+    button.addEventListener("click", () => toggleClubAthletes(button));
+  });
+}
+
+// Mostra/esconde a lista de atletas contratados de um clube (link "Atletas do
+// clube"). A lista é montada sob demanda ao abrir.
+function toggleClubAthletes(button) {
+  const clubId = button.dataset.club;
+  const container = clubList.querySelector(`[data-club-list="${clubId}"]`);
+  if (!container) return;
+  const show = container.hidden;
+  container.hidden = !show;
+  button.setAttribute("aria-expanded", String(show));
+  if (show) renderClubAthletes(clubId, container);
+}
+
+// Preenche a lista com os atletas contratados do clube (contratos ativos na data
+// atual). Cada nome é clicável e leva ao perfil do atleta.
+function renderClubAthletes(clubId, container) {
+  const contracts = getContractsByClub(clubId, currentDate);
+  if (contracts.length === 0) {
+    container.innerHTML =
+      `<li class="club__athletes-empty">Nenhum atleta contratado.</li>`;
+    return;
+  }
+
+  container.innerHTML = contracts
+    .map((contract) => {
+      const athlete = ATHLETES.find((a) => a.id === contract.athleteId);
+      const name = athlete ? getAthleteName(athlete) : `Atleta ${contract.athleteId}`;
+      return `<li><button type="button" class="club-athlete-link link-button" data-athlete="${contract.athleteId}">${name}</button></li>`;
+    })
+    .join("");
+
+  container.querySelectorAll(".club-athlete-link").forEach((button) => {
+    button.addEventListener("click", () =>
+      goToAthlete(Number(button.dataset.athlete))
+    );
+  });
 }
 
 // -----------------------------------------------------------------------------
@@ -479,6 +549,10 @@ document.addEventListener("keydown", (event) => {
 // Inicialização da simulação.
 // Gera os atletas da simulação (10 no momento — apenas para testes; ver TODO.md).
 generateAthletes();
+
+// Contratos de TESTE: assina cada atleta a um clube (ver contracts.js). Vínculo
+// temporário só para as telas terem dados — substituir pelo fluxo real depois.
+seedTestContracts(ATHLETES, currentDate);
 
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);

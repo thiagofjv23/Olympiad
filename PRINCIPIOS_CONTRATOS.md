@@ -42,10 +42,14 @@ Ao chegar o término, há dois caminhos:
 
 ## Escopo atual (o que existe e o que não existe)
 
-- **Só a estrutura/mecânica**, **sem UI** — a tela que mostra os vínculos ao
-  jogador é o próximo passo (ver `TODO.md`).
-- A lista `CONTRACTS` **começa vazia**: nenhum contrato inicial é inventado. As
-  assinaturas virão do fluxo futuro (quem assina quem, decisão de renovar do
-  clube, ligação com a inscrição em etapas). Ver `TODO.md`.
+- **Estrutura/mecânica** pronta e uma **UI parcial**: a aba Clubes lista os
+  atletas contratados (link "Atletas do clube") e a aba Atletas mostra o clube
+  atual de cada atleta. Uma tela mais completa (durações, término, agentes
+  livres) segue no `TODO.md`.
+- **Dados de teste**: para as telas terem o que mostrar, `seedTestContracts`
+  assina, no início da simulação, cada atleta a um clube aleatório do país (com
+  duração anual sorteada). É **temporário** — a lista de contratos não é mais uma
+  database à mão nem um fluxo real; será substituído pelas regras de contratação.
 - A **quem/como** os clubes assinam e a **decisão de renovar** (lógica do clube)
-  ainda **não** existem — este módulo apenas oferece as operações do elo.
+  ainda **não** existem — este módulo apenas oferece as operações do elo e um
+  povoamento de teste. Ver `TODO.md`.

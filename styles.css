@@ -619,6 +619,63 @@ button.day:not(.day--current):hover {
   text-align: right;
 }
 
+/* Atletas do clube (roster via contratos) --------------------------------- */
+.club__roster {
+  padding: 0 14px 12px;
+}
+
+.link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-button:hover {
+  filter: brightness(1.1);
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.club__athletes {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.club__athletes[hidden] {
+  display: none;
+}
+
+.club__athletes li {
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+.club__athletes-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.athlete--highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .stage-status {
   font-weight: 600;
   color: var(--muted);
