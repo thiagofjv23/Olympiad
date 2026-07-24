@@ -7,6 +7,7 @@
 //   - name         : nome do campeonato
 //   - participants : número de participantes (0 inicialmente)
 //   - countryId    : referência ao país (ver countries.js)
+//   - sportId      : esporte disputado (ver sports.js) — todo campeonato tem um
 //   - events       : eventos
 //   - modalities   : modalidades
 //   - competitors  : lista de participantes
@@ -42,6 +43,7 @@ const CHAMPIONSHIPS = {
     name: "Campeonato Nacional de Atletismo",
     participants: 0,
     countryId: "BRA",
+    sportId: "SPT-ATLETISMO", // esporte disputado (ver sports.js)
     events: [],
     modalities: [],
     competitors: [],
@@ -49,6 +51,11 @@ const CHAMPIONSHIPS = {
     stages: buildMonthlyStages(2026, 0, 10),
   },
 };
+
+// Esporte disputado por um campeonato (objeto de sports.js) ou undefined.
+function getChampionshipSport(championship) {
+  return getSport(championship.sportId);
+}
 
 // Compara duas datas por ano/mês/dia.
 function sameCalendarDay(a, b) {

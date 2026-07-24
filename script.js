@@ -149,8 +149,11 @@ function advanceDays(days) {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
+  // Etapas realizadas nesse avanço desgastam seus participantes (uma vez cada).
+  applyParticipationFatigue(currentDate);
   // Status de etapas e situação de contratos dependem da data atual: atualiza
-  // as visões que os exibem (contratos podem ter expirado/entrado em vigor).
+  // as visões que os exibem (contratos podem ter expirado/entrado em vigor;
+  // a fadiga dos participantes pode ter mudado).
   refreshChampionshipView();
   refreshDayDetail();
   refreshClubView();
@@ -617,6 +620,10 @@ generateAthletes();
 // Contratos de TESTE: assina cada atleta a um clube (ver contracts.js). Vínculo
 // temporário só para as telas terem dados — substituir pelo fluxo real depois.
 seedTestContracts(ATHLETES, currentDate);
+
+// Aplica a fadiga de etapas já realizadas na data inicial (nenhuma em 01/01/2026;
+// robustez caso a data de início mude). Ver participation.js.
+applyParticipationFatigue(currentDate);
 
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);

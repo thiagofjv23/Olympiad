@@ -29,7 +29,7 @@ A interface tem duas abas:
 ## Entidades (dados)
 
 - **`countries.js`** — entidade **Países**. Cada país tem `id`, `nome`, `população` e um rating de **Força Olímpica** (0–100). Já inclui o **Brasil** (`BRA`).
-- **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), `eventos`, `modalidades`, `competidores` e `etapas`.
+- **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), **`esporte`** (`sportId`, referência a `sports.js`), `eventos`, `modalidades`, `competidores` e `etapas`. O `CNA-2026` está vinculado ao Atletismo.
   - Campeonato inicial: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil, 0 participantes.
   - **10 etapas**, sempre no **segundo sábado de cada mês**, começando no segundo sábado de janeiro/2026.
 - **`athletes.js`** — entidade **Atletas** + gerador de "regens" (nome, país/COI, idade, Força, Potencial, Preparação Física, Cansaço e **esporte favorito**). Ao iniciar a simulação, gera 10 atletas (número de teste — ver `TODO.md`). Todo regen nasce com um esporte favorito (ver `sports.js`); neste início, todos com Atletismo.
@@ -38,6 +38,7 @@ A interface tem duas abas:
 - **`cities.js`** — entidade **Cidades**: database inicial com 10 cidades reais do Brasil (id, país, população/tamanho, infraestrutura esportiva). Vincula-se a países, clubes (cidade-sede) e atletas (cidade de nascimento). Regras em `PRINCIPIOS_CIDADES.md`. Ainda sem tela.
 - **`sports.js`** — entidade **Esportes**: database inicial com 6 esportes (id, nome, descrição, popularidade geral, ano de início da prática, país originário). Definirá como os atributos dos atletas são usados na simulação de resultados (lógica futura — ver `TODO.md`). Ainda sem tela.
 - **`resultsEngine.js`** — **engine de resolução de resultados** (`ResultsEngine`): módulo genérico que não conhece os esportes; expõe parâmetros de simulação (métrica, direção de vitória, agregação, unidade, precisão) e resolve o ranking de resultados numéricos. Ver `DOCUMENTACAO.md`.
+- **`participation.js`** — **participação atleta ↔ etapa**: define quais atletas disputam cada etapa (por ora, regra de **teste**: cada clube inscreve todos os seus atletas em todas as etapas) e aplica a **fadiga** aos participantes de cada etapa realizada. A mecânica real de cadastro é prioridade média (ver `TODO.md`).
 - **`modalities.js`** — entidade **Modalidades**: variações de prática de um esporte (id, nome, esporte primário, forma de resolução, modelo de desempenho, popularidade geral e por país). Já inclui os **100 m rasos** do Atletismo, com o cálculo de tempo (Força − fadiga → tempo, tendo o recorde 9,58 s como piso). Sem tela ainda. Ver `TODO.md`.
 
 Consulte **`DOCUMENTACAO.md`** (controle do projeto) e **`TODO.md`** (pendências).

@@ -25,6 +25,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
+| `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
@@ -48,8 +49,10 @@ sozinha.
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
 `modalities.js` → `championships.js` → `athletes.js` → `clubs.js` →
-`contracts.js` → `script.js`. (`contracts.js` vem depois de `athletes.js`,
-`clubs.js` e `championships.js` porque referencia `getClub` e `toDayStart`.)
+`contracts.js` → `participation.js` → `script.js`. (`contracts.js` vem depois de
+`athletes.js`, `clubs.js` e `championships.js` porque referencia `getClub` e
+`toDayStart`; `participation.js` vem por último, pois usa atletas, clubes,
+contratos e etapas.)
 
 ---
 
@@ -79,16 +82,20 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `name`        | Nome do campeonato.                                    |
 | `participants`| Número de participantes (inicia em `0`).               |
 | `countryId`   | Referência ao país em `countries.js`.                  |
+| `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
 | `events`      | Eventos (lista).                                       |
 | `modalities`  | Modalidades (lista).                                   |
 | `competitors` | Participantes (lista).                                 |
 | `stages`      | Etapas — `{ number, date }`.                           |
 
 Campeonato cadastrado: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil,
-0 participantes, **10 etapas**.
+esporte **Atletismo** (`SPT-ATLETISMO`), 0 participantes, **10 etapas**. Todo
+novo campeonato deve informar o seu `sportId`.
 
 Funções utilitárias:
 
+- `getChampionshipSport(championship)` — o esporte do campeonato (objeto de
+  `sports.js`).
 - `secondSaturday(year, month)` — retorna a data do 2º sábado do mês.
 - `buildMonthlyStages(startYear, startMonth, count)` — gera N etapas, uma por
   mês, sempre no 2º sábado.
@@ -240,6 +247,32 @@ marca **"renovado"** quando for renovação. Abaixo dos clubes, a lista de
 atual** de cada atleta (ou "Agente livre"). Tudo é **reativo à passagem de tempo**
 (um contrato que expira/entra em vigor atualiza elenco, agentes livres e clube do
 atleta). Ver a seção 4 e as Etapas 23–24.
+
+### Participação atleta ↔ etapa — `participation.js`
+
+A ponte entre **atletas (via clube/contrato)** e as **etapas** de um campeonato:
+define **quais atletas disputam cada etapa** e aplica a **fadiga** de participação.
+
+**Regra de TESTE (temporária):** cada clube inscreve **todos** os seus atletas em
+**todas** as etapas. Assim, os participantes de uma etapa são todos os atletas
+com **contrato ativo na data da etapa** em algum clube do país do campeonato;
+**agentes livres não disputam** (nenhum clube os inscreve). Falta a mecânica
+**real** de cadastro (ver `TODO.md`, prioridade média).
+
+Funções:
+
+- `getStageParticipants(championship, stage)` — atletas participantes da etapa
+  (regra de teste acima); `getStageParticipantCount(...)` retorna a quantidade.
+- `applyParticipationFatigue(referenceDate)` — para cada etapa **já realizada** e
+  ainda não processada, aplica o desgaste aos participantes
+  (`applyStageFatigueToParticipants`) **uma única vez** (controle interno
+  `_fatiguedStages`, para não desgastar de novo a cada avanço de tempo). Chamado
+  em `advanceDays` (e na inicialização). `resetParticipation()` zera o controle.
+
+Efeito visível: ao avançar o tempo além da data de uma etapa, os participantes
+ficam mais cansados (menor `fatigue`) — o que, pelo modelo da modalidade, deixa
+os tempos (ex.: 100 m) **mais lentos**. Ainda **sem UI de resultados** (ver
+`TODO.md`).
 
 ### Cidades — `cities.js`
 
@@ -587,6 +620,30 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 25 — Campeonato ↔ esporte e Participação atleta ↔ etapa
+
+- **Campeonato ↔ esporte**: novo campo **`sportId`** na entidade Campeonato
+  (`championships.js`); o `CNA-2026` foi vinculado ao **Atletismo**
+  (`SPT-ATLETISMO`). Helper `getChampionshipSport`. Todo novo campeonato informa
+  o seu esporte.
+- **Participação atleta ↔ etapa** (`participation.js`): define quais atletas
+  disputam cada etapa. **Regra de TESTE**: cada clube inscreve todos os seus
+  atletas em todas as etapas → participantes = atletas com contrato ativo (na
+  data da etapa) em clubes do país; **agentes livres não disputam**.
+- **Fadiga aplicada de fato**: `applyParticipationFatigue` desgasta os
+  participantes de cada etapa **realizada**, **uma vez** por etapa (controle
+  `_fatiguedStages`), ligado à passagem de tempo em `advanceDays`. Fecha o ciclo
+  Cansaço → tempo: participantes ficam mais lentos nos 100 m.
+- **Escopo**: mexi só no que é dos itens — `championships.js` (sportId),
+  `participation.js` (novo), `index.html` (script) e `script.js` (chamada em
+  advanceDays/init) e a documentação.
+- **Prioridade média** registrada no `TODO.md`: criar a mecânica **real** de
+  cadastro de atletas em campeonatos (hoje é só a regra de teste "todos").
+- **Verificado** (navegador headless): esporte do campeonato = Atletismo;
+  participantes da etapa 1 batem com os contratados (agentes livres de fora);
+  fadiga cai ao realizar a etapa e **não reaplica** nos dias seguintes; o
+  participante fica mais lento nos 100 m; sem erros de JS.
 
 ### Etapa 24 — UI dos contratos (parte 2): duração, agentes livres e reatividade
 

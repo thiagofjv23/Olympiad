@@ -12,6 +12,15 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
   - **Contratações** (de atletas).
   - **Ordenamento de clubes** (ranking/classificação).
 
+## 🟡 Prioridade média
+
+- [ ] **Mecânica de cadastro de atletas em campeonatos.** Hoje a participação é
+      apenas uma **regra de TESTE** (`getStageParticipants` em `participation.js`):
+      cada clube inscreve **todos** os seus atletas em **todas** as etapas. Falta a
+      lógica **real**: o clube **escolhendo quais** atletas inscrever, vagas/limites,
+      critérios (força, forma, elenco), e a inscrição **por etapa** (não
+      necessariamente todas). Deve substituir a regra de teste.
+
 ## Atletas (regens)
 
 - [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos **10**
@@ -24,12 +33,10 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Lógica de melhoria e decréscimo de Força/Potencial.** Ainda não existe.
       O `potential` já é o teto de crescimento da `strength`, mas a evolução
       (subir com treino/idade e cair depois do pico) ainda será criada.
-- [x] **Aplicar o Cansaço nas etapas (mecanismo de aplicação).** Criado
-      `applyStageFatigue(athlete)` (individual, desacoplado de clube) e
-      `applyStageFatigueToParticipants(list)`. Falta apenas **chamar** para os
-      atletas que de fato **participarem** de cada etapa — o que depende do vínculo
-      atleta ↔ etapa (inscrição via clube), ainda inexistente. Quando ele existir,
-      basta passar os participantes; o desgaste já é individual.
+- [x] **Aplicar o Cansaço nas etapas.** Feito: `applyStageFatigue`/
+      `applyStageFatigueToParticipants` (individual) agora são **chamados de fato**
+      via `participation.js` (`applyParticipationFatigue` em `advanceDays`),
+      desgastando os participantes de cada etapa realizada, uma vez por etapa.
 - [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
       todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
 - [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já
@@ -70,10 +77,11 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       ligadas a prestígio e finanças), substituindo o seeding de teste.
 - [ ] **Decisão de renovar (lógica do clube).** `renewContract` existe, mas
       **quando/por que** um clube renova (ou deixa expirar) ainda não foi definido.
-- [ ] **Inscrição de atletas via clube nas etapas.** Com o elo pronto, um atleta
-      só disputa uma etapa através do seu clube: falta ligar **contrato ativo →
-      participação na etapa** (e então resolver o resultado e aplicar a fadiga aos
-      participantes via `applyStageFatigueToParticipants`).
+- [x] **Inscrição de atletas via clube nas etapas (versão de teste).** Feito em
+      `participation.js`: participantes = atletas com contrato ativo em clubes do
+      país (regra de teste "todos"), e a fadiga é aplicada aos participantes. A
+      lógica **real** de cadastro está na seção de prioridade média. Falta ainda
+      **resolver o resultado** da etapa (ver Modalidades/Engine).
 - [ ] **Presidente.** Campo `president` já existe na entidade, mas ainda **não é
       utilizado**.
 - [ ] **Finanças.** Campo `finances` já existe na entidade, mas ainda **não é
@@ -116,8 +124,9 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Esporte afeta o uso dos atributos na simulação de resultados.** A entidade
       `sports.js` já existe, mas a lógica de **como cada esporte usa/pondera os
       atributos dos atletas** para simular resultados ainda **não foi criada**.
-- [ ] **Vincular campeonatos/etapas a um esporte** (`sportId`), para saber qual
-      esporte cada competição disputa.
+- [x] **Vincular campeonatos a um esporte** (`sportId`). Feito: campo `sportId` na
+      entidade Campeonato + helper `getChampionshipSport`; o `CNA-2026` aponta para
+      o Atletismo. As etapas herdam o esporte do seu campeonato.
 - [ ] **Expandir a database de esportes** e revisar dados (popularidade é
       aproximada).
 - [ ] **UI dos esportes.** Ainda não existe tela para esportes.
@@ -132,11 +141,12 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       uma com sua `resolution` e `performance`.
 - [ ] **UI das modalidades e de resultados.** Ainda não há tela para modalidades
       nem para exibir os resultados/tempos de uma etapa.
-- [ ] **Participação atleta ↔ etapa.** O `resolveModality` já resolve o ranking a
-      partir de uma lista de atletas e a aplicação individual de fadiga já existe
-      (`applyStageFatigueToParticipants`); falta definir **quais** atletas (via
-      clube) disputam cada etapa para então resolver o resultado e desgastar os
-      participantes.
+- [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
+      `participation.js`: `getStageParticipants` define quem disputa cada etapa
+      (regra de teste "todos os contratados via clube") e a fadiga é aplicada aos
+      participantes a cada etapa realizada. Falta **resolver o resultado**
+      (`resolveModality`) e a **UI de resultados**, além da mecânica real de
+      cadastro (prioridade média).
 - [ ] **Modelos de desempenho por métrica.** O modelo atual cobre **tempo**
       (100 m). Distância/altura/pontos precisarão de suas próprias fórmulas.
 

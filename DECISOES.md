@@ -251,6 +251,30 @@ Regras a seguir sempre, salvo instrução em contrário:
     vazia. Para a feature ser demonstrável, deixo uma fração livre. É dado de
     TESTE, fácil de ajustar/remover quando vier o fluxo real.
 
+### Campeonato ↔ esporte e Participação
+
+19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato
+    inteiro (as etapas herdam), em vez de repetir em cada etapa — um campeonato
+    disputa um esporte. Se um dia uma etapa precisar de esporte próprio, dá para
+    especializar depois.
+
+19af. **Participação num módulo próprio (`participation.js`), derivada e não
+    guardada.** `getStageParticipants` calcula quem disputa na hora (não armazena
+    inscrições), o que evita estado obsoleto e reflete a data da etapa. Fica claro
+    que é a camada que liga atletas/contratos/clubes às etapas, sem inchar
+    `championships.js`.
+
+19ag. **Regra de teste: participantes = contratados via clube (agentes livres
+    fora).** A pedido, "os clubes escolhem todos os atletas". Como a inscrição é
+    **via clube**, interpretei como todos os atletas com **contrato ativo** em
+    clubes do país do campeonato; quem não tem clube (agente livre) não é inscrito
+    por ninguém, então não disputa. Coerente com o elo de contratos que já temos.
+
+19ah. **Fadiga por etapa aplicada uma única vez, controlada por `_fatiguedStages`.**
+    Como "etapa realizada" é derivado da data (reavaliado a cada avanço de tempo),
+    guardo quais etapas já desgastaram os participantes para não reaplicar a cada
+    `advanceDays`/re-render. O tempo só anda para frente, então um Set basta.
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias
