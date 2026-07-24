@@ -444,6 +444,36 @@ Regras a seguir sempre, salvo instrução em contrário:
     **evidencia a trava**: a categoria, o lugar da abrangência e a contagem de
     atletas elegíveis pelo escopo.
 
+### Travas de idade e de cota por clube
+
+19bo. **Idade e cota como campos do campeonato + helpers (genéricos).** Modelei as
+    duas novas travas como `ageRestriction` e `clubQuota` na entidade Campeonato,
+    com helpers próprios (`getChampionshipAgeRestriction`, `getChampionshipClubQuota`)
+    — assim qualquer campeonato futuro pode declará-las, sem lógica especial.
+
+19bp. **Trava de idade criada mas NÃO aplicada (a pedido).** O mecanismo
+    (`isAthleteAgeEligible`, faixa `{ minAge, maxAge }`) já entra na elegibilidade,
+    mas nenhum campeonato define `ageRestriction` ainda — fica pronto para os
+    juvenis/sub futuros (registrado no `TODO.md`). Faixa com `min`/`max` opcionais
+    cobre tanto "Sub-N" (só max) quanto faixas fechadas.
+
+19bq. **Cota por clube é por ETAPA e de GRUPO (fica em participation.js).**
+    Diferente das travas de atleta (booleanas, em eligibility.js), a cota limita
+    quantos de um mesmo clube entram — então é aplicada ao montar os participantes
+    da etapa (`limitAthletesPerClub`), agrupando por clube.
+
+19br. **Seleção da cota por placeholder = mais fortes (determinístico).** Quando a
+    cota corta (ex.: CNA = 1), é preciso escolher QUAIS atletas o clube manda.
+    Como a inscrição real ainda não existe, uso um placeholder: os de maior
+    `strength` (desempate por id), determinístico para o resultado travado da
+    etapa não variar. A escolha real (por forma/índice/estratégia do clube) é a
+    mecânica pendente no `TODO.md`.
+
+19bs. **UI: card "Regras de Inscrição" agregando as travas.** A pedido, criei um
+    item dedicado na aba Campeonatos reunindo Abrangência, Faixa etária e Limite
+    por clube — e movi a "Abrangência" do card Campeonato para lá, para as regras
+    ficarem num só lugar visível ao jogador.
+
 ### Geografia (regiões e estados)
 
 19bc. **Regiões e estados em módulos próprios (`regions.js`, `states.js`).** Segui

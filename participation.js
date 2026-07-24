@@ -10,31 +10,59 @@
 // com contrato ATIVO (na data da etapa) em algum clube do país do campeonato.
 // Atletas sem clube (agentes livres) não disputam, pois ninguém os inscreve.
 //
-// TRAVA DE INSCRIÇÃO (ver eligibility.js): além disso, só disputa quem é elegível
-// à ABRANGÊNCIA do campeonato (`scope`) — atletas "daquele" país/região/estado/
-// cidade. Assim, um Estadual de São Paulo só recebe atletas nascidos em SP, etc.
+// TRAVAS DE INSCRIÇÃO:
+//   - de ATLETA (ver eligibility.js): só disputa quem é elegível à ABRANGÊNCIA
+//     (`scope`) e à FAIXA ETÁRIA (`ageRestriction`) do campeonato. Ex.: um
+//     Estadual de São Paulo só recebe atletas nascidos em SP.
+//   - de COTA por clube (`clubQuota`): cada clube inscreve no máximo N atletas
+//     por etapa (ex.: CNA = 1). É uma trava de GRUPO, aplicada aqui.
 //
 // FALTA (ver TODO.md — prioridade média): a mecânica REAL de cadastro de atletas
 // em campeonatos (o clube escolhendo quais atletas inscrever, vagas, critérios).
 // -----------------------------------------------------------------------------
 
-// Retorna os atletas participantes de uma etapa de um campeonato.
-// TESTE: atletas com contrato ativo (na data da etapa) em clubes do país do
-// campeonato E elegíveis à abrangência geográfica do campeonato (trava). Sem
-// duplicatas.
+// Retorna os atletas participantes de uma etapa de um campeonato: contratados via
+// clube (na data da etapa), que passam nas travas de atleta (geográfica + idade)
+// e respeitando a cota por clube. Sem duplicatas.
 function getStageParticipants(championship, stage) {
-  const clubs = getClubsByCountry(championship.countryId);
-  const participantIds = new Set();
-  for (const club of clubs) {
+  // Mapa atleta → clube (contrato ativo na data da etapa) nos clubes do país.
+  const athleteClubId = new Map();
+  for (const club of getClubsByCountry(championship.countryId)) {
     for (const contract of getContractsByClub(club.id, stage.date)) {
-      participantIds.add(contract.athleteId);
+      athleteClubId.set(contract.athleteId, club.id);
     }
   }
-  const scope = getChampionshipScope(championship);
-  return ATHLETES.filter(
+  // Contratados via clube E elegíveis pelas travas de atleta (abrangência + idade).
+  let participants = ATHLETES.filter(
     (athlete) =>
-      participantIds.has(athlete.id) && isAthleteEligibleForScope(athlete, scope)
+      athleteClubId.has(athlete.id) &&
+      isAthleteEligibleForChampionship(athlete, championship)
   );
+  // Trava de cota: cada clube inscreve no máximo `clubQuota` atletas.
+  const quota = getChampionshipClubQuota(championship);
+  if (quota != null) {
+    participants = limitAthletesPerClub(participants, athleteClubId, quota);
+  }
+  return participants;
+}
+
+// Limita a `quota` atletas por clube. Placeholder de seleção (enquanto a
+// inscrição REAL não existe): cada clube manda os seus MAIS FORTES (maior
+// `strength`; desempate por id). Determinístico, para o resultado travado de uma
+// etapa não variar entre recálculos.
+function limitAthletesPerClub(athletes, athleteClubId, quota) {
+  const byClub = new Map();
+  for (const athlete of athletes) {
+    const clubId = athleteClubId.get(athlete.id);
+    if (!byClub.has(clubId)) byClub.set(clubId, []);
+    byClub.get(clubId).push(athlete);
+  }
+  const selected = [];
+  for (const list of byClub.values()) {
+    list.sort((a, b) => b.strength - a.strength || a.id - b.id);
+    for (const athlete of list.slice(0, quota)) selected.push(athlete);
+  }
+  return selected;
 }
 
 // Quantidade de participantes de uma etapa (atalho para a UI/depuração).

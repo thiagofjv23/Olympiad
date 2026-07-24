@@ -95,7 +95,9 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `countryId`   | Referência ao país em `countries.js`.                  |
 | `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
 | `categoryId`  | **Categoria/porte** no calendário (ver `competitionCategories.js`). |
-| `scope`       | **Abrangência/trava** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
+| `scope`       | **Trava geográfica** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
+| `ageRestriction` | **Trava de idade** `{ minAge, maxAge }` (opcional) ou ausente — uso **futuro** (juvenil/sub). |
+| `clubQuota`   | **Trava de cota**: máx. de atletas por clube **por etapa** (ou ausente = sem limite). CNA = 1. |
 | `events`      | Eventos (lista).                                       |
 | `modalities`  | Modalidades (lista).                                   |
 | `competitors` | Participantes (lista).                                 |
@@ -104,7 +106,8 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 **Calendário do Brasil (16 campeonatos):**
 
 - **Nacional** — `CNA-2026` (Campeonato Nacional de Atletismo), categoria
-  **Nacional**, `scope` país=`BRA`, 2º sábado do mês. Cadastrado à mão.
+  **Nacional**, `scope` país=`BRA`, **cota de 1 atleta por clube por etapa**
+  (`clubQuota: 1`), 2º sábado do mês. Cadastrado à mão.
 - **10 Estaduais** — um por estado com cidade na database (`CAMP-EST-<UF>-2026`),
   categoria **Estadual**, `scope` estado, 1º sábado do mês.
 - **5 Regionais** — um por região com cidade (`CAMP-REG-<REGIÃO>-2026`), categoria
@@ -121,7 +124,11 @@ Funções utilitárias:
 - `getChampionshipCategory(championship)` — a categoria/porte do campeonato
   (objeto de `competitionCategories.js`).
 - `getChampionshipScope(championship)` — a abrangência `{ level, placeId }` (trava
-  de inscrição) ou `null`.
+  geográfica) ou `null`.
+- `getChampionshipAgeRestriction(championship)` — a trava de idade
+  `{ minAge, maxAge }` ou `null`.
+- `getChampionshipClubQuota(championship)` — a cota máx. de atletas por clube por
+  etapa ou `null`.
 - `buildCountryGeographicChampionships(config)` — **gera** os campeonatos
   **Estaduais** (por estado) e **Regionais** (por região) de um país, **só para
   lugares com cidade na database**, e os registra em `CHAMPIONSHIPS`. Genérico
@@ -360,17 +367,22 @@ com **contrato ativo na data da etapa** em algum clube do país do campeonato;
 **agentes livres não disputam** (nenhum clube os inscreve). Falta a mecânica
 **real** de cadastro (ver `TODO.md`, prioridade média).
 
-**Trava de inscrição (geográfica):** além disso, o participante precisa ser
-**elegível** à abrangência (`scope`) do campeonato — ver `eligibility.js`. Um
-Estadual de São Paulo só recebe atletas nascidos em SP; um Regional do Sudeste,
-os da região; o Nacional, os do país. Participantes = **contratados via clube ∩
-elegíveis pela trava**.
+**Travas de inscrição:** o participante precisa ser **elegível** às travas de
+atleta (abrangência `scope` + faixa etária `ageRestriction` — ver `eligibility.js`)
+**e** respeitar a **cota por clube** (`clubQuota`): cada clube inscreve no máximo
+N atletas **por etapa** (ex.: **CNA = 1**). Assim, participantes = **contratados
+via clube ∩ elegíveis (geografia+idade)**, depois **limitados pela cota**. Quando
+a cota corta, um **placeholder** manda os atletas **mais fortes** do clube
+(`limitAthletesPerClub`, por `strength`, desempate por id) — a seleção **real**
+(qual atleta o clube inscreve) é a mecânica pendente (ver `TODO.md`).
 
 Funções:
 
 - `getStageParticipants(championship, stage)` — atletas participantes da etapa
-  (contratados via clube **e** elegíveis pela trava geográfica);
-  `getStageParticipantCount(...)` retorna a quantidade.
+  (contratados via clube, elegíveis pelas travas de atleta e dentro da cota por
+  clube); `getStageParticipantCount(...)` retorna a quantidade.
+- `limitAthletesPerClub(athletes, athleteClubId, quota)` — aplica a cota por clube
+  (placeholder: os mais fortes).
 - `getStageModality(championship, stage)` — a prova disputada (por ora, a
   primeira modalidade do campeonato; senão, a primeira do esporte).
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
@@ -388,28 +400,32 @@ Funções:
 
 ### Travas de inscrição — `eligibility.js`
 
-Define **quem pode disputar** um campeonato conforme a sua **abrangência
-geográfica** (`championship.scope`). Só participa quem é "daquele" recorte —
-**país, região, estado ou cidade**.
+Define **quem pode disputar** um campeonato pelas **travas de atleta**:
 
-A **origem** do atleta é derivada da sua **cidade de nascimento** (`birthCityId`),
-que dá, pela hierarquia país → região → estado → cidade, todos os níveis. Usar a
-cidade de nascimento mantém a trava **independente de contrato/clube** (vale até
-para agentes livres) e casa com "atletas daquele estado/região".
+- **Abrangência geográfica** (`championship.scope`): só participa quem é "daquele"
+  recorte — **país, região, estado ou cidade**. A **origem** do atleta é derivada
+  da sua **cidade de nascimento** (`birthCityId`), que dá todos os níveis pela
+  hierarquia país → região → estado → cidade. Independe de contrato/clube (vale
+  até para agentes livres). O `scope` é `{ level, placeId }`, com `level` ∈
+  `country`/`region`/`state`/`city`. Sem `scope`, não há trava.
+- **Faixa etária** (`championship.ageRestriction` = `{ minAge, maxAge }`, ambos
+  opcionais): só participa quem está na idade exigida. **Uso futuro** (campeonatos
+  juvenis/sub) — o mecanismo existe, mas nenhum campeonato usa ainda. Sem
+  restrição → todos.
 
-O `scope` é `{ level, placeId }`, com `level` ∈ `country` / `region` / `state` /
-`city` e `placeId` apontando para a entidade correspondente. Sem `scope`, não há
-trava (todos elegíveis).
+(A trava de **cota por clube** é de grupo/etapa e fica em `participation.js`.)
 
 Funções:
 
 - `getAthleteOriginIds(athlete)` — `{ cityId, stateId, regionId, countryId }` da
   origem do atleta (via cidade de nascimento).
-- `isAthleteEligibleForScope(athlete, scope)` — o atleta é elegível ao escopo?
-- `getEligibleAthletes(athletes, scope)` — filtra uma lista pelos elegíveis.
-- `isAthleteEligibleForChampionship(athlete, championship)` e
-  `getChampionshipEligibleAthletes(championship)` — atalhos usando o escopo do
-  campeonato (o segundo é usado na UI para "Atletas elegíveis").
+- `isAthleteEligibleForScope(athlete, scope)` — elegível ao escopo geográfico?
+- `isAthleteAgeEligible(athlete, ageRestriction)` — está na faixa etária?
+- `getEligibleAthletes(athletes, scope)` — filtra uma lista pelo escopo.
+- `isAthleteEligibleForChampionship(athlete, championship)` — passa em **todas** as
+  travas de atleta (geográfica + idade)?
+- `getChampionshipEligibleAthletes(championship)` — todos os elegíveis (geografia +
+  idade); usado na UI para "Atletas elegíveis".
 
 Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
 etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
@@ -815,6 +831,28 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 35 — Mais travas de inscrição (idade e cota por clube) + UI de Regras
+
+- **Trava de idade** (`ageRestriction { minAge, maxAge }`): mecanismo criado em
+  `eligibility.js` (`isAthleteAgeEligible`) e ligado a
+  `isAthleteEligibleForChampionship`. **Nenhum campeonato usa ainda** — é para os
+  futuros **juvenis/sub** (registrado no `TODO.md`).
+- **Trava de cota por clube** (`clubQuota`): cada clube inscreve no máximo N
+  atletas **por etapa**. Aplicada ao **CNA = 1**; os demais campeonatos ficam sem
+  cota. Implementada em `participation.js` (`limitAthletesPerClub`), com
+  **placeholder** de seleção pelos mais fortes (seleção real é pendente).
+- **Genérico**: ambas são campos do campeonato + helpers
+  (`getChampionshipAgeRestriction`, `getChampionshipClubQuota`) — **qualquer
+  campeonato futuro** pode declará-las.
+- **UI**: novo card **"Regras de Inscrição"** na aba Campeonatos, com
+  **Abrangência**, **Faixa etária** e **Limite por clube** (helpers
+  `formatAgeRestriction`, `formatClubQuota`). A "Abrangência" saiu do card
+  Campeonato para este.
+- **Verificado** (navegador headless): CNA com **1 atleta por clube por etapa**
+  (10 participantes = 10 clubes × 1); estadual segue sem cota (até 3/clube);
+  trava de idade correta (Sub-20 barra 25 anos, aceita 15); o card "Regras de
+  Inscrição" aparece com os textos certos por campeonato; sem erros de JS.
+
 ### Etapa 34 — Calendário do Brasil populado + travas de inscrição
 
 - **Calendário populado** a partir da geografia: além do Nacional (`CNA-2026`),
@@ -1119,12 +1157,14 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (categoria, abrangência/trava, atletas elegíveis, etapas com status e link "Ver"); destaca opcionalmente. |
+| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (categoria, atletas elegíveis, card **Regras de Inscrição** com abrangência/idade/cota, etapas com status e link "Ver"); destaca opcionalmente. |
 | `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `formatCityLocation(city)`          | Texto da cidade com a hierarquia: `Cidade — SIGLA · Região`.    |
 | `formatChampionshipScopeText(champ)`| Texto da abrangência (trava) do campeonato: o lugar do escopo.  |
+| `formatAgeRestriction(ageRestriction)` | Texto da trava de idade (ou "Sem restrição").              |
+| `formatClubQuota(quota)`            | Texto da cota por clube (ou "Sem limite").                     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
 | `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |

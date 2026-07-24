@@ -1,9 +1,12 @@
 // -----------------------------------------------------------------------------
 // Elegibilidade / Travas de inscrição (Eligibility)
 //
-// Define QUEM pode disputar um campeonato conforme a sua ABRANGÊNCIA geográfica
-// (`championship.scope` — ver championships.js). A regra: só participa quem é
-// "daquele" recorte — país, região, estado ou cidade.
+// Define QUEM pode disputar um campeonato conforme as TRAVAS DE ATLETA:
+//   - ABRANGÊNCIA geográfica (`championship.scope`): só participa quem é
+//     "daquele" recorte — país, região, estado ou cidade.
+//   - FAIXA ETÁRIA (`championship.ageRestriction`): só participa quem está na
+//     idade exigida (uso FUTURO — campeonatos juvenis/sub; nenhum usa ainda).
+// (A trava de COTA por clube é de grupo/etapa e fica em participation.js.)
 //
 // A ORIGEM do atleta é derivada da sua CIDADE DE NASCIMENTO (`birthCityId`), que
 // dá, pela hierarquia país → região → estado → cidade, todos os níveis. Usar a
@@ -55,13 +58,30 @@ function getEligibleAthletes(athletes, scope) {
   return athletes.filter((athlete) => isAthleteEligibleForScope(athlete, scope));
 }
 
-// Conveniência: o atleta é elegível para um CAMPEONATO (usa o escopo dele)?
-function isAthleteEligibleForChampionship(athlete, championship) {
-  return isAthleteEligibleForScope(athlete, getChampionshipScope(championship));
+// Idade: o atleta está na faixa etária exigida? ageRestriction = { minAge, maxAge }
+// (ambos opcionais). Sem restrição (null) → true. Uso futuro (juvenil/sub).
+function isAthleteAgeEligible(athlete, ageRestriction) {
+  if (!ageRestriction) return true;
+  const { minAge, maxAge } = ageRestriction;
+  if (minAge != null && athlete.age < minAge) return false;
+  if (maxAge != null && athlete.age > maxAge) return false;
+  return true;
 }
 
-// Conveniência: todos os atletas elegíveis a um campeonato (pela trava geográfica),
-// independente de contrato. Útil para a UI ("atletas elegíveis").
+// Conveniência: o atleta passa em TODAS as travas de atleta de um CAMPEONATO
+// (abrangência geográfica + faixa etária)?
+function isAthleteEligibleForChampionship(athlete, championship) {
+  return (
+    isAthleteEligibleForScope(athlete, getChampionshipScope(championship)) &&
+    isAthleteAgeEligible(athlete, getChampionshipAgeRestriction(championship))
+  );
+}
+
+// Conveniência: todos os atletas elegíveis a um campeonato pelas travas de atleta
+// (geográfica + idade), independente de contrato/cota. Útil para a UI
+// ("atletas elegíveis").
 function getChampionshipEligibleAthletes(championship) {
-  return getEligibleAthletes(ATHLETES, getChampionshipScope(championship));
+  return ATHLETES.filter((athlete) =>
+    isAthleteEligibleForChampionship(athlete, championship)
+  );
 }

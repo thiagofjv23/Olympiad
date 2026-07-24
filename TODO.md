@@ -55,6 +55,16 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 - [x] **Travas de inscrição por país/região/estado/cidade.** Feito em
       `eligibility.js`: só disputa quem é elegível ao `scope` do campeonato, pela
       **cidade de nascimento**. Ligado a `getStageParticipants`.
+- [x] **Trava de cota por clube (`clubQuota`).** Feito: cada clube inscreve no
+      máximo N atletas por etapa; aplicada ao **CNA = 1**. Seleção por placeholder
+      (mais fortes) — a seleção **real** faz parte da mecânica de inscrição
+      pendente.
+- [x] **Trava de idade (mecanismo).** Feito em `eligibility.js`
+      (`ageRestriction { minAge, maxAge }`); **nenhum campeonato usa ainda**.
+- [ ] **Campeonatos juvenis/sub (usar a trava de idade).** O mecanismo de idade
+      já existe; falta **criar os campeonatos** que o usam (ex.: Sub-18, Sub-20,
+      Sub-23, juvenil) — definir faixas, calendário e como se relacionam com os
+      adultos.
 - [ ] **Faltam os portes Séries C/B/A e internacionais.** O gerador cobre
       Estadual/Regional/Nacional; **Séries C/B/A** (divisões nacionais) dependem
       do sistema de ranking/acesso, e **Continental/Mundial/Olímpico** dependem de

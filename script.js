@@ -317,6 +317,24 @@ function formatChampionshipScopeText(championship) {
   }
 }
 
+// Texto da trava de idade. Sem restrição → "Sem restrição".
+function formatAgeRestriction(ageRestriction) {
+  if (!ageRestriction) return "Sem restrição";
+  const { minAge, maxAge } = ageRestriction;
+  if (minAge != null && maxAge != null) return `${minAge} a ${maxAge} anos`;
+  if (maxAge != null) return `Até ${maxAge} anos`;
+  if (minAge != null) return `A partir de ${minAge} anos`;
+  return "Sem restrição";
+}
+
+// Texto da trava de cota por clube. Sem cota → "Sem limite".
+function formatClubQuota(quota) {
+  if (quota == null) return "Sem limite";
+  return quota === 1
+    ? "1 atleta por clube por etapa"
+    : `${quota} atletas por clube por etapa`;
+}
+
 function populateChampionshipSelect() {
   championshipSelect.innerHTML = "";
   for (const championship of Object.values(CHAMPIONSHIPS)) {
@@ -336,6 +354,8 @@ function renderChampionship(id, highlightStage) {
   const category = getChampionshipCategory(championship);
   const categoryName = category ? category.name : "—";
   const scopeText = formatChampionshipScopeText(championship);
+  const ageText = formatAgeRestriction(getChampionshipAgeRestriction(championship));
+  const quotaText = formatClubQuota(getChampionshipClubQuota(championship));
   const eligibleCount = getChampionshipEligibleAthletes(championship).length;
 
   const stagesRows = championship.stages
@@ -386,10 +406,18 @@ function renderChampionship(id, highlightStage) {
       <p class="detail-card__id">ID: ${championship.id}</p>
       <ul class="detail-list">
         <li><span>Categoria</span><strong>${categoryName}</strong></li>
-        <li><span>Abrangência</span><strong>${scopeText}</strong></li>
         <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
         <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
+      </ul>
+    </div>
+
+    <div class="detail-card">
+      <h3>Regras de Inscrição</h3>
+      <ul class="detail-list">
+        <li><span>Abrangência</span><strong>${scopeText}</strong></li>
+        <li><span>Faixa etária</span><strong>${ageText}</strong></li>
+        <li><span>Limite por clube</span><strong>${quotaText}</strong></li>
       </ul>
     </div>
 

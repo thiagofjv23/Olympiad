@@ -129,9 +129,25 @@ só disputa quem é **elegível** a ele — ver `eligibility.js`:
 
 Exemplos: o **Estadual de São Paulo** (`scope` estado = `EST-SP`) só recebe
 atletas nascidos em SP; o **Regional Sudeste** (`REG-SUDESTE`), os nascidos na
-região; o **Nacional** (`BRA`), todos os brasileiros. Na prática, os participantes
-de uma etapa são **os contratados via clube ∩ os elegíveis pela trava** (a regra
-de inscrição via clube continua; a trava geográfica soma-se a ela).
+região; o **Nacional** (`BRA`), todos os brasileiros.
+
+Além da geográfica, há mais duas travas (genéricas — **qualquer** campeonato pode
+declará-las):
+
+- **Faixa etária** (`ageRestriction { minAge, maxAge }`): trava de atleta por
+  idade. **Uso futuro** — o mecanismo existe (ver `eligibility.js`), mas nenhum
+  campeonato usa ainda; é para os **juvenis/sub** (Sub-18, Sub-20, ...). Ver
+  `TODO.md`.
+- **Cota por clube** (`clubQuota`): máximo de atletas que **cada clube** inscreve
+  **por etapa**. Aplicada ao **CNA = 1** (cada clube manda 1 atleta por etapa);
+  os demais campeonatos ainda **sem cota**. É uma trava de **grupo**, aplicada em
+  `participation.js`; enquanto a inscrição real não existe, a seleção de quem o
+  clube manda é um **placeholder** (os mais fortes).
+
+Na prática, os participantes de uma etapa são **os contratados via clube ∩ os
+elegíveis pelas travas de atleta (geografia + idade)**, depois **limitados pela
+cota por clube**. Todas essas regras ficam visíveis ao jogador no card **"Regras
+de Inscrição"** (aba Campeonatos).
 
 ---
 

@@ -9,10 +9,17 @@
 //   - countryId    : referência ao país (ver countries.js)
 //   - sportId      : esporte disputado (ver sports.js) — todo campeonato tem um
 //   - categoryId   : categoria/porte no calendário (ver competitionCategories.js)
-//   - scope        : abrangência geográfica { level, placeId } — a TRAVA de
+//   - scope        : abrangência geográfica { level, placeId } — TRAVA de
 //                    inscrição (ver eligibility.js). level ∈ country/region/
 //                    state/city; placeId aponta para a entidade correspondente.
 //                    Só atletas daquele recorte podem disputar.
+//   - ageRestriction : TRAVA de idade { minAge, maxAge } (ambos opcionais) ou
+//                    ausente/null (sem restrição). Para campeonatos juvenis/sub
+//                    (uso FUTURO — o mecanismo existe, mas nenhum campeonato usa
+//                    ainda; ver TODO.md).
+//   - clubQuota    : TRAVA de cota — máximo de atletas que CADA clube pode
+//                    inscrever POR ETAPA (ou ausente/null = sem limite).
+//                    Ex.: CNA = 1 atleta por clube por etapa.
 //   - events       : eventos
 //   - modalities   : modalidades
 //   - competitors  : lista de participantes
@@ -63,6 +70,8 @@ const CHAMPIONSHIPS = {
     categoryId: "CAT-NACIONAL", // porte no calendário (ver competitionCategories.js)
     // Trava de inscrição: campeonato nacional → só atletas do Brasil (ver eligibility.js).
     scope: { level: "country", placeId: "BRA" },
+    // Trava de cota: cada clube inscreve no máximo 1 atleta por etapa.
+    clubQuota: 1,
     events: [],
     modalities: ["MOD-ATL-100M"], // provas disputadas (ver modalities.js)
     competitors: [],
@@ -87,6 +96,17 @@ function getChampionshipCategory(championship) {
 // Retorna null se o campeonato não declarar escopo (sem trava).
 function getChampionshipScope(championship) {
   return championship.scope || null;
+}
+
+// Trava de idade de um campeonato: { minAge, maxAge } ou null (sem restrição).
+function getChampionshipAgeRestriction(championship) {
+  return championship.ageRestriction || null;
+}
+
+// Trava de cota por clube: máximo de atletas por clube por etapa, ou null (sem
+// limite).
+function getChampionshipClubQuota(championship) {
+  return championship.clubQuota != null ? championship.clubQuota : null;
 }
 
 // Compara duas datas por ano/mês/dia.
