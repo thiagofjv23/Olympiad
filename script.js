@@ -63,6 +63,7 @@ const athleteList = document.getElementById("athlete-list");
 // Elementos — clubes.
 const clubCountrySelect = document.getElementById("club-country-select");
 const clubList = document.getElementById("club-list");
+const freeAgentsEl = document.getElementById("free-agents");
 
 function sameDay(a, b) {
   return (
@@ -148,15 +149,34 @@ function advanceDays(days) {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
-  // O status das etapas depende da data atual: atualiza as visões que o exibem.
+  // Status de etapas e situação de contratos dependem da data atual: atualiza
+  // as visões que os exibem (contratos podem ter expirado/entrado em vigor).
   refreshChampionshipView();
   refreshDayDetail();
+  refreshClubView();
+  refreshAthleteView();
 }
 
 // Re-renderiza o campeonato atualmente selecionado (mantém a data em dia).
 function refreshChampionshipView() {
   if (championshipSelect.value) {
     renderChampionship(championshipSelect.value);
+  }
+}
+
+// Re-renderiza a aba Clubes (elenco e agentes livres) após a passagem de tempo,
+// pois a situação dos contratos é relativa à data atual.
+function refreshClubView() {
+  if (clubCountrySelect.value) {
+    renderClubs(clubCountrySelect.value);
+  }
+}
+
+// Re-renderiza a aba Atletas após a passagem de tempo (o "Clube atual" de cada
+// atleta é derivado do contrato ativo na data atual).
+function refreshAthleteView() {
+  if (athleteCountrySelect.value) {
+    renderAthletes(athleteCountrySelect.value);
   }
 }
 
@@ -439,6 +459,9 @@ function populateClubCountrySelect() {
 function renderClubs(countryId) {
   const list = getClubsByCountry(countryId);
 
+  // Os agentes livres do país são exibidos junto (mesma aba), sempre em sincronia.
+  renderFreeAgents(countryId);
+
   if (list.length === 0) {
     clubList.innerHTML = `<p class="clubs__empty">Nenhum clube para este país.</p>`;
     return;
@@ -498,8 +521,14 @@ function toggleClubAthletes(button) {
   if (show) renderClubAthletes(clubId, container);
 }
 
+// Texto da duração de um contrato ("1 ano" / "2 anos").
+function contractDurationText(contract) {
+  return `${contract.durationYears} ${contract.durationYears === 1 ? "ano" : "anos"}`;
+}
+
 // Preenche a lista com os atletas contratados do clube (contratos ativos na data
-// atual). Cada nome é clicável e leva ao perfil do atleta.
+// atual). Cada item mostra o nome do atleta (clicável, leva ao perfil) e os
+// dados do contrato: duração, término e, se for renovação, uma marca "renovado".
 function renderClubAthletes(clubId, container) {
   const contracts = getContractsByClub(clubId, currentDate);
   if (contracts.length === 0) {
@@ -512,11 +541,46 @@ function renderClubAthletes(clubId, container) {
     .map((contract) => {
       const athlete = ATHLETES.find((a) => a.id === contract.athleteId);
       const name = athlete ? getAthleteName(athlete) : `Atleta ${contract.athleteId}`;
-      return `<li><button type="button" class="club-athlete-link link-button" data-athlete="${contract.athleteId}">${name}</button></li>`;
+      const renewal = contract.renewalOf ? " · renovado" : "";
+      const contractInfo = `${contractDurationText(contract)} · até ${formatDate(contract.endDate)}${renewal}`;
+      return `
+        <li class="club-athlete">
+          <button type="button" class="club-athlete-link link-button" data-athlete="${contract.athleteId}">${name}</button>
+          <span class="club-athlete__contract">${contractInfo}</span>
+        </li>`;
     })
     .join("");
 
   container.querySelectorAll(".club-athlete-link").forEach((button) => {
+    button.addEventListener("click", () =>
+      goToAthlete(Number(button.dataset.athlete))
+    );
+  });
+}
+
+// Lista os AGENTES LIVRES do país (atletas sem contrato ativo na data atual).
+// Cada nome é clicável e leva ao perfil do atleta.
+function renderFreeAgents(countryId) {
+  const athletes = ATHLETES.filter((athlete) => athlete.countryId === countryId);
+  const free = getFreeAgents(athletes, currentDate);
+  const heading = `<h3 class="free-agents__title">Agentes livres</h3>`;
+
+  if (free.length === 0) {
+    freeAgentsEl.innerHTML =
+      heading + `<p class="free-agents__empty">Nenhum agente livre.</p>`;
+    return;
+  }
+
+  const items = free
+    .map(
+      (athlete) =>
+        `<li><button type="button" class="free-agent-link link-button" data-athlete="${athlete.id}">${getAthleteName(athlete)}</button></li>`
+    )
+    .join("");
+  freeAgentsEl.innerHTML =
+    heading + `<ul class="free-agents__list">${items}</ul>`;
+
+  freeAgentsEl.querySelectorAll(".free-agent-link").forEach((button) => {
     button.addEventListener("click", () =>
       goToAthlete(Number(button.dataset.athlete))
     );

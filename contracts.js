@@ -170,14 +170,20 @@ function resetContracts() {
 }
 
 // --- povoamento de TESTE (temporário) ----------------------------------------
-// Assina cada atleta a um clube ALEATÓRIO do seu país, com duração anual
-// sorteada (1, 2 ou 3 anos), começando na data de referência. É um vínculo de
-// TESTE, só para dar dados às telas enquanto o fluxo real de contratação não
-// existe. Deve ser substituído depois pelas regras de contratação (prestígio,
-// finanças, decisão do clube etc. — ver TODO.md).
+// Fração dos atletas deixada como AGENTE LIVRE no seed de teste (para as telas
+// terem tanto atletas contratados quanto agentes livres para mostrar).
+const TEST_FREE_AGENT_RATE = 0.25;
+
+// Assina a maioria dos atletas a um clube ALEATÓRIO do seu país, com duração
+// anual sorteada (1, 2 ou 3 anos), começando na data de referência; uma fração
+// (TEST_FREE_AGENT_RATE) fica como agente livre. É um povoamento de TESTE, só
+// para dar dados às telas enquanto o fluxo real de contratação não existe. Deve
+// ser substituído depois pelas regras de contratação (prestígio, finanças,
+// decisão do clube etc. — ver TODO.md).
 function seedTestContracts(athletes, referenceDate) {
   resetContracts();
   for (const athlete of athletes) {
+    if (Math.random() < TEST_FREE_AGENT_RATE) continue; // fica agente livre
     const clubs = getClubsByCountry(athlete.countryId);
     if (clubs.length === 0) continue;
     const club = clubs[Math.floor(Math.random() * clubs.length)];

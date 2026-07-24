@@ -665,10 +665,60 @@ button.day:not(.day--current):hover {
   border-top: 1px solid var(--border);
 }
 
+.club-athlete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.club-athlete__contract {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+}
+
 .club__athletes-empty {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 400;
+}
+
+/* Agentes livres ---------------------------------------------------------- */
+.free-agents {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.free-agents__title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.free-agents__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.free-agents__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.free-agents__list li {
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
 }
 
 .athlete--highlight {

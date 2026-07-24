@@ -231,6 +231,26 @@ Regras a seguir sempre, salvo instrução em contrário:
     sem contrato ativo, "Agente livre". Mantém uma só fonte de verdade (o
     contrato) e não altera a entidade Atleta.
 
+19aa. **No elenco mostro duração E término (não só a duração pedida).** O pedido
+    era a duração; incluí também o término ("até dd/mm/aaaa") e a marca "renovado"
+    porque o dado já está no contrato e a "parte 2" do TODO pedia isso — dá a
+    informação completa sem custo extra.
+
+19ab. **Agentes livres ficam na aba Clubes, abaixo dos clubes.** Como é a tela do
+    "ecossistema de contratos" (quem está em que clube), agrupei ali a lista de
+    quem está sem clube, reusando o seletor de país já existente. Sincronizo com
+    `renderClubs` (uma chamada renderiza clubes + agentes livres).
+
+19ac. **Reatividade à passagem de tempo via re-render.** `advanceDays` reavalia
+    Clubes e Atletas (além de campeonatos/dia). Um re-render completo recolhe
+    detalhes/rosters abertos, mas é o padrão já usado (campeonatos) e o avanço de
+    tempo é ação explícita do usuário — aceitável.
+
+19ad. **Seed de teste deixa ~25% de agentes livres (`TEST_FREE_AGENT_RATE`).**
+    Antes o seed assinava todos, então a lista de agentes livres nasceria sempre
+    vazia. Para a feature ser demonstrável, deixo uma fração livre. É dado de
+    TESTE, fácil de ajustar/remover quando vier o fluxo real.
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias

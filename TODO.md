@@ -57,12 +57,14 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [x] **UI de contratos (parte 1).** Feito: aba Clubes tem o link "Atletas do
       clube" (elenco contratado, nomes clicáveis → perfil do atleta) e a aba
       Atletas mostra o "Clube atual" de cada atleta.
-- [ ] **UI de contratos (parte 2).** Ainda a fazer: mostrar **duração/término**
-      do contrato, tela/lista de **agentes livres** e uma visão mais completa do
-      elenco (datas, renovação). Reatividade dessas telas à passagem de tempo.
+- [x] **UI de contratos (parte 2).** Feito: elenco do clube mostra **duração,
+      término e "renovado"**; nova lista de **agentes livres** na aba Clubes; e as
+      abas Clubes/Atletas são **reativas à passagem de tempo** (contratos
+      expiram/entram em vigor e as telas se atualizam).
 - [ ] **Substituir os contratos de TESTE.** `seedTestContracts` (assinatura
-      aleatória no início) é temporário, só para as telas terem dados. Trocar pelo
-      fluxo real de contratação.
+      aleatória no início, deixando ~25% como agentes livres via
+      `TEST_FREE_AGENT_RATE`) é temporário, só para as telas terem dados. Trocar
+      pelo fluxo real de contratação.
 - [ ] **Assinaturas iniciais / quem assina quem.** Definir como os clubes montam
       elenco no início e ao longo do tempo (regras de contratação — provavelmente
       ligadas a prestígio e finanças), substituindo o seeding de teste.

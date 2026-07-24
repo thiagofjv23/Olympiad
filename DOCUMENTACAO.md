@@ -232,11 +232,14 @@ Funções:
   anual sorteada. Só para dar dados às telas; será substituído pelo fluxo real de
   contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
 
-**UI (parcial):** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do
-`<details>` do clube) que revela os atletas contratados, cada nome clicável e
-levando ao **perfil do atleta**; a aba **Atletas** mostra o **Clube atual** de
-cada atleta (ou "Agente livre"). Ver a seção 4 e a Etapa 23. Uma tela mais
-completa de contratos (durações, término, agentes livres) segue no `TODO.md`.
+**UI:** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do `<details>`
+do clube) que revela os atletas contratados — cada item com o **nome** (clicável,
+leva ao **perfil do atleta**) e os dados do contrato: **duração**, **término** e
+marca **"renovado"** quando for renovação. Abaixo dos clubes, a lista de
+**Agentes livres** do país (nomes clicáveis). A aba **Atletas** mostra o **Clube
+atual** de cada atleta (ou "Agente livre"). Tudo é **reativo à passagem de tempo**
+(um contrato que expira/entra em vigor atualiza elenco, agentes livres e clube do
+atleta). Ver a seção 4 e as Etapas 23–24.
 
 ### Cidades — `cities.js`
 
@@ -585,6 +588,27 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 24 — UI dos contratos (parte 2): duração, agentes livres e reatividade
+
+- **Duração do contrato no elenco**: em "Atletas do clube", cada atleta passou a
+  mostrar, ao lado do nome, os dados do contrato — **duração** ("1 ano"/"N anos"),
+  **término** ("até dd/mm/aaaa") e a marca **"renovado"** quando `renewalOf` está
+  preenchido (`renderClubAthletes` + `contractDurationText`).
+- **Agentes livres**: nova seção na aba Clubes (abaixo dos clubes) listando os
+  atletas do país **sem contrato ativo** (`renderFreeAgents` + `getFreeAgents`),
+  com nomes clicáveis que levam ao perfil.
+- **Reatividade à passagem de tempo**: `advanceDays` passou a reavaliar as abas
+  Clubes e Atletas (`refreshClubView`/`refreshAthleteView`), pois a situação dos
+  contratos é relativa à data atual — ao expirar/entrar em vigor, elenco, agentes
+  livres e "Clube atual" se atualizam sozinhos.
+- **Seed de teste ajustado**: `seedTestContracts` passou a deixar uma fração dos
+  atletas como agente livre (`TEST_FREE_AGENT_RATE = 0.25`) para as telas terem
+  tanto contratados quanto agentes livres. Continua sendo dado de TESTE.
+- **Verificado** (navegador headless): elenco mostra nome + duração/término;
+  agentes livres conferem com os dados e o clique abre o perfil ("Agente livre");
+  ao avançar além do término de um contrato, ele expira e as listas se atualizam
+  (3 → 5 agentes livres); sem erros de JS.
+
 ### Etapa 23 — UI dos contratos: atletas do clube e clube do atleta
 
 - **Aba Clubes**: dentro do `<details>` de cada clube, um link **"Atletas do
@@ -684,9 +708,11 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |
 | `populateClubCountrySelect()`       | Preenche o seletor de países da aba Clubes.                     |
-| `renderClubs(countryId)`            | Lista os clubes do país (inclui o link "Atletas do clube").     |
+| `renderClubs(countryId)`            | Lista os clubes do país (link "Atletas do clube") e chama os agentes livres. |
 | `toggleClubAthletes(button)`        | Mostra/esconde a lista de atletas contratados do clube.         |
-| `renderClubAthletes(clubId, container)` | Preenche a lista com os atletas contratados (nomes clicáveis). |
+| `renderClubAthletes(clubId, container)` | Lista os atletas contratados (nome clicável + duração/término/renovado). |
+| `renderFreeAgents(countryId)`       | Lista os agentes livres do país (nomes clicáveis).              |
+| `refreshClubView()` / `refreshAthleteView()` | Reavaliam as abas Clubes/Atletas após a passagem de tempo. |
 
 ---
 
