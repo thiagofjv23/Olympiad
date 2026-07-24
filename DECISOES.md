@@ -402,6 +402,47 @@ Regras a seguir sempre, salvo instrução em contrário:
     registrado" como o melhor desempenho possível (o recorde não é superado): Força
     efetiva 100 → 9,58 s, e qualquer valor menor gera tempos maiores (mais lentos).
 
+### Calendário de competições (categorias/tiers)
+
+19aw. **Categorias num módulo próprio (`competitionCategories.js`) e GLOBAIS.**
+    Modelei os níveis (Regional → Olímpico) como uma entidade separada e
+    **independente de país** — as mesmas categorias valem para todos. Motivo: o
+    pedido é "servir para todos os países posteriormente"; uma database global
+    evita duplicar a escala de portes em cada país. A competição é que aponta para
+    a categoria (`categoryId`), no mesmo estilo de `sportId`.
+
+19ax. **`scope` (subnacional/nacional/internacional) para ligar categorias a
+    países.** Como uma categoria é global mas uma competição pertence a alguém,
+    criei o `scope` para dizer o alcance: subnacional (dentro de um país),
+    nacional (um país) e internacional (vários). É o que permite o mesmo conjunto
+    de categorias servir qualquer país. **Região/estado ainda não existem** como
+    entidade — por ora o scope subnacional só **classifica o nível**; a ligação
+    fina fica para quando essas entidades existirem.
+
+19ay. **`level` 1–9 (crescente) para ordenar e comparar portes.** Além do nome,
+    guardo um nível numérico (1 = Regional … 9 = Olímpico) para ordenar o
+    calendário e comparar "quem é maior" sem depender da ordem de inserção.
+
+19az. **Premiação (dinheiro) fica FORA do código, a pedido.** Não criei campo de
+    dinheiro nas categorias: só a mecânica de portes (prestígio + ranking). A
+    tabela de premiação (`$`…) foi registrada no `TODO.md` e em
+    `CALENDARIO_DE_COMPETICOES.md` como referência para o sistema financeiro
+    futuro. As categorias **internacionais** ficaram **sem valor de premiação
+    definido** (a tabela do usuário não os trazia) — não inventei valores, seguindo
+    a diretriz de não criar dados não solicitados.
+
+19ba. **`rankingPoints` = base do campeão (por ora).** Interpretei a coluna
+    "Ranking" como o total de pontos que a categoria vale, ancorado no campeão. A
+    **distribuição por posição**, o **acúmulo** (ranking de atleta/clube/país) e os
+    **índices** ficaram para depois (registrados no `TODO.md`), para não presumir
+    regras não pedidas.
+
+19bb. **`CNA-2026` classificado como Nacional (`CAT-NACIONAL`).** O único
+    campeonato existente é o "Campeonato Nacional de Atletismo" — casa com a
+    categoria Nacional (prestígio 95, ranking 300). Não criei outras competições
+    (Regional, Estadual, etc.) para não inventar dados; popular o calendário é
+    passo futuro (registrado no `TODO.md`).
+
 ---
 
 ## Processo

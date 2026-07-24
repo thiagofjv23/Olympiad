@@ -19,7 +19,38 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       cada clube inscreve **todos** os seus atletas em **todas** as etapas. Falta a
       lógica **real**: o clube **escolhendo quais** atletas inscrever, vagas/limites,
       critérios (força, forma, elenco), e a inscrição **por etapa** (não
-      necessariamente todas). Deve substituir a regra de teste.
+      necessariamente todas). Deve substituir a regra de teste. **Depende do
+      calendário de competições** (categorias/tiers) — o clube escolhe em **qual
+      competição** (porte) inscrever cada tipo de atleta. Ver a seção "Calendário
+      de competições" abaixo e `CALENDARIO_DE_COMPETICOES.md`.
+
+## Calendário de competições
+
+Base criada em `competitionCategories.js` (9 categorias/tiers) — ver
+`CALENDARIO_DE_COMPETICOES.md`. Pendências:
+
+- [ ] **Popular o calendário com competições nas várias categorias.** Hoje só
+      existe **um** campeonato (`CNA-2026`, categoria **Nacional**). Faltam
+      competições nos demais portes (Regional, Estadual, Séries C/B/A, e as
+      internacionais), para o clube ter **onde escolher** inscrever cada atleta.
+- [ ] **Ranking: distribuição de pontos.** Cada categoria vale `rankingPoints`
+      (base do campeão); falta **repartir por posição** (1º, 2º, 3º...), definir
+      **onde os pontos se acumulam** (atleta/clube/país/temporada) e os **índices**
+      (marcas que classificam para categorias maiores).
+- [ ] **Pesos de etapa e final.** As etapas do campeonato (hoje 10, todas iguais)
+      poderão ter **pesos diferentes** e **valer pontos** para uma **final** na
+      **última etapa** (temporada acumulada, decidida no fim).
+- [ ] **Premiação (dinheiro) — referência para o sistema financeiro.** A
+      premiação por categoria **não está no código** (só referência). Usar esta
+      tabela quando o sistema financeiro existir:
+      Regional `$`, Estadual `$$`, Série C `$$$`, Série B `$$$$`, Série A `$$$$$`,
+      Nacional `$$$$$$$`; **Continental/Mundial/Olímpico a definir** (não
+      inventados). Liga-se a **Finanças** dos clubes (ver seção Clubes).
+- [ ] **Competições internacionais (multi-país).** Continental/Mundial/Olímpico
+      abrangem **vários** países; como representar isso (lista de países,
+      confederação, sede) depende de existir **mais de um país** (hoje só o Brasil).
+- [ ] **Casar clube/atleta ao porte certo.** O `prestige` da categoria (e o do
+      clube) deverá orientar **quem compete onde** (uso ainda não implementado).
 
 ## Atletas (regens)
 

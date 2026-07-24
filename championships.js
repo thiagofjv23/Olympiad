@@ -8,6 +8,7 @@
 //   - participants : número de participantes (0 inicialmente)
 //   - countryId    : referência ao país (ver countries.js)
 //   - sportId      : esporte disputado (ver sports.js) — todo campeonato tem um
+//   - categoryId   : categoria/porte no calendário (ver competitionCategories.js)
 //   - events       : eventos
 //   - modalities   : modalidades
 //   - competitors  : lista de participantes
@@ -44,6 +45,7 @@ const CHAMPIONSHIPS = {
     participants: 0,
     countryId: "BRA",
     sportId: "SPT-ATLETISMO", // esporte disputado (ver sports.js)
+    categoryId: "CAT-NACIONAL", // porte no calendário (ver competitionCategories.js)
     events: [],
     modalities: ["MOD-ATL-100M"], // provas disputadas (ver modalities.js)
     competitors: [],
@@ -55,6 +57,13 @@ const CHAMPIONSHIPS = {
 // Esporte disputado por um campeonato (objeto de sports.js) ou undefined.
 function getChampionshipSport(championship) {
   return getSport(championship.sportId);
+}
+
+// Categoria/porte de um campeonato (objeto de competitionCategories.js) ou
+// undefined. Dela o campeonato herda prestígio, pontos de ranking e — futuro —
+// premiação.
+function getChampionshipCategory(championship) {
+  return getCompetitionCategory(championship.categoryId);
 }
 
 // Compara duas datas por ano/mês/dia.

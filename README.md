@@ -29,9 +29,10 @@ A interface tem duas abas:
 ## Entidades (dados)
 
 - **`countries.js`** — entidade **Países**. Cada país tem `id`, `nome`, `população` e um rating de **Força Olímpica** (0–100). Já inclui o **Brasil** (`BRA`).
-- **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), **`esporte`** (`sportId`, referência a `sports.js`), `eventos`, `modalidades`, `competidores` e `etapas`. O `CNA-2026` está vinculado ao Atletismo.
+- **`championships.js`** — entidade **Campeonatos**. Cada campeonato tem `id` única, `nome`, `participantes`, `país` (referência a `countries.js`), **`esporte`** (`sportId`, referência a `sports.js`), **`categoria`** (`categoryId`, referência a `competitionCategories.js`), `eventos`, `modalidades`, `competidores` e `etapas`. O `CNA-2026` está vinculado ao Atletismo e à categoria **Nacional**.
   - Campeonato inicial: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil, 0 participantes.
   - **10 etapas**, sempre no **segundo sábado de cada mês**, começando no segundo sábado de janeiro/2026.
+- **`competitionCategories.js`** — entidade **Categorias de Competição**: os **níveis/tiers** do calendário (Regional → Olímpico), cada um com `level`, `scope` (subnacional/nacional/internacional), `prestígio` e `pontos de ranking`. Database **global** (serve todos os países); a competição aponta para a categoria via `categoryId`. A **premiação** (dinheiro) é só referência (sistema financeiro futuro). Desenho completo em **`CALENDARIO_DE_COMPETICOES.md`**.
 - **`athletes.js`** — entidade **Atletas** + gerador de "regens" (nome, país/COI, idade, Força, Potencial, Preparação Física, Cansaço e **esporte favorito**). Ao iniciar a simulação, gera 10 atletas (número de teste — ver `TODO.md`). Todo regen nasce com um esporte favorito (ver `sports.js`); neste início, todos com Atletismo. O **Cansaço** cai ao competir e **se recupera** nos dias de descanso (energia: 100 = descansado). O **Ritmo** (forma) começa baixo no início do ano, sobe competindo e cai parado (inicial/ganho/queda dependem da Preparação Física); ele **modifica a resolução de resultados** (redutor de forma somado ao da fadiga, sem remover Força/fadiga). É exibido na aba Atletas ao expandir o atleta.
 - **`clubs.js`** — entidade **Clubes**: database inicial com 10 clubes reais de tradição no atletismo (id, país, cidade-sede, presidente, ano de fundação, nível de infraestrutura, prestígio, finanças e rivais). Sem gerador e ainda sem tela; os clubes inscreverão atletas nas competições (mecânica futura — ver `TODO.md`).
 - **`contracts.js`** — entidade **Contratos**: o **elo Atleta ↔ Clube**. O vínculo se dá por contrato de duração anual (1, 2 ou 3 anos), estipulada no início; ao término, o clube pode renovar ou o contrato expira e o atleta vai para o **pool de agentes livres**. Situação (ativo/encerrado) derivada das datas. As telas de Clubes/Atletas já exibem o elo (atletas do clube / clube do atleta); no início a lista é povoada com contratos de **teste** (`seedTestContracts`), a serem substituídos pelo fluxo real. Regras em `PRINCIPIOS_CONTRATOS.md`.
@@ -41,7 +42,8 @@ A interface tem duas abas:
 - **`participation.js`** — **participação atleta ↔ etapa**: define quais atletas disputam cada etapa (por ora, regra de **teste**: cada clube inscreve todos os seus atletas em todas as etapas), **resolve e trava o resultado** de cada etapa realizada (via `resolveModality`) e aplica a **fadiga** aos participantes. A mecânica real de cadastro é prioridade média (ver `TODO.md`).
 - **`modalities.js`** — entidade **Modalidades**: variações de prática de um esporte (id, nome, esporte primário, forma de resolução, modelo de desempenho, popularidade geral e por país). Já inclui os **100 m rasos** do Atletismo, com o cálculo de tempo (Força − fadiga → tempo, tendo o recorde 9,58 s como piso). Sem tela ainda. Ver `TODO.md`.
 
-Consulte **`DOCUMENTACAO.md`** (controle do projeto) e **`TODO.md`** (pendências).
+Consulte **`DOCUMENTACAO.md`** (controle do projeto), **`TODO.md`** (pendências) e
+**`CALENDARIO_DE_COMPETICOES.md`** (desenho do calendário de competições).
 
 ## Como usar
 

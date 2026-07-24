@@ -29,6 +29,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
+| `competitionCategories.js` | **Entidade Categorias de Competição** — níveis/tiers do calendário. |
 | `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
@@ -37,6 +38,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `PRINCIPIOS_CIDADES.md` | Princípios de criação/geração de cidades.                          |
 | `DIARIO_DE_TRABALHO.md` | Registro do que foi implantado, por data (atualizar só ao fim do dia). |
 | `SUGESTOES_INICIO_DE_TRABALHO.md` | Pendências resumidas do dia anterior, da mais nova à mais antiga. |
+| `CALENDARIO_DE_COMPETICOES.md` | Desenho do calendário de competições (categorias/tiers) e roteiro. |
 
 ### Princípio de arquitetura
 
@@ -48,11 +50,12 @@ sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
-`modalities.js` → `championships.js` → `athletes.js` → `clubs.js` →
-`contracts.js` → `participation.js` → `script.js`. (`contracts.js` vem depois de
-`athletes.js`, `clubs.js` e `championships.js` porque referencia `getClub` e
-`toDayStart`; `participation.js` vem por último, pois usa atletas, clubes,
-contratos e etapas.)
+`modalities.js` → `competitionCategories.js` → `championships.js` →
+`athletes.js` → `clubs.js` → `contracts.js` → `participation.js` → `script.js`.
+(`competitionCategories.js` vem antes de `championships.js`, pois o campeonato
+referencia a categoria; `contracts.js` vem depois de `athletes.js`, `clubs.js` e
+`championships.js` porque referencia `getClub` e `toDayStart`; `participation.js`
+vem por último, pois usa atletas, clubes, contratos e etapas.)
 
 ---
 
@@ -83,6 +86,7 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `participants`| Número de participantes (inicia em `0`).               |
 | `countryId`   | Referência ao país em `countries.js`.                  |
 | `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
+| `categoryId`  | **Categoria/porte** no calendário (ver `competitionCategories.js`). |
 | `events`      | Eventos (lista).                                       |
 | `modalities`  | Modalidades (lista).                                   |
 | `competitors` | Participantes (lista).                                 |
@@ -90,13 +94,16 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 
 Campeonato cadastrado: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil,
 esporte **Atletismo** (`SPT-ATLETISMO`), modalidade **100 m rasos**
-(`MOD-ATL-100M`), 0 participantes, **10 etapas**. Todo novo campeonato deve
-informar o seu `sportId` (e a(s) modalidade(s) disputada(s)).
+(`MOD-ATL-100M`), categoria **Nacional** (`CAT-NACIONAL`), 0 participantes,
+**10 etapas**. Todo novo campeonato deve informar o seu `sportId`, a(s)
+modalidade(s) disputada(s) e a sua `categoryId`.
 
 Funções utilitárias:
 
 - `getChampionshipSport(championship)` — o esporte do campeonato (objeto de
   `sports.js`).
+- `getChampionshipCategory(championship)` — a categoria/porte do campeonato
+  (objeto de `competitionCategories.js`).
 - `secondSaturday(year, month)` — retorna a data do 2º sábado do mês.
 - `buildMonthlyStages(startYear, startMonth, count)` — gera N etapas, uma por
   mês, sempre no 2º sábado.
@@ -107,6 +114,50 @@ Funções utilitárias:
   data de referência: retorna `true` ao **chegar no dia** da etapa ou depois.
 - `championshipProgress(championship, referenceDate)` — `{ done, total }` com o
   número de etapas já realizadas em relação a uma data.
+
+### Categorias de Competição — `competitionCategories.js`
+
+Os **níveis (tiers)** do calendário de competições — a estrutura que organiza
+**todas** as competições, do menor ao maior porte. É uma database **global e
+independente de país** (as mesmas categorias valem para qualquer país); uma
+competição aponta para uma categoria via `categoryId` e dela herda o **porte**
+(prestígio), o **valor de ranking** e — no futuro — a **premiação**.
+
+Objeto `COMPETITION_CATEGORIES` (indexado por `id`), do nível 1 (menor) ao 9
+(maior):
+
+| Nível | Categoria   | Scope         | Prestígio | Ranking |
+| ----- | ----------- | ------------- | --------- | ------- |
+| 1     | Regional    | subnacional   | 20        | 20      |
+| 2     | Estadual    | subnacional   | 35        | 40      |
+| 3     | Série C     | nacional      | 45        | 60      |
+| 4     | Série B     | nacional      | 60        | 100     |
+| 5     | Série A     | nacional      | 75        | 160     |
+| 6     | Nacional    | nacional      | 95        | 300     |
+| 7     | Continental | internacional | 98        | 450     |
+| 8     | Mundial     | internacional | 99        | 700     |
+| 9     | Olímpico    | internacional | 100       | 1000    |
+
+Campos: `id`, `name`, `level` (1–9, ordena/compara portes), `scope` (alcance —
+ver abaixo), `prestige` (0–100, porte, para casar clubes/atletas ao nível certo —
+uso futuro) e `rankingPoints` (pontos de ranking que a categoria vale — base do
+campeão; distribuição por posição é futura).
+
+**Scope** (`COMPETITION_SCOPES`): `subnacional` (Regional/Estadual — recorte
+dentro de um país; região/estado ainda não existem como entidade), `nacional`
+(Série C/B/A e Nacional — de **um** país) e `internacional` (Continental/Mundial/
+Olímpico — de **vários** países). É o que permite o calendário **servir todos os
+países** sem duplicar as categorias.
+
+**Premiação (dinheiro):** de propósito **não há campo no código**. A tabela de
+valores (`$`… por categoria) é referência para o **sistema financeiro** futuro —
+registrada em `TODO.md` e em `CALENDARIO_DE_COMPETICOES.md`.
+
+Funções utilitárias: `getCompetitionCategory(id)`, `getAllCompetitionCategories()`
+(ordenadas por `level`), `getCategoriesByScope(scope)` e `getCategoryByLevel(level)`.
+
+O **desenho completo** do calendário (motivação, scope, ranking, premiação,
+etapas/final e roteiro) está em **`CALENDARIO_DE_COMPETICOES.md`**.
 
 ### Atletas — `athletes.js`
 
@@ -662,6 +713,32 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 30 — Calendário de competições (categorias/tiers)
+
+- Criada a entidade **Categorias de Competição** (`competitionCategories.js`):
+  **9 níveis** (Regional → Olímpico), cada um com `level`, `scope`, `prestige` e
+  `rankingPoints`. É a estrutura que organizará o **calendário** e permitirá ao
+  clube **escolher** em qual competição inscrever cada tipo de atleta (ritmo,
+  ranking, índices) — a **inscrição real** ainda é futura (ver `TODO.md`).
+- **Genérico para todos os países**: as categorias são uma database **global**;
+  o `scope` (subnacional/nacional/internacional) diz a quem cada competição
+  pertence. Adicionar países **não** recria o calendário.
+- **Campeonato ↔ categoria**: novo campo **`categoryId`** em `championships.js`;
+  o `CNA-2026` foi classificado como **Nacional** (`CAT-NACIONAL`). Helper
+  `getChampionshipCategory`.
+- **Premiação (dinheiro)** ficou **fora do código** de propósito — só referência
+  (`$`… por categoria) para o **sistema financeiro** futuro (`TODO.md`).
+- **Pesos de etapa e final** (etapas valendo pontos rumo a uma final na última
+  etapa) registrados no `TODO.md`.
+- Novo documento **`CALENDARIO_DE_COMPETICOES.md`** com o desenho detalhado
+  (motivação, categorias, scope, ranking, premiação, etapas/final e roteiro).
+- **Escopo**: só `competitionCategories.js` (novo), `championships.js`
+  (categoryId + helper), `index.html` (script) e a documentação. Nenhuma outra
+  entidade foi tocada.
+- **Verificado** (navegador headless): as 9 categorias carregam com
+  prestígio/ranking corretos, `getChampionshipCategory(CNA-2026)` = Nacional,
+  filtros por scope e por level corretos; sem erros de JS.
 
 ### Etapa 29 — Ritmo na UI de Atletas
 
