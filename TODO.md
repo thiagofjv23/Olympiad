@@ -33,6 +33,11 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Lógica de melhoria e decréscimo de Força/Potencial.** Ainda não existe.
       O `potential` já é o teto de crescimento da `strength`, mas a evolução
       (subir com treino/idade e cair depois do pico) ainda será criada.
+- [x] **Ritmo (forma) como modificador de resultados.** Criado o atributo `ritmo`
+      (0–100): inicia baixo no ano, sobe ao competir e cai parado (inicial/ganho/
+      queda dependem da Preparação Física); entra na Força efetiva como redutor de
+      forma somado ao da fadiga (`formPenaltyPerPoint`), sem remover Força/fadiga.
+      Reinicia na virada de ano. UI do atributo ainda pendente (ver Atletas — UI).
 - [x] **Cansaço: desgaste e recuperação.** Feito: o Cansaço **cai** ao competir
       (`applyStageFatigue`, por etapa) e **recupera** nos dias de descanso
       (`fatigueRecoveryForRestDay`/`applyRestDay`, por dia, rumo a 100). A
@@ -54,6 +59,9 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       (nome, idade, Força) expansível para os demais atributos.
 - [ ] **Barras/visual dos atributos** (Força, Potencial, Preparação, Cansaço) —
       hoje são apenas números.
+- [ ] **Exibir o Ritmo (forma) na UI de Atletas.** O atributo `ritmo` já existe e
+      afeta os resultados, mas **não é exibido** — aguardando instrução do usuário
+      para a mudança de tela relativa a ele.
 
 ## Clubes
 

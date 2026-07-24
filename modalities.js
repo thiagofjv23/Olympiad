@@ -37,6 +37,8 @@ const MODALITIES = {
       secondsPerStrengthPoint: 0.05,
       // Cada ponto de fadiga ACUMULADA reduz a Força efetiva (ver cálculo abaixo).
       fatiguePenaltyPerPoint: 0.3,
+      // Cada ponto de DÉFICIT DE FORMA (100 − ritmo) reduz a Força efetiva.
+      formPenaltyPerPoint: 0.15,
     },
     generalPopularity: 95,
     countryPopularity: null, // relação futura (ver TODO.md)
@@ -63,23 +65,38 @@ function getModalitiesBySport(sportId) {
 // -----------------------------------------------------------------------------
 // Modelo de desempenho
 //
-// Força efetiva = Força − redutor de fadiga.
+// Força efetiva = Força − redutor de fadiga − redutor de forma.
 //   - Fadiga acumulada = 100 − fatigue  (o stat `fatigue` começa em 100 = descansado;
-//     quanto mais baixo, mais cansado).
-//   - Redutor = fadiga acumulada × fatiguePenaltyPerPoint.
-//   - Ou seja: atleta descansado (fatigue 100) não perde nada; cansado perde força.
+//     quanto mais baixo, mais cansado). Redutor = fadiga acumulada × fatiguePenaltyPerPoint.
+//   - Déficit de forma = 100 − ritmo  (ritmo 100 = forma plena; quanto mais baixo,
+//     menos afiado). Redutor = déficit de forma × formPenaltyPerPoint.
+//   - Ou seja: descansado (fatigue 100) e em plena forma (ritmo 100) não perde nada;
+//     cansado E/OU fora de forma perde Força efetiva. Os dois redutores SOMAM — a
+//     fadiga (curto prazo) e o ritmo (forma de temporada) são independentes.
+//   - Sem `ritmo` definido, o déficit de forma é 0 (não penaliza) — retrocompatível.
 //
 // Tempo (100 m) = recordTime + (100 − Força efetiva) × secondsPerStrengthPoint.
 //   - Força efetiva 100 → recorde (9,58 s). Quanto menor a Força efetiva, mais
 //     lento (tempo maior). O tempo nunca fica abaixo do recorde.
 // -----------------------------------------------------------------------------
 
-// Força efetiva do atleta nesta modalidade (aplica o redutor de fadiga).
+// Força efetiva do atleta nesta modalidade (aplica os redutores de fadiga e forma).
 function effectiveStrengthForModality(athlete, modality) {
   const perf = modality.performance;
   const accumulatedFatigue = 100 - athlete.fatigue; // 0 = descansado
-  const reducer = accumulatedFatigue * perf.fatiguePenaltyPerPoint;
-  return clampModalityValue(athlete.strength - reducer, 1, 100);
+  const fatigueReducer = accumulatedFatigue * perf.fatiguePenaltyPerPoint;
+
+  // Ritmo/forma: 100 = forma plena. Ausente => sem penalidade (retrocompatível).
+  const ritmo = athlete.ritmo != null ? athlete.ritmo : 100;
+  const formDeficit = 100 - ritmo; // 0 = em plena forma
+  const formPenaltyPerPoint = perf.formPenaltyPerPoint != null ? perf.formPenaltyPerPoint : 0;
+  const formReducer = formDeficit * formPenaltyPerPoint;
+
+  return clampModalityValue(
+    athlete.strength - fatigueReducer - formReducer,
+    1,
+    100
+  );
 }
 
 // Resultado numérico do atleta na modalidade (aqui: o tempo dos 100 m).

@@ -328,6 +328,40 @@ Regras a seguir sempre, salvo instrução em contrário:
     quando as provas ficam próximas. Se quisermos fadiga mais persistente, basta
     reduzir a recuperação (constantes fáceis de ajustar).
 
+### Ritmo (forma)
+
+19aq. **Ritmo entra na resolução como um redutor de forma SOMADO ao da fadiga.**
+    Foi pedido para adicionar sem remover as variáveis anteriores. Modelei a Força
+    efetiva como `Força − redutor de fadiga − redutor de forma`, com
+    `redutor de forma = (100 − ritmo) × formPenaltyPerPoint`. Fica simétrico à
+    fadiga (`100 − fatigue`): 100 = ideal, sem penalidade. Força e fadiga
+    permanecem intactas; o ritmo é só um termo a mais.
+
+19ar. **Ganho por "fração do gap até 100"; queda por "fração do atual".** Interpretei
+    "porcentagem de aumento após a prova" como fechar uma fração do que falta para a
+    forma plena (ganho forte no começo, com retornos decrescentes — natural para
+    "entrar em forma"), e "porcentagem de queda após tempo parado" como perder uma
+    fração do ritmo atual (a forma esfria proporcionalmente). Ambos são mudanças
+    percentuais rumo a um limite (100 no ganho, 0 na queda).
+
+19as. **Os três parâmetros dependem da Preparação Física, com um tema único.**
+    Preparo alto → ritmo inicial maior, ganho maior por prova e queda menor no
+    descanso. Mesmo tema já usado na fadiga: *melhor preparo = melhor gestão de
+    forma/energia*. Idade NÃO entra no ritmo (foi pedido só o vínculo com o preparo).
+
+19at. **Reset de ritmo na virada de ano (temporada).** "Começam o início do ano com
+    ritmo baixo" — li como forma sazonal: a cada 1º de janeiro o ritmo volta ao piso
+    inicial e é reconstruído competindo. Fica isolado em `processDay` (dispara só na
+    virada de ano). **Se não for o desejado, é trivial remover** — me avise.
+
+19au. **`formPenaltyPerPoint = 0.15`.** Calibrado para que a diferença entre forma
+    zero e forma plena valha ~0,6–0,7 s nos 100 m (fora de forma no começo do ano →
+    afiado no auge). É constante de balanceamento, fácil de recalibrar.
+
+19av. **Sem UI do ritmo por ora (a pedido).** O atributo existe nos dados e já
+    afeta os resultados, mas não é exibido — a tela dele fica para quando o usuário
+    instruir.
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias

@@ -64,28 +64,38 @@ function processStage(championship, stage) {
 
   const participants = getStageParticipants(championship, stage);
   const modality = getStageModality(championship, stage);
-  // Resultado com a fadiga atual (acumulada das etapas anteriores, não desta).
+  // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos desta etapa).
   const results = modality ? resolveModality(participants, modality) : [];
   _stageResults.set(key, results);
-  // Depois de competir, os participantes se cansam por esta etapa.
+  // Depois de competir: os participantes se cansam (fadiga) e ganham ritmo (forma).
   applyStageFatigueToParticipants(participants);
+  applyRaceRitmoToParticipants(participants);
   return results;
 }
 
 // Processa UM dia da simulação:
-//   1) as etapas que ocorrem NESTE dia são resolvidas e desgastam seus
-//      participantes (via processStage);
-//   2) todos os demais atletas DESCANSAM (recuperam Cansaço) — quem competiu
-//      hoje não descansa hoje.
+//   0) na virada de ano (1º de janeiro), reinicia o RITMO de todos para o piso
+//      de temporada (forma baixa no início do ano);
+//   1) as etapas que ocorrem NESTE dia são resolvidas; seus participantes se
+//      cansam e GANHAM ritmo (via processStage);
+//   2) todos os demais atletas DESCANSAM: recuperam Cansaço e PERDEM ritmo (forma
+//      esfriando) — quem competiu hoje não descansa hoje.
 // Chamado dia a dia por `advanceDays`. O tempo só anda para frente.
 function processDay(date) {
+  // Virada de ano: nova temporada começa com ritmo baixo para todos.
+  if (date.getMonth() === 0 && date.getDate() === 1) {
+    for (const athlete of ATHLETES) resetSeasonRitmo(athlete);
+  }
+
   const competingIds = new Set();
   for (const { championship, stage } of getStagesOnDate(date)) {
     const results = processStage(championship, stage);
     for (const entry of results) competingIds.add(entry.id);
   }
   for (const athlete of ATHLETES) {
-    if (!competingIds.has(athlete.id)) applyRestDay(athlete);
+    if (competingIds.has(athlete.id)) continue; // competiu hoje: não descansa
+    applyRestDay(athlete); // recupera Cansaço
+    applyRestDayRitmo(athlete); // perde um pouco de ritmo (forma esfria)
   }
 }
 

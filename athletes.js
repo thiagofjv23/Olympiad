@@ -11,6 +11,10 @@
 //   - potential            : Potencial (0-100), teto de crescimento; nunca < Força
 //   - physicalPreparation  : Preparação Física (0-100)
 //   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
+//   - ritmo                : Ritmo/forma (0-100). Começa BAIXO no início do ano,
+//                            sobe ao competir e cai em dias parado. Modifica a
+//                            resolução de resultados. Inicial, ganho e queda
+//                            dependem da Preparação Física.
 //   - birthCityId          : cidade de nascimento (ver cities.js)
 //   - favoriteSportId      : esporte favorito (ver sports.js) — a ligação do
 //                            atleta com um esporte. Todo regen recebe um ao ser
@@ -213,6 +217,93 @@ function applyStageFatigueToParticipants(participants) {
   return participants;
 }
 
+// -----------------------------------------------------------------------------
+// Ritmo (forma / afiação de competição)
+//
+// O `ritmo` (0-100) mede a FORMA do atleta: quanto mais competindo, mais afiado
+// (marcas melhores); parado, a forma "esfria". Diferente da Força (que é o teto
+// de habilidade) e do Cansaço (energia de curto prazo), o ritmo é uma forma de
+// médio prazo, construída ao longo da temporada.
+//
+// Todos começam o ANO com ritmo BAIXO e evoluem competindo. Os TRÊS parâmetros
+// abaixo dependem da Preparação Física (atleta mais preparado entra em forma
+// mais fácil e a perde mais devagar):
+//   - ritmo INICIAL: base baixa + um acréscimo conforme o preparo.
+//   - GANHO por prova: fecha uma fração do que falta para a forma plena (100);
+//     mais preparo => fração maior (entra em forma mais rápido).
+//   - QUEDA por dia parado: perde uma fração do ritmo atual; mais preparo =>
+//     fração menor (mantém a forma por mais tempo).
+//
+// (O EFEITO do ritmo na resolução de resultados fica na modalidade — ver
+// modalities.js —, como um redutor de forma somado ao da fadiga, sem remover
+// nenhuma variável anterior.)
+// -----------------------------------------------------------------------------
+
+const RITMO_INITIAL_BASE = 5; // ritmo mínimo no início do ano (preparo 0)
+const RITMO_INITIAL_PREP_RANGE = 15; // + até isso conforme o preparo (=> 5..20)
+const RITMO_GAIN_PCT_MIN = 0.15; // ganho por prova: fração do gap até 100 (preparo 0)
+const RITMO_GAIN_PCT_MAX = 0.35; // ganho por prova (preparo 100)
+const RITMO_DROP_PCT_MIN = 0.005; // queda por dia parado: fração do ritmo (preparo 100)
+const RITMO_DROP_PCT_MAX = 0.02; // queda por dia parado (preparo 0)
+
+// Ritmo inicial (baixo), maior quanto melhor a Preparação Física.
+function initialRitmo(physicalPreparation) {
+  return clampNumber(
+    RITMO_INITIAL_BASE + (physicalPreparation / 100) * RITMO_INITIAL_PREP_RANGE,
+    0,
+    100
+  );
+}
+
+// Fração de GANHO de ritmo por prova (do gap até 100). Mais preparo => maior.
+function ritmoGainPctForRace(athlete) {
+  return (
+    RITMO_GAIN_PCT_MIN +
+    (athlete.physicalPreparation / 100) * (RITMO_GAIN_PCT_MAX - RITMO_GAIN_PCT_MIN)
+  );
+}
+
+// Fração de QUEDA de ritmo por dia parado (do ritmo atual). Mais preparo => menor.
+function ritmoDropPctForRestDay(athlete) {
+  return (
+    RITMO_DROP_PCT_MAX -
+    (athlete.physicalPreparation / 100) * (RITMO_DROP_PCT_MAX - RITMO_DROP_PCT_MIN)
+  );
+}
+
+// Ganha ritmo ao competir: fecha uma fração do que falta para a forma plena (100).
+function applyRaceRitmo(athlete) {
+  const gainPct = ritmoGainPctForRace(athlete);
+  athlete.ritmo = clampNumber(
+    athlete.ritmo + (100 - athlete.ritmo) * gainPct,
+    0,
+    100
+  );
+  return athlete.ritmo;
+}
+
+// Perde ritmo num dia parado: uma fração do ritmo atual (forma esfriando).
+function applyRestDayRitmo(athlete) {
+  const dropPct = ritmoDropPctForRestDay(athlete);
+  athlete.ritmo = clampNumber(athlete.ritmo - athlete.ritmo * dropPct, 0, 100);
+  return athlete.ritmo;
+}
+
+// Reinicia o ritmo para o piso de início de temporada (novo ano): forma baixa,
+// conforme o preparo. Aplicado a cada virada de ano (ver participation.js).
+function resetSeasonRitmo(athlete) {
+  athlete.ritmo = initialRitmo(athlete.physicalPreparation);
+  return athlete.ritmo;
+}
+
+// Aplica o ganho de ritmo (por prova) a uma LISTA de participantes.
+function applyRaceRitmoToParticipants(participants) {
+  for (const athlete of participants) {
+    applyRaceRitmo(athlete);
+  }
+  return participants;
+}
+
 // --- criação e geração --------------------------------------------------------
 
 // Sorteia a cidade de nascimento entre as cidades do país, ponderando pelo
@@ -253,6 +344,7 @@ function createAthlete(index, country) {
     cityInfra,
     age
   );
+  const physicalPreparation = generatePhysicalPreparation();
 
   return {
     id: index,
@@ -263,8 +355,9 @@ function createAthlete(index, country) {
     age,
     strength,
     potential,
-    physicalPreparation: generatePhysicalPreparation(),
+    physicalPreparation,
     fatigue: 100, // Cansaço inicia sempre em 100%
+    ritmo: initialRitmo(physicalPreparation), // forma baixa no início do ano
   };
 }
 

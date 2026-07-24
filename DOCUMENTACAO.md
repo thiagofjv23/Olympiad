@@ -122,6 +122,7 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
+| `ritmo`               | **Ritmo/forma** (0–100). Começa **baixo** no início do ano, **sobe** ao competir e **cai** parado. **Modifica a resolução de resultados** (redutor de forma). Inicial/ganho/queda dependem da Preparação Física. |
 | `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
 | `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — a ligação do atleta com um esporte. Todo regen recebe um ao ser gerado; neste início, **todos têm Atletismo** (`SPT-ATLETISMO`). |
 
@@ -162,6 +163,22 @@ Regras de geração:
     acúmulo diário não perder precisão. O cansaço é sempre **individual**.
   - A orquestração (quem compete × quem descansa a cada dia) fica em
     `participation.js` (`processDay`).
+- **Ritmo/forma** (`ritmo`, 0–100): forma de **médio prazo** (temporada), separada
+  da Força (teto de habilidade) e do Cansaço (energia de curto prazo). Começa
+  **baixo** no início do ano e sobe competindo. Os **três** parâmetros dependem da
+  **Preparação Física** (constantes em `athletes.js`):
+  - **Inicial** (`initialRitmo`): base baixa (5) + até +15 pelo preparo (→ 5–20).
+  - **Ganho por prova** (`applyRaceRitmo`): fecha uma **fração do que falta para
+    100** (`ritmoGainPctForRace`, 15–35% conforme o preparo — mais preparo entra
+    em forma mais rápido).
+  - **Queda por dia parado** (`applyRestDayRitmo`): perde uma **fração do ritmo
+    atual** (`ritmoDropPctForRestDay`, 2%–0,5% conforme o preparo — mais preparo
+    mantém a forma por mais tempo).
+  - **Reset de temporada** (`resetSeasonRitmo`): na virada de ano (1º/jan) o ritmo
+    de todos volta ao piso inicial. Orquestrado em `participation.js`
+    (`processDay`): quem compete ganha ritmo; quem descansa perde.
+  - **Efeito na resolução**: ver a modalidade (redutor de forma somado ao da
+    fadiga) — abaixo, e sem remover Força/fadiga.
 
 Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
 substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
@@ -276,10 +293,12 @@ Funções:
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
   (1) **resolve o resultado** com a fadiga atual dos participantes (via
   `resolveModality`) e o **trava**; (2) aplica a fadiga da etapa aos participantes.
-- `processDay(date)` — processa **um dia**: resolve as etapas que ocorrem nesse
-  dia (desgastando os participantes) e faz **todos os demais atletas descansarem**
-  (`applyRestDay`, recuperação). Quem competiu no dia não descansa nesse dia.
-  Chamado **dia a dia** por `advanceDays`.
+- `processDay(date)` — processa **um dia**: (0) na virada de ano reinicia o
+  **ritmo** de todos (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
+  participantes se **cansam** e **ganham ritmo**; (2) os demais **descansam**
+  (recuperam Cansaço com `applyRestDay` e **perdem ritmo** com `applyRestDayRitmo`).
+  Quem competiu no dia não descansa nesse dia. Chamado **dia a dia** por
+  `advanceDays`.
 - `getStageResult(championship, stage)` — o resultado travado da etapa
   (`[{ id, result, position }]`) ou `null` se ainda não realizada.
   `resetParticipation()` zera os resultados processados.
@@ -379,9 +398,16 @@ Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
 **Modalidade cadastrada: 100 m rasos** (`MOD-ATL-100M`, do Atletismo). Resolução:
 métrica tempo, **menor vence**, resultado único, 2 casas. Modelo de desempenho:
 
-- **Força efetiva** = `Força − (100 − fatigue) × fatiguePenaltyPerPoint`.
-  O stat `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga
-  acumulada**. Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
+- **Força efetiva** = `Força − redutor de fadiga − redutor de forma`.
+  - **Redutor de fadiga** = `(100 − fatigue) × fatiguePenaltyPerPoint`. O stat
+    `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga acumulada**.
+    Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
+  - **Redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint`. `ritmo` 100 =
+    forma plena (sem penalidade); `100 − ritmo` é o **déficit de forma**. Fora de
+    forma perde Força efetiva. (`formPenaltyPerPoint = 0.15`.) **Os dois redutores
+    somam** e são independentes (fadiga = curto prazo; ritmo = forma de temporada).
+    Sem `ritmo`, o déficit é 0 (retrocompatível). **Força e fadiga permanecem** —
+    o ritmo apenas se soma.
 - **Tempo** = `recordTime + (100 − Força efetiva) × secondsPerStrengthPoint`, com
   `recordTime = 9.58` (recorde mundial, o **piso** — ninguém corre abaixo) e
   `secondsPerStrengthPoint = 0.05`. Força efetiva 100 → 9,58 s; quanto menor,
@@ -636,6 +662,27 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 28 — Atributo Ritmo (forma) e seu efeito nos resultados
+
+- Novo atributo **`ritmo`** (0–100) no atleta: **forma/afiação de temporada**.
+  Começa **baixo** no início do ano, **sobe** ao competir e **cai** parado.
+- **Três parâmetros dependem da Preparação Física** (constantes em `athletes.js`):
+  inicial (`initialRitmo`, 5–20), ganho por prova (`ritmoGainPctForRace`, 15–35%
+  do gap até 100) e queda por dia parado (`ritmoDropPctForRestDay`, 2%–0,5% do
+  ritmo). Mais preparo → entra em forma mais fácil e a perde mais devagar.
+- **Efeito na resolução** (`modalities.js`): a Força efetiva passou a descontar
+  também um **redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint` (0,15),
+  **somado** ao redutor de fadiga. **Nenhuma variável anterior foi removida** —
+  Força e fadiga continuam; o ritmo apenas se soma.
+- **Ciclo** (`participation.js`, `processDay`): quem compete ganha ritmo; quem
+  descansa perde; na virada de ano o ritmo reinicia (nova temporada).
+- **Ainda SEM UI** deste atributo — a mudança de tela ficou para quando o usuário
+  instruir (a resolução/resultados já refletem o ritmo, mas o valor não é exibido).
+- **Verificado** (navegador headless): ritmo inicial baixo e proporcional ao
+  preparo (5–20); fora de forma corre mais lento (11,74 s vs 11,13 s em forma
+  plena); sobe ao competir (18→44) e cai parado (44→41); reinicia na virada de ano
+  (80→18); Força e fadiga seguem na conta; sem erros de JS.
 
 ### Etapa 27 — Cansaço com recuperação em dias de descanso
 
