@@ -6,31 +6,36 @@ cada item, ver `TODO.md`.
 
 ---
 
-## A partir de 24/07/2026 (pendências deixadas em 23/07/2026)
+## A partir de 25/07/2026 (pendências deixadas em 24/07/2026)
 
-1. **Fadiga não altera os tempos na prática.** Todos os atletas estão com
-   `fatigue = 100`, então o redutor de fadiga não muda os tempos dos 100 m ainda.
-2. **Participação atleta ↔ etapa (via clube)** e **aplicar a fadiga** após cada
-   etapa disputada.
-3. **UI de resultados** (mostrar os tempos/classificação de uma etapa) e **UI de
-   modalidades**.
-4. **Modelos de desempenho para outras métricas** (distância, altura, pontos) —
-   hoje só existe o de tempo (100 m).
-5. **Mais modalidades** do Atletismo (além dos 100 m).
-6. **Popularidade por país** das modalidades (relação a construir).
-7. **Extensões da engine** (implantar uma por vez): desempate → pontos → rodadas/
+1. **Contratos de teste → fluxo real de contratação.** `seedTestContracts` é
+   temporário: definir **quem assina quem** (regras ligadas a prestígio/finanças)
+   e a **decisão de renovar/deixar expirar** de cada clube.
+2. **[Prioridade média] Mecânica real de cadastro de atletas em campeonatos.**
+   Substituir a regra de teste (cada clube inscreve todos os contratados em todas
+   as etapas) por seleção real: quem o clube inscreve, vagas, critérios, por etapa.
+3. **Modalidade por etapa** (hoje todas as etapas rodam a mesma prova), **mais
+   modalidades** do Atletismo e **UI de modalidades**.
+4. **Modelos de desempenho por métrica** (distância, altura, pontos) — hoje só o
+   de tempo (100 m).
+5. **Extensões da engine** (uma por vez): desempate → pontos → rodadas/
    qualificação → variância/aleatoriedade.
-8. **Vincular campeonatos/etapas a um esporte/modalidade** (`sportId`).
-9. **Expandir/revisar** as databases (esportes, clubes, cidades) e a UI de esportes.
-10. **Organizador/ordenador** nas telas de Clubes e Atletas (por prestígio, local,
-    etc.).
-11. **[Prioridade alta] Usar o Prestígio dos clubes** em Finanças, contratações e
-    ordenamento de clubes.
-12. **Inscrição de atletas via clube** nas competições.
-13. **Sistema de evolução de atletas** (melhoria/decréscimo de Força/Potencial;
-    influência da infraestrutura do clube).
-14. **Campos de clube ainda sem uso**: presidente, finanças, rivais.
-15. **Barras visuais** dos atributos de atletas/clubes (hoje são só números).
+6. **Evolução de atributos**: melhoria/decréscimo de Força/Potencial (treino,
+   idade, pico) e influência da infraestrutura do clube; possíveis ajustes de Ritmo.
+7. **Barras/visual dos atributos** de atletas (Força, Potencial, Preparação,
+   Cansaço, **Ritmo**) — hoje são só números.
+8. **[Prioridade alta] Usar o Prestígio dos clubes** em Finanças, contratações e
+   ordenamento de clubes.
+9. **Organizador/ordenador** nas telas de Clubes e Atletas (por prestígio, local,
+   idade, força, ritmo, etc.).
+10. **Esportes**: como cada esporte **pondera os atributos** na simulação; **UI de
+    esportes**; expandir/revisar a database.
+11. **Cidades**: **UI**; gerador (calcular infra por força olímpica + tamanho);
+    **cidades nas etapas** (cada etapa numa cidade-sede).
+12. **Outros países** e atletas/clubes de outros países (só existe o Brasil).
+13. **Campos de clube ainda sem uso**: presidente, finanças, rivais.
+14. **Popularidade por país** das modalidades (relação a construir).
+15. **Variar o esporte favorito** dos regens (hoje todos Atletismo) e estender a
+    ligação a **modalidades**.
 16. **Números de teste a rever depois**: 10 atletas por simulação, faixa de idade
     18–35, 10 clubes e 10 cidades por país.
-17. **Cidades de outros países** e atletas de outros países (só existe o Brasil).

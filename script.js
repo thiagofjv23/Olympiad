@@ -471,6 +471,7 @@ function renderAthletes(countryId, highlightAthleteId) {
             <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
             <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
             <li><span>Cansaço</span><strong>${Math.round(athlete.fatigue)}%</strong></li>
+            <li><span>Ritmo</span><strong>${Math.round(athlete.ritmo)}/100</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
             <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
             <li><span>Clube atual</span><strong>${clubName}</strong></li>

@@ -59,9 +59,8 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       (nome, idade, Força) expansível para os demais atributos.
 - [ ] **Barras/visual dos atributos** (Força, Potencial, Preparação, Cansaço) —
       hoje são apenas números.
-- [ ] **Exibir o Ritmo (forma) na UI de Atletas.** O atributo `ritmo` já existe e
-      afeta os resultados, mas **não é exibido** — aguardando instrução do usuário
-      para a mudança de tela relativa a ele.
+- [x] **Exibir o Ritmo (forma) na UI de Atletas.** Feito: linha "Ritmo N/100" ao
+      expandir o atleta.
 
 ## Clubes
 

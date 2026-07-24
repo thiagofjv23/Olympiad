@@ -358,9 +358,9 @@ Regras a seguir sempre, salvo instrução em contrário:
     zero e forma plena valha ~0,6–0,7 s nos 100 m (fora de forma no começo do ano →
     afiado no auge). É constante de balanceamento, fácil de recalibrar.
 
-19av. **Sem UI do ritmo por ora (a pedido).** O atributo existe nos dados e já
-    afeta os resultados, mas não é exibido — a tela dele fica para quando o usuário
-    instruir.
+19av. **Ritmo exibido ao expandir o atleta (aba Atletas).** Primeiro só a mecânica
+    (a pedido); depois, quando o usuário instruiu, adicionei a linha "Ritmo N/100"
+    ao lado dos demais atributos — arredondado, no mesmo padrão do Cansaço.
 
 ### Engine de resultados
 

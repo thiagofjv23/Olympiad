@@ -663,6 +663,13 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 29 — Ritmo na UI de Atletas
+
+- O atributo **`ritmo`** passou a aparecer ao expandir o atleta (aba Atletas),
+  como a linha **"Ritmo N/100"** (arredondado), junto de Força, Cansaço, etc.
+- Única mudança foi em `script.js` (`renderAthletes`); a mecânica do ritmo já
+  existia. **Verificado** em navegador headless (linha presente, sem erros).
+
 ### Etapa 28 — Atributo Ritmo (forma) e seu efeito nos resultados
 
 - Novo atributo **`ritmo`** (0–100) no atleta: **forma/afiação de temporada**.
@@ -677,12 +684,12 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   Força e fadiga continuam; o ritmo apenas se soma.
 - **Ciclo** (`participation.js`, `processDay`): quem compete ganha ritmo; quem
   descansa perde; na virada de ano o ritmo reinicia (nova temporada).
-- **Ainda SEM UI** deste atributo — a mudança de tela ficou para quando o usuário
-  instruir (a resolução/resultados já refletem o ritmo, mas o valor não é exibido).
+- **UI**: o Ritmo é exibido na aba **Atletas**, ao expandir o atleta (linha
+  **"Ritmo N/100"**, arredondado), ao lado dos demais atributos (Etapa 29).
 - **Verificado** (navegador headless): ritmo inicial baixo e proporcional ao
   preparo (5–20); fora de forma corre mais lento (11,74 s vs 11,13 s em forma
   plena); sobe ao competir (18→44) e cai parado (44→41); reinicia na virada de ano
-  (80→18); Força e fadiga seguem na conta; sem erros de JS.
+  (80→18); Força e fadiga seguem na conta; a UI exibe o valor; sem erros de JS.
 
 ### Etapa 27 — Cansaço com recuperação em dias de descanso
 
