@@ -49,10 +49,24 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 
 ## Clubes
 
-- [ ] **Inscrição de atletas via clube.** Os clubes serão responsáveis por
-      inscrever atletas nas competições — um atleta só entra numa competição
-      através de um clube. A mecânica de inscrição (vínculo atleta ↔ clube ↔
-      etapa) ainda não existe.
+- [x] **Elo atleta ↔ clube (contratos).** Criado `contracts.js`: o vínculo se dá
+      por contrato de duração anual (1/2/3), com assinatura (`signContract`, só
+      agente livre), renovação pelo clube (`renewContract`) e expiração →
+      **pool de agentes livres**. Situação derivada das datas. **Só a estrutura,
+      sem UI.** Ver `PRINCIPIOS_CONTRATOS.md`.
+- [ ] **UI de contratos (próximo passo).** Mostrar ao jogador os vínculos: clube
+      atual do atleta, duração/término do contrato, agentes livres e o elenco de
+      cada clube. Estrutura já pronta em `contracts.js`.
+- [ ] **Assinaturas iniciais / quem assina quem.** Hoje `CONTRACTS` começa vazia
+      (nenhum vínculo inventado). Definir como os clubes montam elenco no início e
+      ao longo do tempo (regras de contratação — provavelmente ligadas a prestígio
+      e finanças).
+- [ ] **Decisão de renovar (lógica do clube).** `renewContract` existe, mas
+      **quando/por que** um clube renova (ou deixa expirar) ainda não foi definido.
+- [ ] **Inscrição de atletas via clube nas etapas.** Com o elo pronto, um atleta
+      só disputa uma etapa através do seu clube: falta ligar **contrato ativo →
+      participação na etapa** (e então resolver o resultado e aplicar a fadiga aos
+      participantes via `applyStageFatigueToParticipants`).
 - [ ] **Presidente.** Campo `president` já existe na entidade, mas ainda **não é
       utilizado**.
 - [ ] **Finanças.** Campo `finances` já existe na entidade, mas ainda **não é

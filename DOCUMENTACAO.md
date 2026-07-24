@@ -24,6 +24,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `championships.js`  | **Entidade Campeonatos** (dados) + cálculo das etapas.                  |
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
+| `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
@@ -46,7 +47,9 @@ sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
-`modalities.js` → `championships.js` → `athletes.js` → `clubs.js` → `script.js`.
+`modalities.js` → `championships.js` → `athletes.js` → `clubs.js` →
+`contracts.js` → `script.js`. (`contracts.js` vem depois de `athletes.js`,
+`clubs.js` e `championships.js` porque referencia `getClub` e `toDayStart`.)
 
 ---
 
@@ -177,6 +180,56 @@ Conjunto inicial (10 clubes, todos do Brasil — único país existente): Pinhei
 Sogipa, Grêmio Náutico União, Minas Tênis Clube, Flamengo, Vasco da Gama,
 Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto de
 **teste**, a ser revisado e ampliado.
+
+### Contratos — `contracts.js`
+
+O **elo entre Atletas e Clubes**. Um atleta se vincula a um clube por um
+**contrato** com duração estipulada no início, sempre **anual**: **1, 2 ou 3
+anos**. Ao término, o clube pode **renovar** (novo termo) ou o contrato **expira**
+e o atleta volta ao **pool de agentes livres**. Diferente de clubes/cidades, os
+contratos são **criados durante a simulação** (lista viva `CONTRACTS`, começa
+vazia — nenhum vínculo é inventado). Ver `PRINCIPIOS_CONTRATOS.md`.
+
+| Campo           | Descrição                                                        |
+| --------------- | ---------------------------------------------------------------- |
+| `id`            | Identificador único (`CTR-1`, `CTR-2`, ...).                     |
+| `athleteId`     | Atleta vinculado (ver `athletes.js`).                            |
+| `clubId`        | Clube contratante (ver `clubs.js`).                              |
+| `startDate`     | Data de início do vínculo.                                       |
+| `durationYears` | Duração em anos (**1, 2 ou 3**) — estipulada no início.          |
+| `endDate`       | Data de término (`startDate` + `durationYears`), **derivada**.   |
+| `renewalOf`     | Id do contrato anterior quando é uma renovação (senão `null`).   |
+
+**Status derivado das datas** (como `isStageDone`): não há campo de status. Um
+contrato está **ativo** no intervalo `[startDate, endDate)` — vale do dia de
+início (inclusive) até a **véspera** do término; no dia do término já está
+encerrado. O vínculo atual de um atleta é simplesmente o seu contrato ativo
+naquela data. O clube do atleta é **derivado** do contrato (não é guardado no
+atleta), evitando duplicar o elo em dois lugares.
+
+Funções:
+
+- `signContract(athleteId, clubId, startDate, durationYears)` — assina um novo
+  contrato. Só assina **agente livre** (erro se já houver contrato ativo) e
+  valida a duração (1/2/3). Retorna o contrato.
+- `renewContract(contract, durationYears)` — **renovação pelo clube**: cria um
+  novo termo do mesmo atleta e clube, começando **quando o atual termina** (sem
+  lacuna nem sobreposição); grava `renewalOf`. O contrato anterior fica no
+  histórico.
+- `isContractActive(contract, ref)` / `isContractEnded(contract, ref)` — situação
+  na data de referência (comparação por dia, dinâmica).
+- `getActiveContractForAthlete(athleteId, ref)` — o vínculo atual do atleta (ou
+  `null`).
+- `getAthleteClub(athleteId, ref)` — o clube atual do atleta (derivado) ou `null`.
+- `getContractsByClub(clubId, ref?)` — sem `ref`: histórico do clube; com `ref`:
+  elenco **ativo** naquela data.
+- `isFreeAgent(athleteId, ref)` e `getFreeAgents(athletes, ref)` — pool de
+  **agentes livres** (sem contrato ativo).
+- `isValidContractDuration(years)`, `contractEndDate(startDate, years)`,
+  `getContract(id)`, `getAllContracts()`, `resetContracts()`.
+
+**Sem UI ainda** — apenas a estrutura/mecânica. A tela que mostra os vínculos ao
+jogador é o próximo passo (ver `TODO.md`).
 
 ### Cidades — `cities.js`
 
@@ -524,6 +577,27 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 22 — Contratos: o elo Atleta ↔ Clube (estrutura)
+
+- Criado `contracts.js` com a entidade **Contrato**, que **liga atletas a clubes**.
+  Um atleta se vincula a um clube por um contrato de duração **anual** (1, 2 ou 3
+  anos), estipulada no início.
+- **Ciclo de vida**: `signContract` assina (só **agente livre**, valida a
+  duração); ao término o clube pode **renovar** (`renewContract`, novo termo
+  começando quando o atual acaba) ou o contrato **expira** e o atleta volta ao
+  **pool de agentes livres** (`getFreeAgents`/`isFreeAgent`).
+- **Status derivado das datas** (padrão do projeto, como `isStageDone`):
+  `isContractActive`/`isContractEnded` comparam por dia; não há campo de status.
+- **Desacoplado**: o clube de um atleta é derivado do contrato ativo
+  (`getAthleteClub`) — **não** foi adicionado campo ao atleta nem ao clube; só o
+  módulo novo e o `<script>` no `index.html`. Nenhuma estrutura não relacionada
+  foi tocada, e a lista `CONTRACTS` **começa vazia** (sem vínculos inventados).
+- **Sem UI** — apenas a estrutura/mecânica; a tela é o próximo passo (`TODO.md`).
+- **Verificado** (Node + navegador headless): assinar → ativo (clube derivado) →
+  no dia do término encerra e o atleta fica livre; duração inválida e assinatura
+  dupla barradas; renovação cria novo termo (`renewalOf`) sem lacuna; histórico
+  vs. elenco ativo do clube; pool de agentes livres correto; página sem erros.
 
 ### Etapa 21 — Aplicação individual do Cansaço por etapa
 

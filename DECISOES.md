@@ -185,6 +185,36 @@ Regras a seguir sempre, salvo instrução em contrário:
     aproximação de balanceamento, fácil de recalibrar. Anos e origens seguem fatos
     razoavelmente estabelecidos da codificação moderna de cada esporte.
 
+### Contratos (elo Atleta ↔ Clube)
+
+19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em
+    vez de pôr um campo `clubId` no atleta (ou uma lista de atletas no clube),
+    modelei o vínculo como uma entidade Contrato separada. O clube atual do atleta
+    é **derivado** do contrato ativo (`getAthleteClub`). Motivo: um mesmo elo em
+    dois lugares tende a divergir; e a diretriz era não mexer em estruturas não
+    relacionadas — assim Atleta e Clube ficam intocados.
+
+19t. **Situação (ativo/encerrado) derivada das datas, sem campo de status.**
+    Segui o mesmo princípio de `isStageDone`: comparo as datas do próprio contrato
+    com a data de referência (por dia). Evita um status persistente que possa
+    divergir das datas. Intervalo ativo `[startDate, endDate)`: no dia do término
+    já conta como encerrado.
+
+19u. **Renovação = novo termo começando no fim do anterior (via `signContract`).**
+    Interpretei "após o término, o mesmo pode ser renovado" preservando o
+    histórico: `renewContract` cria um novo contrato começando no `endDate` do
+    atual (sem lacuna nem sobreposição), apontando para o anterior com `renewalOf`.
+    Reaproveita `signContract`, então a mesma regra de "um vínculo por vez" vale.
+
+19v. **`CONTRACTS` começa vazia (nenhum contrato inventado).** Pela diretriz de
+    não criar dados não solicitados, não gerei vínculos iniciais atleta→clube.
+    O módulo oferece as operações; popular quem assina quem é passo futuro
+    (registrado no `TODO.md`).
+
+19w. **Ids de contrato sequenciais (`CTR-1`, `CTR-2`, ...).** Como contratos são
+    criados em runtime (não uma database à mão), usei um contador com prefixo, no
+    estilo dos demais ids legíveis do projeto.
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias
