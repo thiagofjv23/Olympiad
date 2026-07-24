@@ -839,17 +839,26 @@ function renderMarksRanking(modalityId) {
         <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Data</th><th>Marca</th></tr>
       </thead>
       <tbody>${rows}</tbody>
-    </table>
-    <div id="mark-detail" class="mark-detail" aria-live="polite"></div>`;
+    </table>`;
 
+  // Ao clicar na data, mostra o detalhe (data + campeonato + etapa) numa linha
+  // logo ABAIXO da própria marca — sempre visível onde o jogador clicou. Clicar
+  // de novo na mesma data fecha o detalhe.
   rankingContent.querySelectorAll(".mark-date").forEach((button) => {
     button.addEventListener("click", () => {
+      const row = button.closest("tr");
+      const tbody = row.parentNode;
+      const existing = tbody.querySelector(".mark-detail-row");
+      const wasSameRow = existing && existing.previousElementSibling === row;
+      if (existing) existing.remove();
+      if (wasSameRow) return; // clicou de novo na mesma data: fecha
+
       const champ = CHAMPIONSHIPS[button.dataset.champ];
       const champName = champ ? champ.name : button.dataset.champ;
-      const detail = document.getElementById("mark-detail");
-      if (detail) {
-        detail.textContent = `Marca alcançada em ${button.dataset.date} — ${champName}, Etapa ${button.dataset.stage}.`;
-      }
+      const detailRow = document.createElement("tr");
+      detailRow.className = "mark-detail-row";
+      detailRow.innerHTML = `<td colspan="5">Marca alcançada em <strong>${button.dataset.date}</strong> — ${champName}, Etapa ${button.dataset.stage}.</td>`;
+      row.after(detailRow);
     });
   });
 }

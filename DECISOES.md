@@ -484,8 +484,9 @@ Regras a seguir sempre, salvo instrução em contrário:
 19bz. **UI: escolha do ranking ao abrir a aba.** A pedido, ao abrir Rankings só
     aparece o seletor (Pontos/Marcas); o ranking só é desenhado após a escolha.
     `renderRanking` virou dispatcher. A data da marca é um link que revela
-    "data — campeonato, etapa" num detalhe abaixo da tabela (padrão do "Ver" das
-    etapas).
+    "data — campeonato, etapa" numa **linha logo abaixo da própria marca** (assim
+    o detalhe fica sempre visível onde o jogador clicou, mesmo com a tabela longa);
+    clicar de novo fecha.
 
 19ca. **Modalidade exibida fixa nos 100 m por ora.** Só existe uma modalidade;
     `MARKS_DISPLAY_MODALITY_ID` aponta para ela. Um seletor de modalidade fica para

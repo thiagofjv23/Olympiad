@@ -407,13 +407,14 @@ button.day:not(.day--current):hover {
   text-align: right;
 }
 
-.mark-detail:not(:empty) {
-  margin-top: 12px;
-  padding: 10px 12px;
+.marks-table .mark-detail-row td {
   background: var(--surface-2, rgba(127, 127, 127, 0.12));
-  border-radius: var(--radius);
   font-size: 0.85rem;
+  font-weight: 400;
   color: var(--text);
+  text-align: left;
+  width: auto;
+  padding: 10px 12px;
 }
 
 .championships__select-label,
