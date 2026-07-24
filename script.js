@@ -437,6 +437,19 @@ function populateAthleteCountrySelect() {
 }
 
 // Lista os atletas de um país. Cada atleta mostra nome, idade e força;
+// Texto de localização de uma cidade, mostrando a hierarquia geográfica:
+// "Cidade — SIGLA · Região" (com o que estiver disponível). Ex.:
+// "São Paulo — SP · Sudeste". Ver a hierarquia país → região → estado → cidade.
+function formatCityLocation(city) {
+  if (!city) return "—";
+  const state = getCityState(city);
+  const region = getCityRegion(city);
+  const parts = [];
+  if (state) parts.push(state.abbreviation);
+  if (region) parts.push(region.name);
+  return parts.length ? `${city.name} — ${parts.join(" · ")}` : city.name;
+}
+
 // ao clicar, expande para os demais atributos (inclui o clube atual).
 // Se `highlightAthleteId` for informado, o atleta correspondente já vem aberto
 // e a visualização rola até ele (usado ao vir da tela de Clubes).
@@ -452,7 +465,7 @@ function renderAthletes(countryId, highlightAthleteId) {
   athleteList.innerHTML = list
     .map((athlete) => {
       const birthCity = getCity(athlete.birthCityId);
-      const birthPlace = birthCity ? birthCity.name : "—";
+      const birthPlace = formatCityLocation(birthCity);
       const favoriteSport = getAthleteFavoriteSport(athlete);
       const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
       // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
@@ -529,6 +542,11 @@ function renderClubs(countryId) {
       const ioc = country ? country.iocCode : club.countryId;
       const city = getCity(club.cityId);
       const cityName = city ? city.name : "—";
+      const state = getCityState(city);
+      const region = getCityRegion(city);
+      const stateName = state ? `${state.name} (${state.abbreviation})` : "—";
+      const regionName = region ? region.name : "—";
+      const citySummary = state ? `${cityName} (${state.abbreviation})` : cityName;
       const president = club.president || "—";
       const finances = club.finances != null ? club.finances : "—";
       const rivals = club.rivals.length > 0 ? club.rivals.join(", ") : "—";
@@ -536,12 +554,14 @@ function renderClubs(countryId) {
         <details class="club">
           <summary class="club__summary">
             <span class="club__name">${club.name}</span>
-            <span class="club__brief">${cityName}, ${ioc} · Prestígio ${club.prestige}</span>
+            <span class="club__brief">${citySummary}, ${ioc} · Prestígio ${club.prestige}</span>
           </summary>
           <ul class="club__stats">
             <li><span>ID</span><strong>${club.id}</strong></li>
             <li><span>País</span><strong>${countryName}</strong></li>
             <li><span>Cidade</span><strong>${cityName}</strong></li>
+            <li><span>Estado</span><strong>${stateName}</strong></li>
+            <li><span>Região</span><strong>${regionName}</strong></li>
             <li><span>Prestígio</span><strong>${club.prestige}/100</strong></li>
             <li><span>Ano de fundação</span><strong>${club.foundationYear}</strong></li>
             <li><span>Infraestrutura</span><strong>${club.infrastructureLevel}/100</strong></li>

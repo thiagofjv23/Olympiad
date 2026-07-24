@@ -34,8 +34,9 @@ cidade ganhou `stateId`). Pendências:
       houver mais cidades/uso (mesmo espírito das "10 cidades de teste").
 - [ ] **Regiões/estados de outros países.** Hoje só o Brasil; ao adicionar países,
       criar suas divisões geográficas.
-- [ ] **UI de regiões/estados.** Mostrar estado/região junto da cidade nas abas
-      Clubes (cidade-sede) e Atletas (local de nascimento). (Próximo passo.)
+- [x] **UI de regiões/estados.** Feito: sigla do estado e região aparecem junto
+      da cidade nas abas Clubes (resumo com sigla + linhas Estado/Região no
+      detalhe) e Atletas (local de nascimento: "Cidade — SIGLA · Região").
 
 ## Calendário de competições
 

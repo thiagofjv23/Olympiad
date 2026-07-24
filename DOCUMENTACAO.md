@@ -762,6 +762,21 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 32 — UI de regiões e estados
+
+- A hierarquia geográfica passou a **aparecer para o jogador**, junto da cidade:
+  - **Atletas** (expandir): a linha **"Local de nascimento"** agora mostra
+    `Cidade — SIGLA · Região` (ex.: `São Paulo — SP · Sudeste`).
+  - **Clubes**: o **resumo** ganhou a sigla do estado (`São Paulo (SP), BRA`) e o
+    **detalhe** ganhou as linhas **"Estado"** (nome + sigla) e **"Região"**.
+- Novo helper `formatCityLocation(city)` em `script.js` (usa `getCityState` /
+  `getCityRegion`); tolerante a dados faltando (cai para o nome da cidade / `—`).
+- **Escopo**: só `script.js` (nenhuma mudança de dados; sem CSS novo, reusa o
+  padrão de `<li><span>…</span><strong>…</strong></li>`).
+- **Verificado** (navegador headless): aba Atletas mostra
+  `São Paulo — SP · Sudeste`; aba Clubes mostra o resumo com sigla e as linhas
+  Estado/Região corretas; sem erros de JS.
+
 ### Etapa 31 — Estrutura de regiões e estados (hierarquia geográfica)
 
 - Criadas as entidades **Regiões** (`regions.js`) e **Estados** (`states.js`),
@@ -1019,6 +1034,7 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
+| `formatCityLocation(city)`          | Texto da cidade com a hierarquia: `Cidade — SIGLA · Região`.    |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
 | `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |
