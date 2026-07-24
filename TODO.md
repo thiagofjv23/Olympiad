@@ -24,10 +24,24 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       competição** (porte) inscrever cada tipo de atleta. Ver a seção "Calendário
       de competições" abaixo e `CALENDARIO_DE_COMPETICOES.md`.
 
+## Geografia (regiões e estados)
+
+Hierarquia **país → região → estado → cidade** criada (`regions.js`, `states.js`;
+cidade ganhou `stateId`). Pendências:
+
+- [ ] **Ampliar os estados para as 27 UFs.** Hoje só existem os **10 estados** das
+      cidades cadastradas (`states.js`), cobrindo as 5 regiões. Completar quando
+      houver mais cidades/uso (mesmo espírito das "10 cidades de teste").
+- [ ] **Regiões/estados de outros países.** Hoje só o Brasil; ao adicionar países,
+      criar suas divisões geográficas.
+- [ ] **UI de regiões/estados.** Mostrar estado/região junto da cidade nas abas
+      Clubes (cidade-sede) e Atletas (local de nascimento). (Próximo passo.)
+
 ## Calendário de competições
 
 Base criada em `competitionCategories.js` (9 categorias/tiers) — ver
-`CALENDARIO_DE_COMPETICOES.md`. Pendências:
+`CALENDARIO_DE_COMPETICOES.md`. A hierarquia geográfica (regiões/estados) já
+existe para ancorar os portes Regional e Estadual. Pendências:
 
 - [ ] **Popular o calendário com competições nas várias categorias.** Hoje só
       existe **um** campeonato (`CNA-2026`, categoria **Nacional**). Faltam

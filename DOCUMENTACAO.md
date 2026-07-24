@@ -26,6 +26,8 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
 | `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
+| `regions.js`        | **Entidade Regiões** — nível país → **região** → estado → cidade.       |
+| `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
@@ -49,10 +51,12 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
-`modalities.js` → `competitionCategories.js` → `championships.js` →
-`athletes.js` → `clubs.js` → `contracts.js` → `participation.js` → `script.js`.
-(`competitionCategories.js` vem antes de `championships.js`, pois o campeonato
+`countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
+`resultsEngine.js` → `modalities.js` → `competitionCategories.js` →
+`championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
+`participation.js` → `script.js`. (`regions.js`/`states.js` vêm antes de
+`cities.js`, pois a cidade referencia o estado e o estado referencia a região;
+`competitionCategories.js` vem antes de `championships.js`, pois o campeonato
 referencia a categoria; `contracts.js` vem depois de `athletes.js`, `clubs.js` e
 `championships.js` porque referencia `getClub` e `toDayStart`; `participation.js`
 vem por último, pois usa atletas, clubes, contratos e etapas.)
@@ -360,20 +364,64 @@ antes do desgaste daquela etapa). Efeito: etapas seguintes tendem a ficar mais
 lentas conforme os atletas acumulam cansaço. A **UI** exibe a classificação na
 aba Campeonatos (ver seção 4 e Etapa 26).
 
+### Hierarquia geográfica — `regions.js` e `states.js`
+
+O território de um país é dividido em **regiões** e **estados**, formando a
+hierarquia **país → região → estado → cidade**. É a base dos portes
+**Regional** e **Estadual** do calendário (ver `competitionCategories.js` e
+`CALENDARIO_DE_COMPETICOES.md`).
+
+#### Regiões — `regions.js`
+
+Objeto `REGIONS` (indexado por `id`). Cada região agrupa estados de um mesmo país.
+
+| Campo       | Descrição                                     |
+| ----------- | --------------------------------------------- |
+| `id`        | Identificador único (ex.: `REG-SUDESTE`).     |
+| `name`      | Nome da região (ex.: `Sudeste`).              |
+| `countryId` | País da região (ver `countries.js`).          |
+
+Conjunto inicial: as **5 regiões do Brasil** (Norte, Nordeste, Centro-Oeste,
+Sudeste, Sul). Funções: `getRegion(id)`, `getRegionsByCountry(countryId)`,
+`getAllRegions()`.
+
+#### Estados — `states.js`
+
+Objeto `STATES` (indexado por `id`). Cada estado pertence a uma **região** e a um
+**país**.
+
+| Campo          | Descrição                                                       |
+| -------------- | --------------------------------------------------------------- |
+| `id`           | Identificador único (ex.: `EST-RJ`).                           |
+| `name`         | Nome do estado (ex.: `Rio de Janeiro`).                        |
+| `abbreviation` | Sigla (ex.: `RJ`).                                             |
+| `countryId`    | País do estado (derivável via região; guardado para filtragem direta). |
+| `regionId`     | Região do estado (ver `regions.js`).                          |
+
+Conjunto inicial: **10 estados** — os das cidades já cadastradas (`cities.js`),
+cobrindo as 5 regiões. **Não** é o conjunto completo das 27 unidades federativas;
+ampliar depois (mesmo espírito das "10 cidades de teste" — ver `TODO.md`).
+Funções: `getState(id)`, `getStatesByCountry(countryId)`,
+`getStatesByRegion(regionId)`, `getStateRegion(state)`, `getAllStates()`.
+
 ### Cidades — `cities.js`
 
 Database inicial (objeto `CITIES`) de cidades reais. **Relaciona-se com países,
-clubes e atletas**: é o país da cidade, a sede dos clubes e a cidade de
-nascimento dos atletas.
+estados, clubes e atletas**: é o país e o **estado** da cidade, a sede dos clubes
+e a cidade de nascimento dos atletas.
 
 | Campo                  | Descrição                                                       |
 | ---------------------- | --------------------------------------------------------------- |
 | `id`                   | Identificador único (ex.: `CID-SAO-PAULO`).                    |
 | `name`                 | Nome da cidade.                                                 |
 | `countryId`            | País da cidade (ver `countries.js`).                           |
+| `stateId`              | **Estado** da cidade (ver `states.js`); região e país deriváveis dele. |
 | `populationEstimate`   | População estimada (base para o tamanho).                      |
 | `size`                 | Tamanho **derivado** da população: pequena / média / grande / metrópole. |
 | `sportsInfrastructure` | Infraestrutura esportiva (0–100), influenciada pela força olímpica do país. |
+
+Helpers de hierarquia: `getCityState(city)` (estado da cidade) e
+`getCityRegion(city)` (região, derivada via estado).
 
 Funções utilitárias: `getCity(id)`, `getCitiesByCountry(countryId)` e
 `citySizeFromPopulation(pop)`.
@@ -713,6 +761,27 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 31 — Estrutura de regiões e estados (hierarquia geográfica)
+
+- Criadas as entidades **Regiões** (`regions.js`) e **Estados** (`states.js`),
+  formando a hierarquia **país → região → estado → cidade**. Base dos portes
+  **Regional** e **Estadual** do calendário (ver `CALENDARIO_DE_COMPETICOES.md`).
+- **Regiões**: as 5 do Brasil (Norte, Nordeste, Centro-Oeste, Sudeste, Sul),
+  cada uma ligada ao país (`countryId`).
+- **Estados**: os 10 das cidades já cadastradas (SP, RJ, MG, BA, CE, PE, DF, AM,
+  PR, RS), cada um com `abbreviation`, `countryId` e `regionId`. Não é o conjunto
+  completo (27 UFs) — ampliar depois (`TODO.md`).
+- **Cidades ↔ estado**: novo campo **`stateId`** em cada cidade (`cities.js`);
+  país e região passam a ser **deriváveis** via estado. Helpers `getCityState` e
+  `getCityRegion`. `countryId` foi **mantido** na cidade (compatibilidade com
+  `getCitiesByCountry`, usado na geração de atletas).
+- **Escopo**: só entidades/dados e carga (`regions.js`, `states.js` novos;
+  `cities.js` com `stateId`; `index.html`) e documentação. **Sem UI ainda** — a
+  tela vem na etapa seguinte.
+- **Verificado** (navegador headless): 5 regiões, 10 estados, mapeamento
+  estado→região correto e a hierarquia cidade→estado→região→país resolvendo
+  (ex.: São Paulo → SP → Sudeste → BRA); sem erros de JS.
 
 ### Etapa 30 — Calendário de competições (categorias/tiers)
 

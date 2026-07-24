@@ -402,6 +402,36 @@ Regras a seguir sempre, salvo instrução em contrário:
     registrado" como o melhor desempenho possível (o recorde não é superado): Força
     efetiva 100 → 9,58 s, e qualquer valor menor gera tempos maiores (mais lentos).
 
+### Geografia (regiões e estados)
+
+19bc. **Regiões e estados em módulos próprios (`regions.js`, `states.js`).** Segui
+    o padrão "uma entidade por arquivo" (como países, cidades, clubes). A
+    hierarquia é país → região → estado → cidade; cada nível referencia o de cima
+    por id.
+
+19bd. **Criei as 5 regiões (completas) mas só 10 estados (os das cidades).** As
+    regiões do Brasil são um conjunto pequeno e fechado (5) — criei todas. Já os
+    estados são o nível "que se expande" (como as cidades): criei **apenas os 10**
+    referenciados pelas cidades existentes, cobrindo as 5 regiões, e deixei a
+    ampliação para as 27 UFs no `TODO.md`. Motivo: seguir a diretriz de não criar
+    dados sem uso atual — um estado sem cidade/clube/competição não teria função
+    ainda. Fronteira principiada: "existe o estado de cada cidade que temos".
+
+19be. **Estado guarda `countryId` E `regionId` (país redundante).** O país é
+    derivável via região, mas guardei `countryId` direto no estado para filtragem
+    por país (`getStatesByCountry`), no mesmo estilo de cidades/clubes. Aceito a
+    leve redundância em troca de consultas diretas simples.
+
+19bf. **Cidade ganhou `stateId`, mas manteve `countryId`.** Poderia derivar o país
+    da cidade via estado, mas mantive `countryId` para não quebrar
+    `getCitiesByCountry` (usado na geração de atletas) e por coerência com clubes.
+    País e região da cidade têm helpers derivados (`getCityRegion`).
+
+19bg. **Distrito Federal tratado como um "estado" (unidade federativa).** O DF não
+    é estado juridicamente, mas é uma UF com sigla própria (DF); modelei como um
+    registro de `states.js` (região Centro-Oeste) para casar com a cidade de
+    Brasília, sem criar um tipo à parte.
+
 ### Calendário de competições (categorias/tiers)
 
 19aw. **Categorias num módulo próprio (`competitionCategories.js`) e GLOBAIS.**

@@ -84,9 +84,11 @@ Consequências do desenho:
 - **Competições `internacional`** abrangerão **vários** países. A forma de
   representar isso (lista de países, confederação, sede rotativa) **ainda será
   definida** quando existir mais de um país (hoje só há o Brasil).
-- **Entidades geográficas subnacionais (região, estado) ainda não existem.** Por
-  ora o scope `subnacional` apenas **classifica o nível**; quando região/estado
-  forem criados, uma competição subnacional apontará para o recorte específico.
+- **Entidades geográficas subnacionais já existem**: **regiões** (`regions.js`) e
+  **estados** (`states.js`), na hierarquia país → região → estado → cidade. Uma
+  competição **Regional** acontece dentro de uma **região**; uma **Estadual**,
+  dentro de um **estado**. Falta apenas **popular** essas competições (ver seção 8)
+  e, no código de cada competição, apontar para a região/estado específico.
 
 ---
 
