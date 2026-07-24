@@ -263,6 +263,20 @@ Regras a seguir sempre, salvo instrução em contrário:
     Continua **isolado no seed de TESTE**: a distribuição real (quem cada clube
     assina, por prestígio/finanças) segue pendente no `TODO.md`.
 
+19cd. **Afinidade de cidade como PESO multiplicativo, não regra fixa.** A pedido
+    ("chance bem mais alta de um atleta ir a um clube da mesma cidade, sem impedir
+    que fique sem clube"), acrescentei a cidade-sede ao sorteio como um
+    **multiplicador** do peso (`TEST_SAME_CITY_AFFINITY = 8`) quando o clube é da
+    cidade de nascimento do atleta, combinando com a infraestrutura em
+    `clubSeedWeight`. Escolhi um **peso** (e não forçar o clube local) por três
+    motivos: (1) preserva a chance de clubes de outras cidades; (2) atletas de
+    cidades **sem clube** simplesmente caem no sorteio por infraestrutura, sem
+    caso especial; (3) mantém a **agência livre** intacta — ela é sorteada
+    **antes** e independe do clube, então a afinidade nunca faz o atleta deixar de
+    ficar sem clube. Renomeei `pickClubByInfrastructure` → `pickClubForAthlete`
+    (agora recebe o atleta). O fator 8 é de balanceamento (dá ~77–83% de mesma
+    cidade onde há vários clubes locais), fácil de recalibrar.
+
 ### Campeonato ↔ esporte e Participação
 
 19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato

@@ -48,11 +48,15 @@ Ao chegar o término, há dois caminhos:
   atual de cada atleta. As telas são **reativas à passagem de tempo**.
 - **Dados de teste**: para as telas terem o que mostrar, `seedTestContracts`
   assina, no início da simulação, a maioria dos atletas a um clube do país
-  **sorteado ponderando pelo nível de infraestrutura** (clubes mais estruturados
-  recebem mais atletas; menos estruturados, menos — via
-  `pickClubByInfrastructure`), com duração anual sorteada, deixando uma fração
-  (`TEST_FREE_AGENT_RATE`, hoje 25%) como **agente livre**. É **temporário** — não
-  é um fluxo real; será substituído pelas regras de contratação.
+  **sorteado ponderando por (1) nível de infraestrutura** (clubes mais
+  estruturados recebem mais atletas; menos estruturados, menos) **e (2) afinidade
+  com a cidade de nascimento** (chance bem maior de ir a um clube da própria
+  cidade) — via `pickClubForAthlete`, com duração anual sorteada, deixando uma
+  fração (`TEST_FREE_AGENT_RATE`, hoje 25%) como **agente livre**. A afinidade de
+  cidade é só um **peso**: não garante o clube local e **não** impede o atleta de
+  ficar sem clube (a agência livre é decidida à parte, antes da escolha do clube).
+  É **temporário** — não é um fluxo real; será substituído pelas regras de
+  contratação.
 - A **quem/como** os clubes assinam e a **decisão de renovar** (lógica do clube)
   ainda **não** existem — este módulo apenas oferece as operações do elo e um
   povoamento de teste. Ver `TODO.md`.

@@ -347,14 +347,21 @@ Funções:
   `getContract(id)`, `getAllContracts()`, `resetContracts()`.
 - `seedTestContracts(athletes, referenceDate)` — **povoamento de TESTE**
   (temporário): assina cada atleta a um clube do seu país **sorteado ponderando
-  pelo nível de infraestrutura** (mais infraestrutura → mais atletas; menos
-  infraestrutura → menos atletas), via `pickClubByInfrastructure`, com duração
-  anual sorteada. Só para dar dados às telas; será substituído pelo fluxo real de
-  contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
-- `pickClubByInfrastructure(clubs)` — sorteia um clube de uma lista **ponderando
-  pelo `infrastructureLevel`** (mesmo estilo do sorteio ponderado da cidade de
-  nascimento em `athletes.js`); cai para sorteio uniforme se a soma dos pesos for
-  0. Usado pelo `seedTestContracts` para a distribuição inicial dos regens.
+  por (1) nível de infraestrutura** (mais infraestrutura → mais atletas; menos →
+  menos) **e (2) afinidade com a cidade de nascimento** (chance bem maior de ir a
+  um clube da própria cidade), via `pickClubForAthlete`, com duração anual
+  sorteada. A **agência livre** (uma fração `TEST_FREE_AGENT_RATE`) é decidida
+  **antes** e independe do clube — a afinidade de cidade **não** impede o atleta
+  de ficar sem clube. Só para dar dados às telas; será substituído pelo fluxo real
+  de contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
+- `pickClubForAthlete(clubs, athlete)` — sorteia um clube de uma lista
+  **ponderando por infraestrutura × afinidade de cidade** (via `clubSeedWeight`);
+  mesmo estilo do sorteio ponderado da cidade de nascimento em `athletes.js`; cai
+  para sorteio uniforme se a soma dos pesos for 0. Usado pelo `seedTestContracts`.
+- `clubSeedWeight(club, athlete)` — peso do clube no sorteio: base = seu
+  `infrastructureLevel`, multiplicado por `TEST_SAME_CITY_AFFINITY` quando o clube
+  é da **mesma cidade** de nascimento do atleta. Sem atleta/cidade, usa só a
+  infraestrutura.
 
 **UI:** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do `<details>`
 do clube) que revela os atletas contratados — cada item com o **nome** (clicável,
@@ -893,6 +900,30 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 39 — Afinidade de cidade na distribuição inicial de regens
+
+- A distribuição inicial dos atletas entre os clubes (seed de teste) passou a
+  considerar, além da infraestrutura, a **afinidade com a cidade-sede**: um atleta
+  tem chance **bem maior** de assinar com um clube da **sua cidade de nascimento**.
+- **Lógica** (em `contracts.js`): o peso de cada clube no sorteio virou
+  `clubSeedWeight(club, athlete)` = `infrastructureLevel` **×**
+  `TEST_SAME_CITY_AFFINITY` (8) quando `club.cityId === athlete.birthCityId`
+  (senão só a infraestrutura). O sorteio ponderado passou a receber o atleta
+  (`pickClubForAthlete(clubs, athlete)`, antes `pickClubByInfrastructure`).
+- **Não impede a agência livre**: a fração de agentes livres
+  (`TEST_FREE_AGENT_RATE`) é decidida **antes** e **independe** do clube — a
+  afinidade só muda **qual** clube, nunca **se** o atleta assina. É um **peso**
+  (não uma regra fixa): clubes de outras cidades continuam possíveis, e atletas de
+  cidades **sem clube** caem no sorteio por infraestrutura.
+- **Escopo**: só `contracts.js` (peso/ helper + a chamada) e a documentação.
+  Entidades Atleta/Clube intactas; continua sendo dado de **teste**.
+- **Verificado**: nascido em SP (3 clubes locais) assina ~77% das vezes com um
+  clube de SP; RJ (4 clubes) ~83%; BH (1 clube) ~50%; nascido em cidade **sem
+  clube** (Salvador) → 0% mesma cidade, distribuído por infraestrutura; a fração
+  de agentes livres fica ~25% em **todos** os casos (afinidade não a altera);
+  carga real (100 atletas) em navegador headless sem erros de JS (~32% mesma
+  cidade no geral, pois 6 das 10 cidades não têm clube).
 
 ### Etapa 38 — Distribuição inicial de regens ponderada pela infraestrutura
 

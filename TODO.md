@@ -168,9 +168,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       expiram/entram em vigor e as telas se atualizam).
 - [ ] **Substituir os contratos de TESTE.** `seedTestContracts` (assinatura no
       início a um clube sorteado **ponderando pela infraestrutura** — mais infra,
-      mais atletas — via `pickClubByInfrastructure`, deixando ~25% como agentes
-      livres via `TEST_FREE_AGENT_RATE`) é temporário, só para as telas terem
-      dados. Trocar pelo fluxo real de contratação.
+      mais atletas — **e pela afinidade com a cidade de nascimento** — chance bem
+      maior de ir a um clube da sua cidade — via `pickClubForAthlete`, deixando
+      ~25% como agentes livres via `TEST_FREE_AGENT_RATE`) é temporário, só para as
+      telas terem dados. Trocar pelo fluxo real de contratação.
 - [ ] **Assinaturas iniciais / quem assina quem.** Definir como os clubes montam
       elenco no início e ao longo do tempo (regras de contratação — provavelmente
       ligadas a prestígio e finanças), substituindo o seeding de teste.
