@@ -147,14 +147,21 @@ Regras de geração:
   melhor infraestrutura tendem a formar atletas mais fortes e com maior
   potencial**.
 - **Preparação Física**: normal em torno de 60 (0–100).
-- **Cansaço**: começa em 100. `fatigueReductionForStage(athlete)` define quanto
-  cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**.
-  A **aplicação** é feita por `applyStageFatigue(athlete)` — desgaste de **uma
-  etapa** em **um** atleta (individual), limitado a `[0, 100]`; e
-  `applyStageFatigueToParticipants(participants)` aplica, individualmente, a uma
-  lista de participantes. É o **ponto de aplicação por participação**, **desacoplado
-  de clube**: quando a inscrição via clube existir, basta passar os atletas
-  inscritos. Não aplica fadiga em massa a um país — o cansaço é sempre individual.
+- **Cansaço** (`fatigue`): é a **energia/frescor** do atleta — **100 = descansado**,
+  0 = exausto. Dois efeitos opostos o movem:
+  - **Competir desgasta** (reduz): `fatigueReductionForStage(athlete)` define
+    quanto cai por **etapa** — **mais idade → cai mais**, **mais Preparação Física
+    → cai menos**. Aplicado por `applyStageFatigue(athlete)` (individual) e
+    `applyStageFatigueToParticipants(participants)` (uma lista).
+  - **Descansar recupera** (aumenta, até 100): `fatigueRecoveryForRestDay(athlete)`
+    define quanto sobe por **dia sem competir** — **mais Preparação Física →
+    recupera mais**, **mais idade → recupera menos** (espelho do desgaste, sinais
+    trocados). Aplicado por `applyRestDay(athlete)`.
+  - O desgaste é por **evento** (esforço pontual); a recuperação é por **dia**
+    (contínua). `fatigue` é guardado como número **real** (a UI arredonda) para o
+    acúmulo diário não perder precisão. O cansaço é sempre **individual**.
+  - A orquestração (quem compete × quem descansa a cada dia) fica em
+    `participation.js` (`processDay`).
 
 Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
 substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
@@ -266,11 +273,13 @@ Funções:
   (regra de teste acima); `getStageParticipantCount(...)` retorna a quantidade.
 - `getStageModality(championship, stage)` — a prova disputada (por ora, a
   primeira modalidade do campeonato; senão, a primeira do esporte).
-- `processStage(championship, stage)` / `processRealizedStages(referenceDate)` —
-  processam cada etapa **realizada** e ainda não processada, **uma única vez**:
-  (1) **resolvem o resultado** com a fadiga atual dos participantes (via
-  `resolveModality`) e o **travam**; (2) aplicam a fadiga da etapa aos
-  participantes. Chamado em `advanceDays` (e na inicialização).
+- `processStage(championship, stage)` — processa uma etapa **uma única vez**:
+  (1) **resolve o resultado** com a fadiga atual dos participantes (via
+  `resolveModality`) e o **trava**; (2) aplica a fadiga da etapa aos participantes.
+- `processDay(date)` — processa **um dia**: resolve as etapas que ocorrem nesse
+  dia (desgastando os participantes) e faz **todos os demais atletas descansarem**
+  (`applyRestDay`, recuperação). Quem competiu no dia não descansa nesse dia.
+  Chamado **dia a dia** por `advanceDays`.
 - `getStageResult(championship, stage)` — o resultado travado da etapa
   (`[{ id, result, position }]`) ou `null` se ainda não realizada.
   `resetParticipation()` zera os resultados processados.
@@ -628,6 +637,28 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 27 — Cansaço com recuperação em dias de descanso
+
+- **Reformulação do Cansaço**: além de cair ao competir, o `fatigue` agora
+  **recupera** nos dias em que o atleta **não** compete, subindo rumo a 100.
+- **Fórmula** (`fatigueRecoveryForRestDay`, em `athletes.js`): recuperação **por
+  dia** = `base(2) + preparo(até +2) − idade(até −1,5)`, clamp `[0.5, 10]`.
+  Espelha o desgaste com sinais trocados (preparo acelera, idade desacelera);
+  o porquê está detalhado no comentário do arquivo e no `DECISOES.md`.
+- **Por dia × por evento**: o desgaste é por etapa (esforço pontual); a
+  recuperação é por dia (contínua). Por isso a passagem de tempo passou a ser
+  **dia a dia** (`advanceDays` → `processDay`): cada dia resolve as etapas do dia
+  (desgaste dos participantes) e faz os demais **descansarem**.
+- **Precisão**: `fatigue` virou número **real** (sem arredondar internamente),
+  para o acúmulo diário não derivar; a UI exibe arredondado.
+- **Consequência de balanceamento**: como as etapas são **mensais**, os atletas
+  tendem a **recuperar totalmente** entre elas (realista); o cansaço só se
+  **acumula** com agenda congestionada. Constantes fáceis de recalibrar.
+- **Verificado** (navegador headless): no dia da etapa o participante fica
+  desgastado (<100) e recupera nos dias seguintes; nunca passa de 100; agente
+  livre (nunca compete) permanece em 100; resultados continuam resolvendo; UI
+  mostra o Cansaço arredondado. Sem erros de JS.
+
 ### Etapa 26 — Resultados das etapas (resolução + UI)
 
 - **Modalidade do campeonato**: o `CNA-2026` passou a listar a prova disputada em
@@ -776,7 +807,7 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | ----------------------------------- | -------------------------------------------------------------- |
 | `renderCalendar()`                  | Desenha a grade do mês, o destaque da data atual e marcadores. |
 | `renderCurrentDate()`               | Escreve a data simulada por extenso.                           |
-| `advanceDays(days)`                 | Avança a passagem de tempo (1 dia / 1 semana).                 |
+| `advanceDays(days)`                 | Avança a passagem de tempo **dia a dia** (cada dia: `processDay`). |
 | `changeMonth(delta)`                | Navega entre meses (setas), sem mexer no tempo.                |
 | `goToCurrent()`                     | Volta a visualização ao mês da data atual.                     |
 | `activateTab(tab)`                  | Alterna entre as abas Calendário/Campeonatos.                  |

@@ -298,6 +298,36 @@ Regras a seguir sempre, salvo instrução em contrário:
     Só aparece "Ver" nas etapas realizadas; ao clicar, mostra posição/atleta/
     resultado (empates dividem a posição, como na engine).
 
+### Cansaço: recuperação em dias de descanso
+
+19am. **Por que a fórmula de recuperação é do jeito que é.** O stat `fatigue` é a
+    energia do atleta (100 = descansado). Competir gasta; descansar recupera. Pedi
+    que a recuperação fosse "da mesma forma" que o desgaste, então a modelei como o
+    **espelho** de `fatigueReductionForStage`, com os sinais dos atributos
+    trocados:
+    - **Preparação Física acelera** a recuperação (no desgaste ela reduz a perda).
+    - **Idade desacelera** a recuperação (no desgaste ela aumenta a perda).
+    Tema único e coerente: *melhor condicionamento = melhor gestão de fadiga*
+    (cansa menos e se recupera mais rápido); *mais idade = pior gestão*. Um `base`
+    garante recuperação mínima diária (o corpo se recupera sozinho), e o clamp
+    `[0.5, 10]` evita que descanso "canse" ou recupere absurdamente.
+
+19an. **Recuperação por DIA, desgaste por EVENTO.** A competição é um esforço
+    pontual (uma etapa), então o desgaste é por etapa. A recuperação é contínua,
+    então é por dia. Como a unidade de tempo é o dia, passei `advanceDays` a rodar
+    **dia a dia** (`processDay`): cada dia, quem compete se desgasta e os demais
+    descansam. Isso torna o cálculo exato mesmo em avanços de vários dias.
+
+19ao. **`fatigue` como número real (arredondo só na UI).** Como a recuperação
+    diária soma valores pequenos (ex.: 2,25/dia), arredondar a cada dia acumularia
+    erro. Guardo o valor real e arredondo apenas para exibir.
+
+19ap. **Constantes calibradas sabendo que etapas são mensais.** Com ~30 dias entre
+    etapas, o atleta tende a recuperar totalmente antes da próxima — o que é
+    realista (competições espaçadas permitem descanso pleno). O cansaço se acumula
+    quando as provas ficam próximas. Se quisermos fadiga mais persistente, basta
+    reduzir a recuperação (constantes fáceis de ajustar).
+
 ### Engine de resultados
 
 19k. **Engine exposta como um único objeto `ResultsEngine`**, em vez de várias

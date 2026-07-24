@@ -145,13 +145,16 @@ function render() {
 }
 
 function advanceDays(days) {
-  currentDate.setDate(currentDate.getDate() + days);
+  // Avança dia a dia: cada dia resolve as etapas que nele ocorrem (desgastando
+  // os participantes) e faz os demais atletas descansarem (recuperar Cansaço).
+  // Ver participation.js (processDay).
+  for (let i = 0; i < days; i++) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    processDay(currentDate);
+  }
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
-  // Etapas realizadas nesse avanço têm seu resultado resolvido e desgastam os
-  // participantes (uma vez cada). Ver participation.js.
-  processRealizedStages(currentDate);
   // Status de etapas e situação de contratos dependem da data atual: atualiza
   // as visões que os exibem (contratos podem ter expirado/entrado em vigor;
   // a fadiga dos participantes pode ter mudado).
@@ -467,7 +470,7 @@ function renderAthletes(countryId, highlightAthleteId) {
             <li><span>Força</span><strong>${athlete.strength}</strong></li>
             <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
             <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
-            <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
+            <li><span>Cansaço</span><strong>${Math.round(athlete.fatigue)}%</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
             <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
             <li><span>Clube atual</span><strong>${clubName}</strong></li>
@@ -669,9 +672,9 @@ generateAthletes();
 // temporário só para as telas terem dados — substituir pelo fluxo real depois.
 seedTestContracts(ATHLETES, currentDate);
 
-// Resolve/desgasta as etapas já realizadas na data inicial (nenhuma em
-// 01/01/2026; robustez caso a data de início mude). Ver participation.js.
-processRealizedStages(currentDate);
+// Na data inicial (01/01/2026) nenhuma etapa ocorreu e todos estão descansados
+// (fatigue 100). A evolução do Cansaço (desgaste/recuperação) passa a acontecer
+// dia a dia pela passagem de tempo — ver advanceDays/participation.js.
 
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);

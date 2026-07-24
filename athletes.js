@@ -136,13 +136,49 @@ function getAthleteFavoriteSport(athlete) {
   return getSport(athlete.favoriteSportId);
 }
 
-// Redução de Cansaço por etapa concluída: maior com a idade e menor quanto
+// -----------------------------------------------------------------------------
+// Modelo de Cansaço (fatigue)
+//
+// O stat `fatigue` é, na prática, a ENERGIA/FRESCOR do atleta: 100 = totalmente
+// descansado, 0 = exausto. Dois efeitos opostos o movem:
+//   - COMPETIR (participar de uma etapa) DESGASTA → reduz o fatigue.
+//   - DESCANSAR (um dia sem competir) RECUPERA → aumenta o fatigue, até 100.
+//
+// O desgaste é por EVENTO (uma etapa é um esforço pontual). A recuperação é por
+// DIA (o corpo se recupera continuamente, todo dia de descanso) — por isso as
+// magnitudes são diferentes: o desgaste de uma etapa é grande e único; a
+// recuperação é menor, mas se soma ao longo dos vários dias entre as etapas.
+//
+// As duas fórmulas são SIMÉTRICAS nos atributos, com sinais trocados:
+//   - Preparação Física: no desgaste, REDUZ a perda; na recuperação, AUMENTA o
+//     ganho. Tema: quanto melhor o condicionamento, melhor a gestão de fadiga
+//     (cansa menos e se recupera mais rápido).
+//   - Idade: no desgaste, AUMENTA a perda; na recuperação, DIMINUI o ganho.
+//     Tema: quanto mais velho, pior a gestão (cansa mais e se recupera devagar).
+//
+// `fatigue` é guardado como número real (não arredondado) para o acúmulo diário
+// da recuperação não perder precisão; a UI é que arredonda para exibir.
+// -----------------------------------------------------------------------------
+
+// Redução de Cansaço por etapa disputada: maior com a idade e menor quanto
 // melhor a Preparação Física (atleta mais preparado se cansa menos).
 function fatigueReductionForStage(athlete) {
   const base = 4;
   const ageEffect = (athlete.age / ATHLETE_AGE_LIMITS.max) * 6; // +idade => +redução
   const prepRelief = (athlete.physicalPreparation / 100) * 5; // +preparo => -redução
   return clampNumber(base + ageEffect - prepRelief, 1, 20);
+}
+
+// Recuperação de Cansaço por DIA de descanso (dia sem competir). É o oposto do
+// desgaste: espelha os atributos com sinais trocados. Um mínimo (base) garante
+// que todo dia de descanso recupera algo; a Preparação Física acelera e a idade
+// desacelera a recuperação. Clamp em [0.5, 10] (descanso nunca cansa; teto de
+// segurança). Constantes de balanceamento, fáceis de recalibrar.
+function fatigueRecoveryForRestDay(athlete) {
+  const base = 2;
+  const prepBoost = (athlete.physicalPreparation / 100) * 2; // +preparo => +recuperação
+  const agePenalty = (athlete.age / ATHLETE_AGE_LIMITS.max) * 1.5; // +idade => -recuperação
+  return clampNumber(base + prepBoost - agePenalty, 0.5, 10);
 }
 
 // Aplica o desgaste de UMA etapa a UM atleta (individual): reduz o seu Cansaço
@@ -156,7 +192,15 @@ function fatigueReductionForStage(athlete) {
 // nada aqui atrelado a clubes nem que aplique a fadiga em massa a um país.
 function applyStageFatigue(athlete) {
   const reduction = fatigueReductionForStage(athlete);
-  athlete.fatigue = clampNumber(Math.round(athlete.fatigue - reduction), 0, 100);
+  athlete.fatigue = clampNumber(athlete.fatigue - reduction, 0, 100);
+  return athlete.fatigue;
+}
+
+// Aplica UM dia de descanso a UM atleta (individual): recupera o Cansaço em
+// direção a 100 (descansado), sem ultrapassar. Retorna o novo valor de `fatigue`.
+function applyRestDay(athlete) {
+  const recovery = fatigueRecoveryForRestDay(athlete);
+  athlete.fatigue = clampNumber(athlete.fatigue + recovery, 0, 100);
   return athlete.fatigue;
 }
 

@@ -33,10 +33,11 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Lógica de melhoria e decréscimo de Força/Potencial.** Ainda não existe.
       O `potential` já é o teto de crescimento da `strength`, mas a evolução
       (subir com treino/idade e cair depois do pico) ainda será criada.
-- [x] **Aplicar o Cansaço nas etapas.** Feito: `applyStageFatigue`/
-      `applyStageFatigueToParticipants` (individual) agora são **chamados de fato**
-      via `participation.js` (`applyParticipationFatigue` em `advanceDays`),
-      desgastando os participantes de cada etapa realizada, uma vez por etapa.
+- [x] **Cansaço: desgaste e recuperação.** Feito: o Cansaço **cai** ao competir
+      (`applyStageFatigue`, por etapa) e **recupera** nos dias de descanso
+      (`fatigueRecoveryForRestDay`/`applyRestDay`, por dia, rumo a 100). A
+      orquestração é dia a dia em `participation.js` (`processDay`, via
+      `advanceDays`). `fatigue` virou número real (a UI arredonda).
 - [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
       todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
 - [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já

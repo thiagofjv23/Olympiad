@@ -72,14 +72,20 @@ function processStage(championship, stage) {
   return results;
 }
 
-// Processa todas as etapas JÁ REALIZADAS (em ordem) e ainda não processadas.
-// Chamado após a passagem de tempo. O tempo só anda para frente.
-function processRealizedStages(referenceDate) {
-  for (const championship of Object.values(CHAMPIONSHIPS)) {
-    for (const stage of championship.stages) {
-      if (!isStageDone(stage, referenceDate)) continue;
-      processStage(championship, stage);
-    }
+// Processa UM dia da simulação:
+//   1) as etapas que ocorrem NESTE dia são resolvidas e desgastam seus
+//      participantes (via processStage);
+//   2) todos os demais atletas DESCANSAM (recuperam Cansaço) — quem competiu
+//      hoje não descansa hoje.
+// Chamado dia a dia por `advanceDays`. O tempo só anda para frente.
+function processDay(date) {
+  const competingIds = new Set();
+  for (const { championship, stage } of getStagesOnDate(date)) {
+    const results = processStage(championship, stage);
+    for (const entry of results) competingIds.add(entry.id);
+  }
+  for (const athlete of ATHLETES) {
+    if (!competingIds.has(athlete.id)) applyRestDay(athlete);
   }
 }
 
