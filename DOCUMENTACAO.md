@@ -137,8 +137,13 @@ Regras de geração:
   potencial**.
 - **Preparação Física**: normal em torno de 60 (0–100).
 - **Cansaço**: começa em 100. `fatigueReductionForStage(athlete)` define quanto
-  cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**
-  (a aplicação por etapa depende da participação; ver `TODO.md`).
+  cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**.
+  A **aplicação** é feita por `applyStageFatigue(athlete)` — desgaste de **uma
+  etapa** em **um** atleta (individual), limitado a `[0, 100]`; e
+  `applyStageFatigueToParticipants(participants)` aplica, individualmente, a uma
+  lista de participantes. É o **ponto de aplicação por participação**, **desacoplado
+  de clube**: quando a inscrição via clube existir, basta passar os atletas
+  inscritos. Não aplica fadiga em massa a um país — o cansaço é sempre individual.
 
 Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
 substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
@@ -519,6 +524,23 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 21 — Aplicação individual do Cansaço por etapa
+
+- A fadiga já era **fator no tempo** dos 100 m (Força efetiva = Força − fadiga
+  acumulada, em `modalities.js`), mas na prática nunca variava: todos os atletas
+  ficavam com `fatigue = 100`. Criado o **ponto de aplicação** do cansaço.
+- **`applyStageFatigue(athlete)`** (em `athletes.js`) reduz o Cansaço de **um**
+  atleta pelo valor de `fatigueReductionForStage`, limitado a `[0, 100]`. O
+  desgaste é **individual** — cada atleta se cansa conforme seus próprios
+  atributos (idade e Preparação Física). `applyStageFatigueToParticipants(list)`
+  aplica o mesmo, individualmente, a uma lista de participantes.
+- **Desacoplado de clube**: o mecanismo não depende da inscrição via clube (que
+  ainda não existe). Quando ela existir, basta passar os atletas inscritos numa
+  etapa; **não** há aplicação em massa aos atletas de um país.
+- **Verificado**: dois atletas de mesma Força e descansados correm o mesmo tempo;
+  após participarem de etapas, cada um acumula fadiga diferente (idade/preparo) e
+  os tempos divergem; a versão por lista só afeta os participantes passados.
 
 ### Etapa 20 — Esporte favorito do atleta (ligação atleta ↔ esporte)
 

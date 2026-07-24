@@ -138,12 +138,35 @@ function getAthleteFavoriteSport(athlete) {
 
 // Redução de Cansaço por etapa concluída: maior com a idade e menor quanto
 // melhor a Preparação Física (atleta mais preparado se cansa menos).
-// TODO: aplicar quando os atletas forem vinculados às etapas (ver TODO.md).
 function fatigueReductionForStage(athlete) {
   const base = 4;
   const ageEffect = (athlete.age / ATHLETE_AGE_LIMITS.max) * 6; // +idade => +redução
   const prepRelief = (athlete.physicalPreparation / 100) * 5; // +preparo => -redução
   return clampNumber(base + ageEffect - prepRelief, 1, 20);
+}
+
+// Aplica o desgaste de UMA etapa a UM atleta (individual): reduz o seu Cansaço
+// pelo valor de `fatigueReductionForStage`, limitado a [0, 100]. Retorna o novo
+// valor de `fatigue`. O cansaço é sempre INDIVIDUAL — cada atleta desgasta
+// conforme seus próprios atributos (idade, preparação física).
+//
+// Este é o ponto de aplicação do cansaço por participação, e é INDEPENDENTE de
+// clube: quando o mecanismo de inscrição (via clube) definir QUAIS atletas
+// disputam cada etapa, basta chamar esta função para cada participante — não há
+// nada aqui atrelado a clubes nem que aplique a fadiga em massa a um país.
+function applyStageFatigue(athlete) {
+  const reduction = fatigueReductionForStage(athlete);
+  athlete.fatigue = clampNumber(Math.round(athlete.fatigue - reduction), 0, 100);
+  return athlete.fatigue;
+}
+
+// Aplica o desgaste de uma etapa a uma LISTA de participantes, individualmente.
+// Pensado para receber, no futuro, os atletas inscritos numa etapa (via clube).
+function applyStageFatigueToParticipants(participants) {
+  for (const athlete of participants) {
+    applyStageFatigue(athlete);
+  }
+  return participants;
 }
 
 // --- criação e geração --------------------------------------------------------

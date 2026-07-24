@@ -92,8 +92,16 @@ Regras a seguir sempre, salvo instrução em contrário:
     garantindo que o Potencial nunca fique abaixo da Força.
 
 14. **Fórmula de redução de Cansaço por etapa** (mais idade reduz mais, mais
-    Preparação Física reduz menos) — criei a fórmula, mas ela ainda não é aplicada
-    (falta o vínculo atleta ↔ etapa). Registrado no `TODO.md`.
+    Preparação Física reduz menos). A **aplicação** foi implementada em
+    `applyStageFatigue` (ver 14b); falta só o vínculo de participação (inscrição
+    via clube) para escolher quem disputa cada etapa.
+
+14b. **Aplicação do Cansaço é individual e desacoplada de clube.** A pedido, o
+    desgaste por etapa é aplicado por atleta (`applyStageFatigue`), nunca em massa
+    aos atletas de um país. Não amarrei nada a clube: o mecanismo recebe os
+    participantes (`applyStageFatigueToParticipants`) e já fica pronto para quando
+    a inscrição via clube existir. **Arredondo o `fatigue` para inteiro** ao
+    aplicar, para casar com a exibição (`${fatigue}%`) e manter o stat limpo.
 
 14a. **Esporte favorito guardado como `favoriteSportId` (referência a `sports.js`),
     não texto.** Segui o padrão das demais ligações do atleta (`countryId`,

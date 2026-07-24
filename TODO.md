@@ -24,10 +24,12 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **Lógica de melhoria e decréscimo de Força/Potencial.** Ainda não existe.
       O `potential` já é o teto de crescimento da `strength`, mas a evolução
       (subir com treino/idade e cair depois do pico) ainda será criada.
-- [ ] **Aplicar o Cansaço nas etapas.** A fórmula já existe
-      (`fatigueReductionForStage`), mas só deve reduzir o cansaço dos atletas que
-      **participarem** de cada etapa — falta o vínculo atleta ↔ etapa
-      (participação), que virá com as próximas telas/entidades.
+- [x] **Aplicar o Cansaço nas etapas (mecanismo de aplicação).** Criado
+      `applyStageFatigue(athlete)` (individual, desacoplado de clube) e
+      `applyStageFatigueToParticipants(list)`. Falta apenas **chamar** para os
+      atletas que de fato **participarem** de cada etapa — o que depende do vínculo
+      atleta ↔ etapa (inscrição via clube), ainda inexistente. Quando ele existir,
+      basta passar os participantes; o desgaste já é individual.
 - [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
       todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
 - [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já
@@ -110,9 +112,10 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 - [ ] **UI das modalidades e de resultados.** Ainda não há tela para modalidades
       nem para exibir os resultados/tempos de uma etapa.
 - [ ] **Participação atleta ↔ etapa.** O `resolveModality` já resolve o ranking a
-      partir de uma lista de atletas; falta definir **quais** atletas (via clube)
-      disputam cada etapa e **aplicar a fadiga** após a etapa (hoje todos estão com
-      fatigue 100, então o redutor de fadiga não altera os tempos ainda).
+      partir de uma lista de atletas e a aplicação individual de fadiga já existe
+      (`applyStageFatigueToParticipants`); falta definir **quais** atletas (via
+      clube) disputam cada etapa para então resolver o resultado e desgastar os
+      participantes.
 - [ ] **Modelos de desempenho por métrica.** O modelo atual cobre **tempo**
       (100 m). Distância/altura/pontos precisarão de suas próprias fórmulas.
 
