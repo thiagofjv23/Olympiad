@@ -153,6 +153,11 @@ function getCitiesByCountry(countryId) {
   return Object.values(CITIES).filter((city) => city.countryId === countryId);
 }
 
+// Retorna todas as cidades de um estado.
+function getCitiesByState(stateId) {
+  return Object.values(CITIES).filter((city) => city.stateId === stateId);
+}
+
 // Estado de uma cidade (objeto de states.js) ou undefined.
 function getCityState(city) {
   return city ? getState(city.stateId) : undefined;

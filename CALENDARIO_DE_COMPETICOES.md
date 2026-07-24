@@ -3,13 +3,16 @@
 Documento de referência do **calendário de competições** do Olympiad. Aprofunda
 **como o calendário foi desenhado** para servir de base às próximas interações
 (inscrição real de atletas, ranking, índices, premiação e finais). O código-fonte
-está em `competitionCategories.js` (a estrutura) e em `championships.js` (as
-competições que apontam para ela).
+está em `competitionCategories.js` (a estrutura de categorias), `championships.js`
+(as competições e o **gerador** geográfico) e `eligibility.js` (as **travas de
+inscrição**).
 
-> Estado atual: **a estrutura (categorias) está implementada**; a lógica de
-> **inscrição real**, a **distribuição de ranking**, os **índices**, as **finais**
-> e a **premiação** ainda **não existem** — estão desenhadas aqui e registradas no
-> `TODO.md`.
+> Estado atual: **a estrutura (categorias) está implementada** e o **calendário do
+> Brasil está populado** (Nacional + Estaduais + Regionais), com as **travas de
+> inscrição** por país/região/estado/cidade. A lógica de **inscrição real** (o
+> clube escolhendo quais atletas), a **distribuição de ranking**, os **índices**,
+> as **finais** e a **premiação** ainda **não existem** — desenhadas aqui e
+> registradas no `TODO.md`.
 
 ---
 
@@ -87,8 +90,48 @@ Consequências do desenho:
 - **Entidades geográficas subnacionais já existem**: **regiões** (`regions.js`) e
   **estados** (`states.js`), na hierarquia país → região → estado → cidade. Uma
   competição **Regional** acontece dentro de uma **região**; uma **Estadual**,
-  dentro de um **estado**. Falta apenas **popular** essas competições (ver seção 8)
-  e, no código de cada competição, apontar para a região/estado específico.
+  dentro de um **estado**.
+
+---
+
+## 3.1. Como o calendário do Brasil foi populado (gerador)
+
+O calendário é montado por um **gerador genérico**,
+`buildCountryGeographicChampionships(config)` (em `championships.js`), que serve
+**qualquer país**. Dado um país (e o esporte/modalidade), ele cria:
+
+- **um Estadual por estado** que tenha **ao menos uma cidade** na database;
+- **um Regional por região** que tenha **ao menos uma cidade** (via seus estados).
+
+O **Nacional** (`CNA-2026`) está na database à mão. Para o Brasil, o resultado são
+**16 campeonatos**: 1 Nacional + 10 Estaduais + 5 Regionais.
+
+Princípios:
+
+- **Só lugares com cidade na database geram competição.** Um estado/região sem
+  cidade cadastrada **não** vira campeonato — o calendário reflete exatamente as
+  cidades que temos.
+- **Etapas em sábados distintos por nível** para não colidir no calendário:
+  Estadual no **1º** sábado, Nacional no **2º**, Regional no **3º** de cada mês.
+- **Genérico**: para um novo país, basta chamar o gerador com o seu `countryId`
+  (e ter a sua geografia/cidades cadastradas).
+
+## 3.2. Travas de inscrição (quem pode disputar)
+
+Cada campeonato declara um **`scope`** `{ level, placeId }` (a **abrangência**), e
+só disputa quem é **elegível** a ele — ver `eligibility.js`:
+
+- `country` → atletas **do país**; `region` → **da região**; `state` → **do
+  estado**; `city` → **da cidade**.
+- A **origem** do atleta vem da sua **cidade de nascimento** (`birthCityId`), que
+  dá todos os níveis pela hierarquia. Vale inclusive para **agentes livres**
+  (independe de contrato/clube).
+
+Exemplos: o **Estadual de São Paulo** (`scope` estado = `EST-SP`) só recebe
+atletas nascidos em SP; o **Regional Sudeste** (`REG-SUDESTE`), os nascidos na
+região; o **Nacional** (`BRA`), todos os brasileiros. Na prática, os participantes
+de uma etapa são **os contratados via clube ∩ os elegíveis pela trava** (a regra
+de inscrição via clube continua; a trava geográfica soma-se a ela).
 
 ---
 
@@ -167,14 +210,16 @@ de `championships.js`, pois o campeonato referencia a categoria.
 
 Registrados no `TODO.md`; em ordem sugerida:
 
-1. **Popular o calendário** de um país com competições nas várias categorias
-   (hoje só existe o `CNA-2026`, na categoria Nacional).
+1. ✅ **Popular o calendário** (Estadual/Regional/Nacional) e as **travas de
+   inscrição** — feito (seções 3.1 e 3.2).
 2. **Inscrição real** (prioridade média): o clube escolhendo **quais** atletas
    inscrever em **qual** competição, por perfil (força/forma/índice), vagas e
-   critérios — substituindo a regra de teste em `participation.js`.
-3. **Ranking**: distribuição de pontos por posição, ranking acumulado e índices.
-4. **Pesos de etapa e final** dentro de cada campeonato.
-5. **Competições internacionais**: como representar a participação de vários
+   critérios — substituindo a regra de teste em `participation.js`. A trava
+   geográfica já restringe **quem pode**; falta a **escolha do clube**.
+3. **Séries C/B/A** (divisões nacionais) — dependem do sistema de ranking/acesso.
+4. **Ranking**: distribuição de pontos por posição, ranking acumulado e índices.
+5. **Pesos de etapa e final** dentro de cada campeonato.
+6. **Competições internacionais**: como representar a participação de vários
    países (depende de existir mais de um país).
-6. **Premiação/finanças**: usar a tabela de premiação quando houver sistema
+7. **Premiação/finanças**: usar a tabela de premiação quando houver sistema
    financeiro.

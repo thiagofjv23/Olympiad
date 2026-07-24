@@ -26,6 +26,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
 | `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
+| `eligibility.js`    | **Travas de inscrição** — quem pode disputar por país/região/estado/cidade. |
 | `regions.js`        | **Entidade Regiões** — nível país → **região** → estado → cidade.       |
 | `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
@@ -54,12 +55,15 @@ Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
 `resultsEngine.js` → `modalities.js` → `competitionCategories.js` →
 `championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
-`participation.js` → `script.js`. (`regions.js`/`states.js` vêm antes de
-`cities.js`, pois a cidade referencia o estado e o estado referencia a região;
+`eligibility.js` → `participation.js` → `script.js`. (`regions.js`/`states.js`
+vêm antes de `cities.js`, pois a cidade referencia o estado e o estado referencia
+a região; `championships.js` já vem depois de `regions.js`/`states.js`/`cities.js`
+porque **gera** os campeonatos geográficos a partir da geografia;
 `competitionCategories.js` vem antes de `championships.js`, pois o campeonato
 referencia a categoria; `contracts.js` vem depois de `athletes.js`, `clubs.js` e
-`championships.js` porque referencia `getClub` e `toDayStart`; `participation.js`
-vem por último, pois usa atletas, clubes, contratos e etapas.)
+`championships.js` porque referencia `getClub` e `toDayStart`; `eligibility.js`
+vem antes de `participation.js` (que aplica a trava); `participation.js` vem por
+último, pois usa atletas, clubes, contratos e etapas.)
 
 ---
 
@@ -91,16 +95,24 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `countryId`   | Referência ao país em `countries.js`.                  |
 | `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
 | `categoryId`  | **Categoria/porte** no calendário (ver `competitionCategories.js`). |
+| `scope`       | **Abrangência/trava** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
 | `events`      | Eventos (lista).                                       |
 | `modalities`  | Modalidades (lista).                                   |
 | `competitors` | Participantes (lista).                                 |
 | `stages`      | Etapas — `{ number, date }`.                           |
 
-Campeonato cadastrado: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil,
-esporte **Atletismo** (`SPT-ATLETISMO`), modalidade **100 m rasos**
-(`MOD-ATL-100M`), categoria **Nacional** (`CAT-NACIONAL`), 0 participantes,
-**10 etapas**. Todo novo campeonato deve informar o seu `sportId`, a(s)
-modalidade(s) disputada(s) e a sua `categoryId`.
+**Calendário do Brasil (16 campeonatos):**
+
+- **Nacional** — `CNA-2026` (Campeonato Nacional de Atletismo), categoria
+  **Nacional**, `scope` país=`BRA`, 2º sábado do mês. Cadastrado à mão.
+- **10 Estaduais** — um por estado com cidade na database (`CAMP-EST-<UF>-2026`),
+  categoria **Estadual**, `scope` estado, 1º sábado do mês.
+- **5 Regionais** — um por região com cidade (`CAMP-REG-<REGIÃO>-2026`), categoria
+  **Regional**, `scope` região, 3º sábado do mês.
+
+Estaduais e Regionais são **gerados** a partir da geografia (ver o gerador
+abaixo); o Nacional está na database. Todo novo campeonato deve informar
+`sportId`, `categoryId`, `scope` e a(s) modalidade(s).
 
 Funções utilitárias:
 
@@ -108,9 +120,18 @@ Funções utilitárias:
   `sports.js`).
 - `getChampionshipCategory(championship)` — a categoria/porte do campeonato
   (objeto de `competitionCategories.js`).
-- `secondSaturday(year, month)` — retorna a data do 2º sábado do mês.
-- `buildMonthlyStages(startYear, startMonth, count)` — gera N etapas, uma por
-  mês, sempre no 2º sábado.
+- `getChampionshipScope(championship)` — a abrangência `{ level, placeId }` (trava
+  de inscrição) ou `null`.
+- `buildCountryGeographicChampionships(config)` — **gera** os campeonatos
+  **Estaduais** (por estado) e **Regionais** (por região) de um país, **só para
+  lugares com cidade na database**, e os registra em `CHAMPIONSHIPS`. Genérico
+  (serve qualquer país); chamado para o **Brasil** no fim de `championships.js`.
+- `nthSaturday(year, month, n)` — data do N-ésimo sábado do mês.
+- `secondSaturday(year, month)` — data do 2º sábado (= `nthSaturday(...,2)`).
+- `buildMonthlyStagesOn(startYear, startMonth, count, nth)` — N etapas mensais no
+  N-ésimo sábado (níveis usam sábados diferentes para não colidir).
+- `buildMonthlyStages(startYear, startMonth, count)` — N etapas mensais no 2º
+  sábado (compatibilidade).
 - `getStagesOnDate(date)` — retorna as etapas (de qualquer campeonato) que caem
   em uma data. Usada para marcar o calendário e listar eventos do dia.
 - `isStageDone(stage, referenceDate)` — **lógica de realização** da etapa. Lê a
@@ -339,10 +360,17 @@ com **contrato ativo na data da etapa** em algum clube do país do campeonato;
 **agentes livres não disputam** (nenhum clube os inscreve). Falta a mecânica
 **real** de cadastro (ver `TODO.md`, prioridade média).
 
+**Trava de inscrição (geográfica):** além disso, o participante precisa ser
+**elegível** à abrangência (`scope`) do campeonato — ver `eligibility.js`. Um
+Estadual de São Paulo só recebe atletas nascidos em SP; um Regional do Sudeste,
+os da região; o Nacional, os do país. Participantes = **contratados via clube ∩
+elegíveis pela trava**.
+
 Funções:
 
 - `getStageParticipants(championship, stage)` — atletas participantes da etapa
-  (regra de teste acima); `getStageParticipantCount(...)` retorna a quantidade.
+  (contratados via clube **e** elegíveis pela trava geográfica);
+  `getStageParticipantCount(...)` retorna a quantidade.
 - `getStageModality(championship, stage)` — a prova disputada (por ora, a
   primeira modalidade do campeonato; senão, a primeira do esporte).
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
@@ -357,6 +385,31 @@ Funções:
 - `getStageResult(championship, stage)` — o resultado travado da etapa
   (`[{ id, result, position }]`) ou `null` se ainda não realizada.
   `resetParticipation()` zera os resultados processados.
+
+### Travas de inscrição — `eligibility.js`
+
+Define **quem pode disputar** um campeonato conforme a sua **abrangência
+geográfica** (`championship.scope`). Só participa quem é "daquele" recorte —
+**país, região, estado ou cidade**.
+
+A **origem** do atleta é derivada da sua **cidade de nascimento** (`birthCityId`),
+que dá, pela hierarquia país → região → estado → cidade, todos os níveis. Usar a
+cidade de nascimento mantém a trava **independente de contrato/clube** (vale até
+para agentes livres) e casa com "atletas daquele estado/região".
+
+O `scope` é `{ level, placeId }`, com `level` ∈ `country` / `region` / `state` /
+`city` e `placeId` apontando para a entidade correspondente. Sem `scope`, não há
+trava (todos elegíveis).
+
+Funções:
+
+- `getAthleteOriginIds(athlete)` — `{ cityId, stateId, regionId, countryId }` da
+  origem do atleta (via cidade de nascimento).
+- `isAthleteEligibleForScope(athlete, scope)` — o atleta é elegível ao escopo?
+- `getEligibleAthletes(athletes, scope)` — filtra uma lista pelos elegíveis.
+- `isAthleteEligibleForChampionship(athlete, championship)` e
+  `getChampionshipEligibleAthletes(championship)` — atalhos usando o escopo do
+  campeonato (o segundo é usado na UI para "Atletas elegíveis").
 
 Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
 etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
@@ -762,6 +815,30 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 34 — Calendário do Brasil populado + travas de inscrição
+
+- **Calendário populado** a partir da geografia: além do Nacional (`CNA-2026`),
+  passaram a existir **10 Estaduais** (um por estado com cidade na database) e
+  **5 Regionais** (um por região com cidade) — **16 campeonatos** no total.
+- **Gerador genérico** `buildCountryGeographicChampionships(config)` em
+  `championships.js`: cria Estaduais/Regionais de um país **só para lugares com
+  cidade na database** (não cria para estado/região ausente). Serve qualquer
+  país; chamado para o **Brasil**. Etapas em sábados distintos por nível
+  (estadual 1º, nacional 2º, regional 3º) para não colidir no calendário.
+- **Campo `scope`** `{ level, placeId }` no campeonato + helper
+  `getChampionshipScope`. É a **abrangência**: país/região/estado/cidade.
+- **Travas de inscrição** (`eligibility.js`, novo): só disputa quem é **elegível**
+  ao `scope`, pela **cidade de nascimento** (país → região → estado → cidade).
+  Ligado à participação: participantes = **contratados via clube ∩ elegíveis**.
+- **UI** (aba Campeonatos): o detalhe do campeonato ganhou **Categoria**,
+  **Abrangência** (o lugar da trava) e **Atletas elegíveis**; o seletor lista os
+  16 campeonatos.
+- **Verificado** (navegador headless): 16 campeonatos (1 Nacional, 10 Estaduais,
+  5 Regionais); elegíveis do CNA = todos os 100, do Estadual de SP = só nascidos
+  em SP, do Regional Sudeste = só da região; participantes de uma etapa estadual
+  = elegíveis ∩ contratados; seletor com 16 opções e detalhe correto; sem erros
+  de JS.
+
 ### Etapa 33 — 100 atletas por simulação
 
 - Aumentado o número de atletas gerados no início de **10 → 100**
@@ -1042,11 +1119,12 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (etapas com status e link "Ver" de resultados); destaca opcionalmente. |
+| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (categoria, abrangência/trava, atletas elegíveis, etapas com status e link "Ver"); destaca opcionalmente. |
 | `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `formatCityLocation(city)`          | Texto da cidade com a hierarquia: `Cidade — SIGLA · Região`.    |
+| `formatChampionshipScopeText(champ)`| Texto da abrangência (trava) do campeonato: o lugar do escopo.  |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
 | `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |

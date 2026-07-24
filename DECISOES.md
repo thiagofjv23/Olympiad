@@ -402,6 +402,48 @@ Regras a seguir sempre, salvo instrução em contrário:
     registrado" como o melhor desempenho possível (o recorde não é superado): Força
     efetiva 100 → 9,58 s, e qualquer valor menor gera tempos maiores (mais lentos).
 
+### Calendário populado e travas de inscrição
+
+19bh. **Gerador de calendário a partir da geografia (não database à mão).** Em vez
+    de escrever 15 campeonatos à mão, criei um **gerador**
+    (`buildCountryGeographicChampionships`) que percorre a geografia do país e
+    cria Estaduais/Regionais. Motivo: o pedido é "uma estrutura que sirva para
+    todos os países e a partir dela criar os campeonatos do Brasil" — um gerador é
+    genérico e evita repetição. O **Nacional** (`CNA-2026`) ficou na database à
+    mão (é a competição-âncora, com id/nome próprios).
+
+19bi. **Só gera competição para lugar COM cidade na database.** A pedido ("não
+    criar campeonatos para cidades/estados que não estejam na database"), o gerador
+    pula estados sem cidade e regiões sem nenhuma cidade. Como criamos exatamente
+    os estados/regiões das cidades existentes, hoje todos geram — mas a trava está
+    lá para quando a geografia crescer sem cidades.
+
+19bj. **Escopo como `{ level, placeId }` genérico (país/região/estado/cidade).**
+    Modelei a abrangência como um par nível+lugar, em vez de campos fixos
+    (`regionId`/`stateId`). Assim a mesma trava serve os quatro níveis (inclusive
+    `city`, ainda sem campeonato) e qualquer país, sem inchar a entidade.
+
+19bk. **Elegibilidade pela CIDADE DE NASCIMENTO do atleta.** A trava usa
+    `birthCityId` para derivar cidade/estado/região/país do atleta. Escolhi o
+    nascimento porque é um atributo próprio do atleta (independe de contrato/clube,
+    vale para agentes livres) e casa com "atletas daquele estado/região". A
+    alternativa (representação via cidade do clube) ficou registrada no `TODO.md`.
+
+19bl. **Trava SOMADA à regra de inscrição via clube (não a substitui).** Os
+    participantes de uma etapa passaram a ser **contratados via clube ∩ elegíveis
+    pela trava**. Mantive a regra de teste anterior (inscrição via clube) e apenas
+    **acrescentei** o filtro geográfico, sem remover nada.
+
+19bm. **Etapas em sábados distintos por nível.** Estadual no 1º sábado, Nacional no
+    2º (o que o CNA já usava), Regional no 3º. Escolhi separar para os níveis não
+    caírem todos no mesmo dia do calendário (generalizei `secondSaturday` para
+    `nthSaturday`). É balanceamento de calendário, fácil de mudar.
+
+19bn. **UI do campeonato mostra Categoria, Abrangência e Atletas elegíveis.**
+    Troquei as linhas "Participantes/Eventos" (sempre 0) por informação útil e que
+    **evidencia a trava**: a categoria, o lugar da abrangência e a contagem de
+    atletas elegíveis pelo escopo.
+
 ### Geografia (regiões e estados)
 
 19bc. **Regiões e estados em módulos próprios (`regions.js`, `states.js`).** Segui

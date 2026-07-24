@@ -290,6 +290,33 @@ function formatDate(date) {
   return `${day}/${month}/${date.getFullYear()}`;
 }
 
+// Texto da abrangência (trava) de um campeonato: o lugar do seu escopo.
+// Ex.: "Brasil", "Sudeste", "São Paulo (SP)".
+function formatChampionshipScopeText(championship) {
+  const scope = getChampionshipScope(championship);
+  if (!scope) return "Sem trava";
+  switch (scope.level) {
+    case "country": {
+      const c = getCountry(scope.placeId);
+      return c ? c.name : scope.placeId;
+    }
+    case "region": {
+      const r = getRegion(scope.placeId);
+      return r ? r.name : scope.placeId;
+    }
+    case "state": {
+      const s = getState(scope.placeId);
+      return s ? `${s.name} (${s.abbreviation})` : scope.placeId;
+    }
+    case "city": {
+      const ci = getCity(scope.placeId);
+      return ci ? ci.name : scope.placeId;
+    }
+    default:
+      return scope.placeId;
+  }
+}
+
 function populateChampionshipSelect() {
   championshipSelect.innerHTML = "";
   for (const championship of Object.values(CHAMPIONSHIPS)) {
@@ -306,6 +333,10 @@ function renderChampionship(id, highlightStage) {
 
   const country = getCountry(championship.countryId);
   const progress = championshipProgress(championship, currentDate);
+  const category = getChampionshipCategory(championship);
+  const categoryName = category ? category.name : "—";
+  const scopeText = formatChampionshipScopeText(championship);
+  const eligibleCount = getChampionshipEligibleAthletes(championship).length;
 
   const stagesRows = championship.stages
     .map((stage) => {
@@ -354,8 +385,9 @@ function renderChampionship(id, highlightStage) {
       <p class="detail-card__title">${championship.name}</p>
       <p class="detail-card__id">ID: ${championship.id}</p>
       <ul class="detail-list">
-        <li><span>Participantes</span><strong>${championship.participants}</strong></li>
-        <li><span>Eventos</span><strong>${championship.events.length}</strong></li>
+        <li><span>Categoria</span><strong>${categoryName}</strong></li>
+        <li><span>Abrangência</span><strong>${scopeText}</strong></li>
+        <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
         <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
       </ul>

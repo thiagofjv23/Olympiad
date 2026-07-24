@@ -10,13 +10,18 @@
 // com contrato ATIVO (na data da etapa) em algum clube do país do campeonato.
 // Atletas sem clube (agentes livres) não disputam, pois ninguém os inscreve.
 //
+// TRAVA DE INSCRIÇÃO (ver eligibility.js): além disso, só disputa quem é elegível
+// à ABRANGÊNCIA do campeonato (`scope`) — atletas "daquele" país/região/estado/
+// cidade. Assim, um Estadual de São Paulo só recebe atletas nascidos em SP, etc.
+//
 // FALTA (ver TODO.md — prioridade média): a mecânica REAL de cadastro de atletas
 // em campeonatos (o clube escolhendo quais atletas inscrever, vagas, critérios).
 // -----------------------------------------------------------------------------
 
 // Retorna os atletas participantes de uma etapa de um campeonato.
-// TESTE: todos os atletas com contrato ativo (na data da etapa) em clubes do
-// país do campeonato. Sem duplicatas.
+// TESTE: atletas com contrato ativo (na data da etapa) em clubes do país do
+// campeonato E elegíveis à abrangência geográfica do campeonato (trava). Sem
+// duplicatas.
 function getStageParticipants(championship, stage) {
   const clubs = getClubsByCountry(championship.countryId);
   const participantIds = new Set();
@@ -25,7 +30,11 @@ function getStageParticipants(championship, stage) {
       participantIds.add(contract.athleteId);
     }
   }
-  return ATHLETES.filter((athlete) => participantIds.has(athlete.id));
+  const scope = getChampionshipScope(championship);
+  return ATHLETES.filter(
+    (athlete) =>
+      participantIds.has(athlete.id) && isAthleteEligibleForScope(athlete, scope)
+  );
 }
 
 // Quantidade de participantes de uma etapa (atalho para a UI/depuração).

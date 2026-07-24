@@ -23,6 +23,9 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       calendário de competições** (categorias/tiers) — o clube escolhe em **qual
       competição** (porte) inscrever cada tipo de atleta. Ver a seção "Calendário
       de competições" abaixo e `CALENDARIO_DE_COMPETICOES.md`.
+      **Já existe** o calendário populado (Estaduais/Regionais/Nacional) e a
+      **trava geográfica** (`eligibility.js`) que restringe por país/região/
+      estado/cidade — falta a **escolha do clube** (quais/quantos/por etapa).
 
 ## Geografia (regiões e estados)
 
@@ -44,10 +47,24 @@ Base criada em `competitionCategories.js` (9 categorias/tiers) — ver
 `CALENDARIO_DE_COMPETICOES.md`. A hierarquia geográfica (regiões/estados) já
 existe para ancorar os portes Regional e Estadual. Pendências:
 
-- [ ] **Popular o calendário com competições nas várias categorias.** Hoje só
-      existe **um** campeonato (`CNA-2026`, categoria **Nacional**). Faltam
-      competições nos demais portes (Regional, Estadual, Séries C/B/A, e as
-      internacionais), para o clube ter **onde escolher** inscrever cada atleta.
+- [x] **Popular o calendário (Estadual/Regional/Nacional).** Feito: gerador
+      `buildCountryGeographicChampionships` cria os **Estaduais** (por estado com
+      cidade) e **Regionais** (por região com cidade); o **Nacional** (`CNA-2026`)
+      está na database. Brasil: **16 campeonatos** (1 + 10 + 5). Só cria para
+      lugares com cidade na database.
+- [x] **Travas de inscrição por país/região/estado/cidade.** Feito em
+      `eligibility.js`: só disputa quem é elegível ao `scope` do campeonato, pela
+      **cidade de nascimento**. Ligado a `getStageParticipants`.
+- [ ] **Faltam os portes Séries C/B/A e internacionais.** O gerador cobre
+      Estadual/Regional/Nacional; **Séries C/B/A** (divisões nacionais) dependem
+      do sistema de ranking/acesso, e **Continental/Mundial/Olímpico** dependem de
+      existir mais de um país. Criar depois.
+- [ ] **Campeonatos municipais (nível cidade).** A trava já suporta `level:"city"`,
+      mas ainda **não há categoria municipal** nem campeonatos de cidade — criar
+      se/quando fizer sentido.
+- [ ] **Origem do atleta = cidade de nascimento.** A trava usa `birthCityId`.
+      Depois, avaliar se a elegibilidade deveria considerar também
+      **representação** (cidade do clube) além do nascimento.
 - [ ] **Ranking: distribuição de pontos.** Cada categoria vale `rankingPoints`
       (base do campeão); falta **repartir por posição** (1º, 2º, 3º...), definir
       **onde os pontos se acumulam** (atleta/clube/país/temporada) e os **índices**
