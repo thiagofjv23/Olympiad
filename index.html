@@ -3,38 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calendário</title>
+  <title>Olympiad</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="calendar" aria-label="Calendário mensal">
-    <header class="calendar__header">
-      <button id="prev" class="nav-btn" type="button" aria-label="Mês anterior">
-        &#8249;
+  <div class="app">
+    <nav class="tabs" role="tablist" aria-label="Seções">
+      <button id="tab-btn-calendar" class="tab tab--active" role="tab" aria-selected="true" aria-controls="tab-calendar" type="button">
+        Calendário
       </button>
-      <h1 id="month-label" class="calendar__title" aria-live="polite"></h1>
-      <button id="next" class="nav-btn" type="button" aria-label="Próximo mês">
-        &#8250;
+      <button id="tab-btn-championships" class="tab" role="tab" aria-selected="false" aria-controls="tab-championships" type="button">
+        Campeonatos
       </button>
-    </header>
+      <button id="tab-btn-athletes" class="tab" role="tab" aria-selected="false" aria-controls="tab-athletes" type="button">
+        Atletas
+      </button>
+      <button id="tab-btn-clubs" class="tab" role="tab" aria-selected="false" aria-controls="tab-clubs" type="button">
+        Clubes
+      </button>
+    </nav>
 
-    <div class="calendar__weekdays">
-      <span>Dom</span>
-      <span>Seg</span>
-      <span>Ter</span>
-      <span>Qua</span>
-      <span>Qui</span>
-      <span>Sex</span>
-      <span>Sáb</span>
-    </div>
+    <!-- ABA: Calendário -->
+    <section id="tab-calendar" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-calendar">
+      <main class="calendar" aria-label="Calendário mensal">
+        <header class="calendar__header">
+          <button id="prev" class="nav-btn" type="button" aria-label="Mês anterior">&#8249;</button>
+          <h1 id="month-label" class="calendar__title" aria-live="polite"></h1>
+          <button id="next" class="nav-btn" type="button" aria-label="Próximo mês">&#8250;</button>
+        </header>
 
-    <div id="days" class="calendar__days"></div>
+        <div class="calendar__weekdays">
+          <span>Dom</span>
+          <span>Seg</span>
+          <span>Ter</span>
+          <span>Qua</span>
+          <span>Qui</span>
+          <span>Sex</span>
+          <span>Sáb</span>
+        </div>
 
-    <footer class="calendar__footer">
-      <button id="today" class="today-btn" type="button">Hoje</button>
-    </footer>
-  </main>
+        <div id="days" class="calendar__days"></div>
 
+        <p class="calendar__legend"><span class="legend-dot"></span> Etapa de campeonato</p>
+
+        <div id="day-detail" class="day-detail" aria-live="polite"></div>
+
+        <section class="time-panel" aria-label="Passagem de tempo">
+          <p class="time-panel__label">Data atual</p>
+          <p id="current-date" class="time-panel__date" aria-live="polite"></p>
+          <div class="time-panel__actions">
+            <button id="advance-day" class="time-btn" type="button">+ 1 dia</button>
+            <button id="advance-week" class="time-btn" type="button">+ 1 semana</button>
+          </div>
+          <button id="go-current" class="today-btn" type="button">Ir para a data atual</button>
+        </section>
+      </main>
+    </section>
+
+    <!-- ABA: Campeonatos -->
+    <section id="tab-championships" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-championships">
+      <div class="championships">
+        <label class="championships__select-label" for="championship-select">Campeonato</label>
+        <select id="championship-select" class="championships__select"></select>
+        <div id="championship-details" class="championship-details"></div>
+      </div>
+    </section>
+
+    <!-- ABA: Atletas -->
+    <section id="tab-athletes" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-athletes">
+      <div class="athletes">
+        <label class="athletes__select-label" for="athlete-country-select">País</label>
+        <select id="athlete-country-select" class="athletes__select"></select>
+        <div id="athlete-list" class="athlete-list"></div>
+      </div>
+    </section>
+
+    <!-- ABA: Clubes -->
+    <section id="tab-clubs" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-clubs">
+      <div class="clubs">
+        <label class="clubs__select-label" for="club-country-select">País</label>
+        <select id="club-country-select" class="clubs__select"></select>
+        <div id="club-list" class="club-list"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="countries.js"></script>
+  <script src="cities.js"></script>
+  <script src="sports.js"></script>
+  <script src="resultsEngine.js"></script>
+  <script src="modalities.js"></script>
+  <script src="championships.js"></script>
+  <script src="athletes.js"></script>
+  <script src="clubs.js"></script>
+  <script src="contracts.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

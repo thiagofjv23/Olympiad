@@ -7,6 +7,8 @@
   --accent: #3b6cff;
   --accent-soft: #e7edff;
   --today: #3b6cff;
+  --event: #ff8a00;
+  --done: #16a34a;
   --radius: 12px;
   --shadow: 0 8px 30px rgba(20, 30, 60, 0.08);
 }
@@ -19,7 +21,7 @@ body {
   margin: 0;
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 24px;
   background: var(--bg);
@@ -27,9 +29,50 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.calendar {
+.app {
   width: 100%;
   max-width: 420px;
+}
+
+/* Abas ------------------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  padding: 6px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tab-panel--hidden {
+  display: none;
+}
+
+.calendar {
+  width: 100%;
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -96,6 +139,7 @@ body {
 }
 
 .day {
+  position: relative;
   aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
@@ -103,22 +147,214 @@ body {
   font-size: 0.9rem;
   border-radius: 8px;
   color: var(--text);
+  font-family: inherit;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+button.day:not(.day--current):hover {
+  background: var(--accent-soft);
+}
+
+.day--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .day--empty {
   visibility: hidden;
 }
 
-.day--today {
+.day--current {
   background: var(--today);
   color: #fff;
   font-weight: 600;
 }
 
-.calendar__footer {
-  margin-top: 16px;
+.day--event {
+  font-weight: 600;
+}
+
+.day__marker {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--event);
+}
+
+.day__marker--done {
+  background: var(--done);
+}
+
+.day--current .day__marker {
+  background: #fff;
+}
+
+.calendar__legend {
   display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--event);
+}
+
+/* Detalhe do dia clicado -------------------------------------------------- */
+.day-detail:empty {
+  display: none;
+}
+
+.day-detail {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.day-detail__date {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.day-detail__label {
+  margin: 8px 0 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.day-detail__empty {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--event);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.event-item:hover {
+  background: var(--accent-soft);
+}
+
+.event-item__name {
+  font-weight: 600;
+  text-align: left;
+}
+
+.event-item__meta {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.event-item__stage {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.event-item__status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.event-item__status--done {
+  color: var(--done);
+}
+
+.time-panel {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.time-panel__label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.time-panel__date {
+  margin: 4px 0 16px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.time-panel__actions {
+  display: flex;
+  gap: 10px;
   justify-content: center;
+  margin-bottom: 14px;
+}
+
+.time-btn {
+  flex: 1;
+  max-width: 150px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.time-btn:hover {
+  filter: brightness(1.08);
+}
+
+.time-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 .today-btn {
@@ -134,6 +370,327 @@ body {
 
 .today-btn:hover {
   background: var(--accent-soft);
+}
+
+/* Campeonatos ------------------------------------------------------------ */
+.championships {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.championships__select-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.championships__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.detail-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.detail-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.detail-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.detail-card__id {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.detail-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.detail-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.detail-list li span {
+  color: var(--muted);
+}
+
+.strength-bar {
+  margin-top: 10px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.strength-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--event));
+}
+
+.stages-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.stages-table th,
+.stages-table td {
+  text-align: left;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stages-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stages-table td:first-child {
+  width: 60px;
+  font-weight: 600;
+}
+
+/* Atletas e Clubes (mesmo padrão visual) --------------------------------- */
+.athletes,
+.clubs {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.athletes__select-label,
+.clubs__select-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.athletes__select,
+.clubs__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+
+.athletes__empty,
+.clubs__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.athlete-list,
+.club-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.athlete,
+.club {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.athlete__summary,
+.club__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+/* Remove o marcador padrão do <summary>. */
+.athlete__summary::-webkit-details-marker,
+.club__summary::-webkit-details-marker {
+  display: none;
+}
+
+.athlete__summary::after,
+.club__summary::after {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.athlete[open] .athlete__summary::after,
+.club[open] .club__summary::after {
+  transform: rotate(90deg);
+}
+
+.athlete__summary:hover,
+.club__summary:hover {
+  background: var(--accent-soft);
+}
+
+.athlete__name,
+.club__name {
+  font-weight: 600;
+}
+
+.athlete__brief,
+.club__brief {
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.athlete__stats,
+.club__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 12px;
+}
+
+.athlete__stats li,
+.club__stats li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.athlete__stats li span,
+.club__stats li span {
+  color: var(--muted);
+}
+
+.club__stats li strong {
+  text-align: right;
+}
+
+/* Atletas do clube (roster via contratos) --------------------------------- */
+.club__roster {
+  padding: 0 14px 12px;
+}
+
+.link-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-button:hover {
+  filter: brightness(1.1);
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.club__athletes {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.club__athletes[hidden] {
+  display: none;
+}
+
+.club__athletes li {
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+.club__athletes-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.athlete--highlight {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.stage-status {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.stage-status--done {
+  color: var(--done);
+}
+
+.stage-row--highlight td {
+  background: var(--accent-soft);
+}
+
+.stage-row--highlight td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
