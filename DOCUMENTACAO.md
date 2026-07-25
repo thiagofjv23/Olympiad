@@ -83,7 +83,10 @@ Objeto `COUNTRIES` indexado por `id`. Cada país:
 | `population`      | População.                         |
 | `olympicStrength` | **Força Olímpica** — rating 0–100. |
 
-País cadastrado: **Brasil** (`BRA`, população 213.421.037, força olímpica 78).
+Países cadastrados: **Brasil** (`BRA`, população 213.421.037, força olímpica 78)
+e **Argentina** (`ARG`, população 45.808.747, força olímpica 70). A Argentina
+entrou apenas como **país + atributos básicos** (mesma estrutura do Brasil);
+**cidades, clubes e atletas ficam para depois** (ver `TODO.md`).
 Função utilitária: `getCountry(id)`.
 
 ### Campeonatos — `championships.js`
@@ -294,10 +297,15 @@ competição por meio de um clube (mecânica ainda **não** implementada; ver
 
 Funções utilitárias: `getClub(id)` e `getClubsByCountry(countryId)`.
 
-Conjunto inicial (10 clubes, todos do Brasil — único país existente): Pinheiros,
-Sogipa, Grêmio Náutico União, Minas Tênis Clube, Flamengo, Vasco da Gama,
-Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto de
-**teste**, a ser revisado e ampliado.
+Conjunto inicial de 10 clubes: Pinheiros, Sogipa, Grêmio Náutico União, Minas
+Tênis Clube, Flamengo, Vasco da Gama, Botafogo, Fluminense, Corinthians e Clube
+Atlético Paulistano. Depois, **cada cidade que ainda não tinha clube recebeu 2**
+(mesmos parâmetros): Brasília (Gama, Brasiliense), Salvador (Bahia, Vitória),
+Fortaleza (Fortaleza EC, Ceará), Manaus (Nacional-AM, Fast), Curitiba (Coritiba,
+Athletico-PR) e Recife (Sport, Náutico) — **22 clubes** no total, **todos do
+Brasil**. Assim, **toda cidade da database tem clube**, e a afinidade de cidade
+na contratação (ver `contracts.js`) passa a valer para todas. É um conjunto de
+**teste**, a ser revisado e ampliado (inclusive com clubes de outros países).
 
 ### Contratos — `contracts.js`
 
@@ -900,6 +908,41 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 41 — País Argentina (só o país + atributos básicos)
+
+- Criado o **2º país**: **Argentina** (`ARG`) em `countries.js`, com os **mesmos
+  atributos** do Brasil (`id`, `name`, `iocCode`, `population`, `olympicStrength`)
+  — reutilizando a estrutura existente, **sem** alterá-la.
+- Valores: população 45.808.747; **força olímpica 70** (um pouco abaixo do Brasil,
+  aproximação de balanceamento — ver `DECISOES.md`); COI `ARG`.
+- **Só o país por ora**: **sem cidades, clubes ou atletas** ainda (ficam para
+  depois — ver `TODO.md`). A geração de atletas continua só no Brasil; nada mais
+  foi tocado.
+- **Verificado** (navegador headless): 2 países carregados; a Argentina aparece
+  nos seletores de país das abas Atletas e Clubes; selecioná-la renderiza listas
+  **vazias sem erro** (`getClubsByCountry("ARG")` = 0, `getCitiesByCountry("ARG")`
+  = 0); os 100 atletas seguem do Brasil; sem erros de JS.
+
+### Etapa 40 — Clubes para todas as cidades (2 por cidade sem clube)
+
+- Cada uma das **6 cidades que ainda não tinha clube** (Brasília, Salvador,
+  Fortaleza, Manaus, Curitiba, Recife) recebeu **2 clubes reais**, com os
+  **mesmos parâmetros** dos clubes anteriores (campos idênticos; `president`/
+  `finances` nulos, `rivals` vazio; infraestrutura próxima à da cidade-sede,
+  considerando a força olímpica do país; prestígio na mesma faixa). **12 clubes
+  novos** → `CLUBS` passou de 10 para **22**, todos do Brasil.
+- **Consequência**: **toda cidade da database passa a ter clube**, então a
+  **afinidade de cidade** na contratação de teste (Etapa 39) passa a valer para
+  **todas** as cidades — antes, atletas nascidos nessas 6 cidades caíam no sorteio
+  só por infraestrutura (0% mesma cidade).
+- **Escopo**: só `clubs.js` (novas entradas + nota no cabeçalho) e a documentação.
+  Nenhuma estrutura foi alterada — só novas entidades dentro da estrutura vigente.
+- **Verificado**: 22 clubes com **estrutura/parâmetros corretos** (campos, faixas
+  de infra 68–90 e prestígio 60–92, `cityId` válido); cada cidade antes vazia com
+  **exatamente 2**; contratação de teste passa a assinar **~43–46%** na mesma
+  cidade para essas cidades (era 0%), com **agentes livres ~25%** preservados;
+  carga real (100 atletas) em navegador headless sem erros de JS.
 
 ### Etapa 39 — Afinidade de cidade na distribuição inicial de regens
 

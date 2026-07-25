@@ -277,6 +277,31 @@ Regras a seguir sempre, salvo instrução em contrário:
     (agora recebe o atleta). O fator 8 é de balanceamento (dá ~77–83% de mesma
     cidade onde há vários clubes locais), fácil de recalibrar.
 
+19ce. **2 clubes por cidade sem clube, clubes reais e mesmos parâmetros.** A
+    pedido, criei 2 clubes para cada cidade que ainda não tinha nenhum (Brasília,
+    Salvador, Fortaleza, Manaus, Curitiba, Recife) — 12 no total, `CLUBS` foi de
+    10 a 22. Segui a mesma linha dos anteriores: **clubes reais** de tradição da
+    cidade, os **mesmos campos** (`president`/`finances` nulos, `rivals` vazio) e a
+    mesma lógica de valores — `infrastructureLevel` **próximo à infraestrutura
+    esportiva da cidade-sede** (considerando a força olímpica do país) e dentro da
+    faixa já usada (68–90), `prestige` na faixa 60–92 refletindo a estatura de cada
+    clube. Escolhi 2 por cidade (não 1) para haver disputa local e para a afinidade
+    de cidade (19cd) não recair sempre no mesmo clube. **Não** mexi em nenhuma
+    estrutura — só acrescentei entidades. Efeito colateral desejado: agora **toda
+    cidade tem clube**, então a afinidade de cidade vale para todas.
+
+### Países
+
+19cf. **2º país (Argentina) só com o país + atributos básicos.** A pedido, criei a
+    **Argentina** (`ARG`) reutilizando a **mesma estrutura** de `countries.js`
+    (sem alterá-la), com os mesmos campos do Brasil. Deixei **cidades, clubes e
+    atletas para depois** (a pedido) — por isso nada mais foi tocado: a geração de
+    atletas segue só no Brasil e `getClubsByCountry("ARG")`/`getCitiesByCountry
+    ("ARG")` retornam vazio (a UI lida com isso sem erro). **`olympicStrength = 70`**
+    é uma aproximação de balanceamento, um pouco abaixo do Brasil (78), no mesmo
+    espírito "a olho" do valor do Brasil — fácil de recalibrar quando a Argentina
+    ganhar cidades/atletas. População 45.808.747 (estimativa) e COI `ARG`.
+
 ### Campeonato ↔ esporte e Participação
 
 19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato

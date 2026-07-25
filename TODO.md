@@ -35,8 +35,12 @@ cidade ganhou `stateId`). Pendências:
 - [ ] **Ampliar os estados para as 27 UFs.** Hoje só existem os **10 estados** das
       cidades cadastradas (`states.js`), cobrindo as 5 regiões. Completar quando
       houver mais cidades/uso (mesmo espírito das "10 cidades de teste").
-- [ ] **Regiões/estados de outros países.** Hoje só o Brasil; ao adicionar países,
-      criar suas divisões geográficas.
+- [ ] **Regiões/estados de outros países.** Já existe a **Argentina** (`ARG`,
+      só país + atributos básicos); falta criar sua **geografia** (regiões,
+      estados/províncias) e depois cidades, no mesmo molde do Brasil.
+- [ ] **Cidades, clubes e atletas da Argentina.** A Argentina entrou só como país;
+      povoar depois (cidades → clubes → atletas), reutilizando as estruturas e os
+      mesmos parâmetros já usados no Brasil.
 - [x] **UI de regiões/estados.** Feito: sigla do estado e região aparecem junto
       da cidade nas abas Clubes (resumo com sigla + linhas Estado/Região no
       detalhe) e Atletas (local de nascimento: "Cidade — SIGLA · Região").
@@ -133,8 +137,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       (`fatigueRecoveryForRestDay`/`applyRestDay`, por dia, rumo a 100). A
       orquestração é dia a dia em `participation.js` (`processDay`, via
       `advanceDays`). `fatigue` virou número real (a UI arredonda).
-- [ ] **Atletas de outros países.** Hoje só existe o Brasil (`BRA`); por isso
-      todos os atletas são brasileiros. Ao adicionar países, distribuir a origem.
+- [ ] **Atletas de outros países.** Já existe a **Argentina** (`ARG`), mas só o
+      país + atributos básicos — **sem cidades/clubes/atletas** ainda; por isso
+      todos os atletas seguem brasileiros. Ao dar cidades/clubes à Argentina,
+      gerar e distribuir a origem dos seus atletas.
 - [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já
       existe e é atribuído na geração (`INITIAL_FAVORITE_SPORT_ID` em
       `athletes.js`), mas por ora **todos nascem com Atletismo**. Depois, sortear
@@ -191,9 +197,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 - [ ] **Sistema de evolução de atletas via infraestrutura.** O
       `infrastructureLevel` do clube (0–100, ligado à força olímpica do país)
       servirá de base para a evolução dos atletas — sistema ainda **não** criado.
-- [ ] **Expandir/revisar a database de clubes.** Começamos com 10 clubes reais
-      (todos do Brasil) apenas para teste; ampliar e revisar depois, inclusive
-      com clubes de outros países quando existirem.
+- [ ] **Expandir/revisar a database de clubes.** Hoje são **22 clubes reais**,
+      todos do Brasil (10 iniciais + 2 por cidade que não tinha clube), de modo que
+      **toda cidade da database tem clube**. Revisar/ampliar depois, inclusive com
+      clubes de **outros países** (ex.: Argentina) quando eles tiverem cidades.
 - [x] **UI dos clubes (lista por país).** Feita: seletor de país + lista de
       clubes (nome, país, prestígio) expansível para as demais informações.
 - [x] **Atributo de Prestígio do clube.** Criado: `prestige` (0-100) em todos os
