@@ -24,6 +24,9 @@
       <button id="tab-btn-rankings" class="tab" role="tab" aria-selected="false" aria-controls="tab-rankings" type="button">
         Rankings
       </button>
+      <button id="tab-btn-sports" class="tab" role="tab" aria-selected="false" aria-controls="tab-sports" type="button">
+        Esportes
+      </button>
     </nav>
 
     <!-- ABA: Calendário -->
@@ -101,6 +104,13 @@
           <option value="marks">Ranking de Marcas</option>
         </select>
         <div id="ranking-content" class="ranking-content"></div>
+      </div>
+    </section>
+
+    <!-- ABA: Esportes -->
+    <section id="tab-sports" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-sports">
+      <div class="sports">
+        <div id="sport-list" class="sport-list"></div>
       </div>
     </section>
   </div>

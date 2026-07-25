@@ -53,6 +53,10 @@ const TABS = {
     btn: document.getElementById("tab-btn-rankings"),
     panel: document.getElementById("tab-rankings"),
   },
+  sports: {
+    btn: document.getElementById("tab-btn-sports"),
+    panel: document.getElementById("tab-sports"),
+  },
 };
 
 // Elementos — campeonatos.
@@ -68,6 +72,9 @@ const athleteList = document.getElementById("athlete-list");
 const clubCountrySelect = document.getElementById("club-country-select");
 const clubList = document.getElementById("club-list");
 const freeAgentsEl = document.getElementById("free-agents");
+
+// Elementos — esportes.
+const sportList = document.getElementById("sport-list");
 
 // Elementos — rankings.
 const rankingTypeSelect = document.getElementById("ranking-type-select");
@@ -864,6 +871,61 @@ function renderMarksRanking(eventId) {
 }
 
 // -----------------------------------------------------------------------------
+// Esportes
+// Mostra a hierarquia Esporte → Modalidade → Evento. Os esportes vêm em ordem
+// alfabética; cada um é um <details> que revela suas modalidades (também em
+// <details>), e cada modalidade revela seus eventos. Lê SEMPRE das databases
+// vivas (getAllSports / getModalitiesBySport / getEventsByModality), então novos
+// esportes/modalidades/eventos aparecem sozinhos — sem lista fixa na tela.
+// -----------------------------------------------------------------------------
+
+// Ordenação alfabética por nome (acentos-cientes, pt-BR).
+function byNamePtBr(a, b) {
+  return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+}
+
+function renderSports() {
+  const sports = getAllSports().slice().sort(byNamePtBr);
+
+  if (sports.length === 0) {
+    sportList.innerHTML = `<p class="sports__empty">Nenhum esporte cadastrado.</p>`;
+    return;
+  }
+
+  sportList.innerHTML = sports
+    .map((sport) => {
+      const modalities = getModalitiesBySport(sport.id).slice().sort(byNamePtBr);
+      const modalitiesHtml = modalities.length
+        ? modalities
+            .map((modality) => {
+              const events = getEventsByModality(modality.id).slice().sort(byNamePtBr);
+              const eventsHtml = events.length
+                ? `<ul class="modality__events">${events
+                    .map((event) => `<li>${event.name}</li>`)
+                    .join("")}</ul>`
+                : `<p class="modality__empty">Nenhum evento cadastrado.</p>`;
+              return `
+                <details class="modality">
+                  <summary class="modality__summary">
+                    <span class="modality__name">${modality.name}</span>
+                  </summary>
+                  ${eventsHtml}
+                </details>`;
+            })
+            .join("")
+        : `<p class="sport__empty">Nenhuma modalidade cadastrada.</p>`;
+      return `
+        <details class="sport">
+          <summary class="sport__summary">
+            <span class="sport__name">${sport.name}</span>
+          </summary>
+          <div class="sport__modalities">${modalitiesHtml}</div>
+        </details>`;
+    })
+    .join("");
+}
+
+// -----------------------------------------------------------------------------
 // Eventos
 // -----------------------------------------------------------------------------
 prevBtn.addEventListener("click", () => changeMonth(-1));
@@ -877,6 +939,7 @@ TABS.championships.btn.addEventListener("click", () => activateTab("championship
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
 TABS.rankings.btn.addEventListener("click", () => activateTab("rankings"));
+TABS.sports.btn.addEventListener("click", () => activateTab("sports"));
 rankingTypeSelect.addEventListener("change", () => renderRanking());
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
@@ -910,5 +973,7 @@ populateClubCountrySelect();
 renderClubs(clubCountrySelect.value);
 
 renderRanking();
+
+renderSports();
 
 render();

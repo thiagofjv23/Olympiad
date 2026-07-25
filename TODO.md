@@ -252,7 +252,11 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       popularidade, ano de início, origem) são **aproximações** — revisar depois.
 - [ ] **`resultSystems` é só indicador (sem mecânica).** Ver o item de **prioridade
       alta** "Criar a mecânica de ResultSystem" no topo.
-- [ ] **UI dos esportes.** Ainda não existe tela para esportes.
+- [x] **UI dos esportes.** Feita: aba **Esportes** lista os esportes em ordem
+      alfabética (`<details>`), abrindo as modalidades e, nelas, os eventos
+      (`renderSports`). Reconhece novos dados automaticamente. Falta ainda, se
+      desejado, mostrar **atributos** do esporte (popularidade, origem,
+      `resultSystems`) — hoje a aba mostra só nomes (a pedido).
 
 ## Modalidades e Eventos
 
@@ -260,9 +264,11 @@ Hierarquia **Esporte → Modalidade → Evento** criada (`modalities.js` = 72
 modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só os
 100 m). Pendências:
 
-- [ ] **UI de Modalidades/Eventos.** Ainda **não existe tela** para modalidades
-      nem eventos (lista/detalhe por esporte, provas de cada modalidade). Criar
-      depois — é o próximo passo natural da estrutura recém-criada.
+- [x] **UI de Modalidades/Eventos (lista por esporte).** Feita na aba **Esportes**:
+      cada esporte abre suas modalidades (`<details>`) e cada modalidade abre seus
+      eventos (`renderSports`), tudo por nome e em ordem alfabética. Falta ainda,
+      se desejado, um **detalhe** de modalidade/evento (atributos, `resolution`,
+      popularidade) — hoje é só a estrutura por nome.
 - [ ] **Popular os eventos das modalidades.** Hoje só existe o evento **100 m**
       (`EVT-ATL-100M`, modalidade Velocidade). Criar os demais eventos de cada
       modalidade (ex.: 200 m, 400 m em Velocidade; salto em distância em Saltos;

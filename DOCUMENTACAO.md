@@ -948,6 +948,28 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 44 — Aba Esportes (UI da hierarquia Esporte → Modalidade → Evento)
+
+- Nova aba **Esportes** (6ª aba), que mostra **organizadamente** a hierarquia
+  **Esporte → Modalidade → Evento**, só por nome:
+  - os **esportes** aparecem em **ordem alfabética**, cada um como um `<details>`;
+  - ao abrir um esporte, suas **modalidades** (também em `<details>`, alfabéticas);
+  - ao abrir uma modalidade, seus **eventos** (lista, alfabética).
+- **Reativa a novos dados**: `renderSports` lê **sempre** das databases vivas
+  (`getAllSports` / `getModalitiesBySport` / `getEventsByModality`) — não há lista
+  fixa na tela, então **qualquer esporte/modalidade/evento novo** adicionado às
+  databases **aparece sozinho** (verificado injetando um esporte de teste e
+  re-renderizando: entra na posição alfabética certa, com sua modalidade e evento).
+- **Só UI** (a pedido): `index.html` (botão da aba + painel), `script.js`
+  (`renderSports` + `byNamePtBr` + registro da aba na estrutura `TABS`) e
+  `styles.css` (estilos, **reutilizando** o padrão de `<details>` de Atletas/Clubes
+  para os cards + estilos do aninhamento modalidade/evento). **Nenhuma estrutura de
+  dados/mecânica foi tocada.**
+- **Verificado** (navegador headless): a aba abre; 36 esportes em ordem alfabética
+  (Atletismo … Vôlei); Atletismo com as 10 modalidades (alfabéticas) e Velocidade
+  com o evento "100 metros rasos"; reconhecimento automático de dados novos; sem
+  erros de JS.
+
 ### Etapa 43 — Hierarquia Esporte → Modalidade → Evento
 
 - Estabelecida a hierarquia **Esporte → Modalidade → Evento**. Antes o que
@@ -1474,6 +1496,8 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
 | `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
 | `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
 | `renderMarksRanking(eventId)`       | Ranking de marcas de um evento (posição/atleta/clube/data clicável/marca). |
+| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um abrindo suas modalidades (`<details>`) e cada modalidade seus eventos. Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
+| `byNamePtBr(a, b)`                  | Comparador de ordenação alfabética por `name` (pt-BR, acentos-ciente).       |
 
 ---
 

@@ -530,7 +530,8 @@ button.day:not(.day--current):hover {
 
 /* Atletas e Clubes (mesmo padrão visual) --------------------------------- */
 .athletes,
-.clubs {
+.clubs,
+.sports {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -570,21 +571,26 @@ button.day:not(.day--current):hover {
 }
 
 .athlete-list,
-.club-list {
+.club-list,
+.sport-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .athlete,
-.club {
+.club,
+.sport,
+.modality {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .athlete__summary,
-.club__summary {
+.club__summary,
+.sport__summary,
+.modality__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -597,12 +603,16 @@ button.day:not(.day--current):hover {
 
 /* Remove o marcador padrão do <summary>. */
 .athlete__summary::-webkit-details-marker,
-.club__summary::-webkit-details-marker {
+.club__summary::-webkit-details-marker,
+.sport__summary::-webkit-details-marker,
+.modality__summary::-webkit-details-marker {
   display: none;
 }
 
 .athlete__summary::after,
-.club__summary::after {
+.club__summary::after,
+.sport__summary::after,
+.modality__summary::after {
   content: "▸";
   color: var(--muted);
   font-size: 0.85rem;
@@ -610,17 +620,23 @@ button.day:not(.day--current):hover {
 }
 
 .athlete[open] .athlete__summary::after,
-.club[open] .club__summary::after {
+.club[open] .club__summary::after,
+.sport[open] .sport__summary::after,
+.modality[open] .modality__summary::after {
   transform: rotate(90deg);
 }
 
 .athlete__summary:hover,
-.club__summary:hover {
+.club__summary:hover,
+.sport__summary:hover,
+.modality__summary:hover {
   background: var(--accent-soft);
 }
 
 .athlete__name,
-.club__name {
+.club__name,
+.sport__name,
+.modality__name {
   font-weight: 600;
 }
 
@@ -758,6 +774,54 @@ button.day:not(.day--current):hover {
 .free-agents__list li {
   padding: 4px 0;
   border-top: 1px solid var(--border);
+}
+
+/* Esportes (Esporte → Modalidade → Evento) -------------------------------- */
+.sports__empty,
+.sport__empty,
+.modality__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.sport__empty,
+.modality__empty {
+  padding: 6px 14px 12px;
+}
+
+/* Modalidades dentro de um esporte (nível 2). */
+.sport__modalities {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 14px 12px;
+}
+
+/* A modalidade é um card mais suave, aninhado no esporte. */
+.modality {
+  background: var(--bg);
+}
+
+.modality__summary {
+  padding: 9px 12px;
+}
+
+.modality__name {
+  font-size: 0.92rem;
+}
+
+/* Eventos dentro de uma modalidade (nível 3). */
+.modality__events {
+  list-style: none;
+  margin: 0;
+  padding: 2px 12px 10px 26px;
+}
+
+.modality__events li {
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
 }
 
 .athlete--highlight {

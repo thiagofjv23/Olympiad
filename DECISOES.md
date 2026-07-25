@@ -236,6 +236,28 @@ Regras a seguir sempre, salvo instrução em contrário:
       "screenshot do Atletismo", gerei uma visualização **descartável** (fora do
       repositório) a partir dos dados reais, sem adicionar tela ao app.
 
+19ci. **Aba Esportes: só UI, lendo das databases vivas (auto-reativa).** A pedido,
+    criei a aba **Esportes** com a hierarquia Esporte → Modalidade → Evento em
+    `<details>` aninhados, por nome e em ordem alfabética. Decisões:
+    - **Nada de lista fixa na tela**: `renderSports` percorre `getAllSports` e, por
+      esporte, `getModalitiesBySport`, e por modalidade, `getEventsByModality`.
+      Assim, "reconhecer automaticamente" novos dados sai de graça — a tela é um
+      espelho das databases; adicionar um esporte/modalidade/evento faz ele
+      **aparecer sozinho** (não precisa tocar na UI). Foi o cerne do pedido.
+    - **Só nomes** (a pedido): cada nível mostra apenas o nome; não coloquei
+      atributos (popularidade, origem, `resultSystems`, `resolution`). Se quiserem
+      detalhes depois, é fácil acrescentar (registrado no `TODO.md`).
+    - **Ordenação alfabética** com `localeCompare("pt-BR")` (acentos-ciente), num
+      helper único `byNamePtBr`. Ordenei também modalidades e eventos (não só os
+      esportes) para a tela ficar previsível/organizada — a ordenação é escolha de
+      **exibição**, não mexe na ordem das databases.
+    - **Reusei o CSS** dos `<details>` de Atletas/Clubes para os cards (agrupando os
+      seletores, no espírito da decisão 10), e só acrescentei o estilo do
+      **aninhamento** (modalidade dentro do esporte, eventos dentro da modalidade).
+    - **Escopo respeitado**: mexi **só na UI** (`index.html`, `script.js`,
+      `styles.css`); nenhuma entidade/mecânica foi tocada. A aba entrou na estrutura
+      genérica `TABS` (decisão 8), então não precisou de tratamento especial.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em
