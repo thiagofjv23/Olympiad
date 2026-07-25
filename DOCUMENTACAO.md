@@ -592,12 +592,24 @@ valoriza atributos de forma diferente) — essa lógica ainda **não existe** (v
 | `generalPopularity` | Popularidade geral (0–100).                                      |
 | `practiceStartYear` | Ano de início da prática (número; negativo = a.C., ex.: −776).  |
 | `originCountry`     | País originário (texto — ver `DECISOES.md`).                    |
+| `resultSystems`     | Lista dos **ResultSystem** do esporte (ex.: `TimeResultSystem`, `MatchResultSystem`, …). **Só indicador/rótulo por enquanto** — sem mecânica (a mecânica é **prioridade alta** no `TODO.md`). |
 
 Funções utilitárias: `getSport(id)` e `getAllSports()`.
 
-Conjunto inicial (6 esportes): Atletismo (o do nosso campeonato), Natação,
-Futebol, Basquete, Vôlei e Ginástica Artística. Popularidade é aproximada; lista
-a ser ampliada.
+Conjunto atual: **36 esportes olímpicos** (Atletismo — o do nosso campeonato —,
+Badminton, Basquete, Beisebol/Softbol, Boxe, Canoagem, Ciclismo, Críquete,
+Escalada Esportiva, Esgrima, Flag Football, Futebol, Ginástica, Golfe, Handebol,
+Hipismo, Hóquei sobre Grama, Judô, Lacrosse, Levantamento de Peso, Lutas,
+Natação, Pentatlo Moderno, Remo, Rugby, Skate, Surfe, Squash, Taekwondo, Tênis,
+Tênis de Mesa, Tiro Esportivo, Tiro com Arco, Triatlo, Vela e Voleibol). Cada um
+declara seus **`resultSystems`** (só indicador). Popularidade, anos e origens são
+**aproximações**, a revisar.
+
+Os **ResultSystem** por esporte (conforme a tabela pedida): `TimeResultSystem`,
+`DistanceResultSystem`, `HeightResultSystem`, `PointsResultSystem`,
+`MatchResultSystem`, `JudgeResultSystem`, `ScoreResultSystem`,
+`WeightResultSystem` e `CombinedResultSystem`. **Nenhum tem mecânica ainda** — a
+criação da mecânica de ResultSystem é **prioridade alta** (ver `TODO.md`).
 
 ### Engine de resultados — `resultsEngine.js`
 
@@ -908,6 +920,32 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 42 — Esportes olímpicos + campo `resultSystems` (indicador)
+
+- `sports.js` passou de **6 para 36 esportes** — a lista olímpica pedida —, cada um
+  com um novo campo **`resultSystems`**: a lista dos "ResultSystem" do esporte
+  (ex.: Atletismo → `TimeResultSystem`, `DistanceResultSystem`,
+  `HeightResultSystem`, `CombinedResultSystem`; a maioria dos coletivos →
+  `MatchResultSystem`), exatamente conforme a **tabela** fornecida.
+- **`resultSystems` é só um INDICADOR (rótulo)** — **não** há nenhuma mecânica
+  ligada a ele ainda. A **criação da mecânica de ResultSystem** foi registrada no
+  `TODO.md` como **prioridade alta**.
+- **Baseados na estrutura existente**: cada esporte usa os mesmos campos dos 6
+  anteriores (`id`, `name`, `description`, `generalPopularity`,
+  `practiceStartYear`, `originCountry`) + `resultSystems`. Os 6 que já existiam
+  (Atletismo, Natação, Futebol, Basquete, Vôlei, Ginástica) só **ganharam o
+  campo**; os 30 novos foram criados. Dados (popularidade, ano, origem) são
+  **aproximações**.
+- **Escopo**: só a **criação/dados de esportes** em `sports.js` (mais a nota no
+  cabeçalho) e a documentação. **Nenhuma função foi alterada** (`getSport`/
+  `getAllSports` intactos); nenhuma outra entidade foi tocada.
+- **Processo**: criados **em lotes de 5**, verificando cada lote (`node --check` +
+  conferência dos `resultSystems` contra a tabela) antes do próximo.
+- **Verificado**: 36 esportes, `resultSystems` de **todos** batendo com a tabela,
+  campos obrigatórios presentes, popularidade 0–100, ids únicos; carga real em
+  navegador headless com os 36 esportes e sem erros de JS (esporte favorito dos
+  atletas segue Atletismo).
 
 ### Etapa 41 — País Argentina (só o país + atributos básicos)
 

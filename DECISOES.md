@@ -185,6 +185,26 @@ Regras a seguir sempre, salvo instrução em contrário:
     aproximação de balanceamento, fácil de recalibrar. Anos e origens seguem fatos
     razoavelmente estabelecidos da codificação moderna de cada esporte.
 
+19cg. **36 esportes olímpicos + `resultSystems` só como indicador.** A pedido,
+    ampliei `sports.js` de 6 para os **36 esportes** da tabela olímpica fornecida e
+    adicionei o campo **`resultSystems`** (lista) com exatamente os ResultSystem de
+    cada esporte na tabela. Decisões e limites que segui:
+    - **Só indicador, sem mecânica** (a pedido): `resultSystems` é um **rótulo**;
+      não liguei nenhuma lógica a ele. A criação da mecânica ficou no `TODO.md`
+      como **prioridade alta**.
+    - **Guardado como lista de strings** (nomes dos sistemas, ex.:
+      `"MatchResultSystem"`), no mesmo espírito de outros rótulos-texto do projeto;
+      quando a mecânica existir, cada nome vira/aponta para um resolvedor.
+    - **Reutilizei a estrutura existente**: mesmos campos dos 6 anteriores +
+      `resultSystems`. Os 6 que já existiam só **ganharam o campo** (não recriei);
+      criei os 30 novos. **Não** toquei em nenhuma função (`getSport`/`getAllSports`
+      intactos) nem em outra entidade — só dados de esporte.
+    - **Dados (descrição, popularidade, ano, origem) são aproximações minhas**, no
+      mesmo padrão de 19j — fáceis de recalibrar. Nomes/ids seguem o estilo
+      `SPT-<NOME>`. "Beisebol/Softbol" ficou como um esporte único (como na tabela).
+    - **Criados em lotes de 5, verificando cada lote** (a pedido), conferindo os
+      `resultSystems` contra a tabela antes de seguir.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

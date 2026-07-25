@@ -5,6 +5,16 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 
 ## 🔴 Prioridade alta
 
+- [ ] **Criar a mecânica de ResultSystem.** Cada esporte já declara em
+      `sports.js` a lista `resultSystems` (ex.: `TimeResultSystem`,
+      `DistanceResultSystem`, `HeightResultSystem`, `PointsResultSystem`,
+      `MatchResultSystem`, `JudgeResultSystem`, `ScoreResultSystem`,
+      `WeightResultSystem`, `CombinedResultSystem`), **mas por enquanto é só um
+      indicador (rótulo) — não há nenhuma mecânica ligada a ele**. Falta criar os
+      ResultSystem de verdade: como cada um resolve o resultado de uma prova
+      (provavelmente sobre a `ResultsEngine` genérica em `resultsEngine.js`) e como
+      o esporte/modalidade escolhe qual usar. É o próximo grande passo da simulação
+      de resultados por esporte.
 - [ ] **Usar o Prestígio dos clubes.** O atributo `prestige` (0-100) já existe em
       todos os clubes (`clubs.js`) com valores iniciais aproximados, **mas ainda
       não é utilizado**. Ele será a base das próximas features:
@@ -231,11 +241,16 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 - [ ] **Esporte afeta o uso dos atributos na simulação de resultados.** A entidade
       `sports.js` já existe, mas a lógica de **como cada esporte usa/pondera os
       atributos dos atletas** para simular resultados ainda **não foi criada**.
+      Liga-se à **mecânica de ResultSystem** (prioridade alta, no topo).
 - [x] **Vincular campeonatos a um esporte** (`sportId`). Feito: campo `sportId` na
       entidade Campeonato + helper `getChampionshipSport`; o `CNA-2026` aponta para
       o Atletismo. As etapas herdam o esporte do seu campeonato.
-- [ ] **Expandir a database de esportes** e revisar dados (popularidade é
-      aproximada).
+- [x] **Criar os esportes olímpicos.** Feito: `sports.js` passou de 6 para **36
+      esportes** (a lista olímpica pedida), cada um com o campo **`resultSystems`**
+      (indicador dos ResultSystem, conforme a tabela). Dados (descrição,
+      popularidade, ano de início, origem) são **aproximações** — revisar depois.
+- [ ] **`resultSystems` é só indicador (sem mecânica).** Ver o item de **prioridade
+      alta** "Criar a mecânica de ResultSystem" no topo.
 - [ ] **UI dos esportes.** Ainda não existe tela para esportes.
 
 ## Modalidades
