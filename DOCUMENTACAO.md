@@ -33,7 +33,8 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
-| `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
+| `modalities.js`     | **Entidade Modalidades** — agrupam eventos dentro de um esporte (Esporte → Modalidade). |
+| `events.js`         | **Entidade Eventos** — as provas resolvíveis de uma modalidade (Modalidade → Evento); traz o modelo de resultado. |
 | `competitionCategories.js` | **Entidade Categorias de Competição** — níveis/tiers do calendário. |
 | `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
 | `README.md`         | Resumo de uso.                                                          |
@@ -55,12 +56,14 @@ sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
-`resultsEngine.js` → `modalities.js` → `competitionCategories.js` →
+`resultsEngine.js` → `modalities.js` → `events.js` → `competitionCategories.js` →
 `championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
 `eligibility.js` → `ranking.js` → `marksRanking.js` → `participation.js` →
 `script.js`. (`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade
-referencia o estado e o estado referencia a região; `championships.js` já vem
-depois de `regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
+referencia o estado e o estado referencia a região; `events.js` vem depois de
+`modalities.js` e `resultsEngine.js`, pois o evento referencia a modalidade
+(`getModality`) e usa a `ResultsEngine`; `championships.js` já vem depois de
+`regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
 geográficos a partir da geografia; `competitionCategories.js` vem antes de
 `championships.js`, pois o campeonato referencia a categoria; `contracts.js` vem
 depois de `athletes.js`, `clubs.js` e `championships.js` porque referencia
@@ -104,8 +107,7 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `scope`       | **Trava geográfica** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
 | `ageRestriction` | **Trava de idade** `{ minAge, maxAge }` (opcional) ou ausente — uso **futuro** (juvenil/sub). |
 | `clubQuota`   | **Trava de cota**: máx. de atletas por clube **por etapa** (ou ausente = sem limite). CNA = 1. |
-| `events`      | Eventos (lista).                                       |
-| `modalities`  | Modalidades (lista).                                   |
+| `events`      | **Eventos (provas) disputados** — lista de ids de `events.js` (ex.: `["EVT-ATL-100M"]`). Uma etapa roda o primeiro evento. |
 | `competitors` | Participantes (lista).                                 |
 | `stages`      | Etapas — `{ number, date }`.                           |
 
@@ -407,11 +409,11 @@ Funções:
   clube); `getStageParticipantCount(...)` retorna a quantidade.
 - `limitAthletesPerClub(athletes, athleteClubId, quota)` — aplica a cota por clube
   (placeholder: os mais fortes).
-- `getStageModality(championship, stage)` — a prova disputada (por ora, a
-  primeira modalidade do campeonato; senão, a primeira do esporte).
+- `getStageEvent(championship, stage)` — a prova (evento) disputada (por ora, o
+  primeiro evento do campeonato; senão, o primeiro evento do esporte).
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**:
   (1) **resolve o resultado** com a fadiga atual dos participantes (via
-  `resolveModality`) e o **trava**; (2) **soma os pontos** ao ranking
+  `resolveEvent`) e o **trava**; (2) **soma os pontos** ao ranking
   (`recordStageForRanking`, conforme a tier) e **registra as marcas**
   (`recordStageMarks`, melhor por atleta); (3) aplica a fadiga da etapa aos
   participantes.
@@ -484,24 +486,24 @@ do campeonato: **maiores valem mais** (a categoria dá a base do campeão via
 
 ### Ranking de Marcas — `marksRanking.js`
 
-Para cada **modalidade**, guarda a **melhor marca** de cada atleta na **temporada**
-e monta o ranking da melhor para a pior marca. "Melhor" depende da modalidade (a
-`resolution.order` da ResultsEngine): nos 100 m (tempo) a **menor** marca é a
-melhor. É um **template genérico**: funciona para **qualquer** modalidade
-(indexado por `modalityId`, usando a ordem e o formatador da própria modalidade).
+Para cada **evento** (prova), guarda a **melhor marca** de cada atleta na
+**temporada** e monta o ranking da melhor para a pior marca. "Melhor" depende do
+evento (a `resolution.order` da ResultsEngine): nos 100 m (tempo) a **menor** marca
+é a melhor. É um **template genérico**: funciona para **qualquer** evento
+(indexado por `eventId`, usando a ordem e o formatador do próprio evento).
 Também é **só cálculo** — a UI só lê e exibe.
 
 De cada melhor marca guarda-se **onde/quando** foi alcançada (`date`,
 `championshipId`, `stageNumber`), para a UI detalhar ao clicar na data.
 
-- `recordStageMarks(championship, stage, modality, results)` — registra as marcas
+- `recordStageMarks(championship, stage, event, results)` — registra as marcas
   de uma etapa, mantendo só a **melhor** por atleta (via `isBetterResult`). Chamado
   por `processStage`.
-- `getSeasonMarksRanking(modalityId)` → `[{ position, athleteId, value, date,
+- `getSeasonMarksRanking(eventId)` → `[{ position, athleteId, value, date,
   championshipId, stageNumber }]`, ordenado por marca (empate na marca compartilha
-  posição). `getModalitiesWithMarks()` lista as modalidades com marcas.
+  posição). `getEventsWithMarks()` lista os eventos com marcas.
 - **Temporada / histórico**: na virada de ano, `processDay` chama
-  `archiveMarksSeason(anoQueTerminou)` (snapshot por modalidade em `MARKS_HISTORY`)
+  `archiveMarksSeason(anoQueTerminou)` (snapshot por evento em `MARKS_HISTORY`)
   e `resetMarksSeason()`. Histórico **salvo para uso posterior** (ver `TODO.md`).
   Consulta: `getMarksHistory(year)`. `resetMarks()` limpa tudo.
 
@@ -638,23 +640,48 @@ Competidores: `{ id, values: number[] }` ou `{ id, value }`.
 
 ### Modalidades — `modalities.js`
 
-Entidade **ligada a um esporte** (`sportId`), usada em esportes com mais de uma
-variação de prática (ex.: Atletismo → 100 m, salto em distância, etc.).
+**Nível intermediário** da hierarquia **Esporte → Modalidade → Evento**. Uma
+modalidade **agrupa os eventos** (provas) de um esporte. Ex.: no Atletismo, a
+modalidade **Velocidade** reúne provas como os **100 m** (que são um **evento**).
+
+| Campo     | Descrição                                    |
+| --------- | -------------------------------------------- |
+| `id`      | Identificador único (ex.: `MOD-ATL-VELOCIDADE`). |
+| `name`    | Nome da modalidade (ex.: `Velocidade`).      |
+| `sportId` | Esporte a que pertence (ver `sports.js`).    |
+
+Funções utilitárias: `getModality(id)`, `getModalitiesBySport(sportId)` e
+`getModalitySport(modality)` (o esporte da modalidade).
+
+**Database: 72 modalidades** — a lista olímpica por esporte (Atletismo →
+Velocidade, Meio-fundo, Fundo, Barreiras, Obstáculos, Revezamentos, Saltos,
+Arremessos/Lançamentos, Marcha Atlética, Provas Combinadas; Vela → Dinghy, Skiff,
+Multicasco, Prancha à Vela, Kite; etc.). É só a estrutura (id/nome/esporte) — o
+**modelo de resultado** fica nos **eventos** (abaixo). Ainda **sem UI** (ver
+`TODO.md`).
+
+### Eventos — `events.js`
+
+**Nível resolvível** da hierarquia (Modalidade → **Evento**). O evento é a prova
+que a simulação resolve: é ele que carrega o **modelo de resultado**
+(`resolution` + `performance`). Pertence a uma **modalidade** (`modalityId`).
 
 | Campo               | Descrição                                                        |
 | ------------------- | ---------------------------------------------------------------- |
-| `id`                | Identificador único.                                             |
-| `name`              | Nome da modalidade.                                              |
-| `sportId`           | Esporte primário (ver `sports.js`).                             |
+| `id`                | Identificador único (ex.: `EVT-ATL-100M`).                       |
+| `name`              | Nome do evento (ex.: `100 metros rasos`).                        |
+| `modalityId`        | Modalidade a que pertence (ver `modalities.js`).                 |
 | `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). |
 | `performance`       | Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
-| `generalPopularity` | Popularidade geral da modalidade **dentro do esporte** (0–100).  |
+| `generalPopularity` | Popularidade geral do evento **dentro do esporte** (0–100).      |
 | `countryPopularity` | Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
 
-Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
+Funções utilitárias: `getEvent(id)`, `getEventsByModality(modalityId)`,
+`getEventsBySport(sportId)` (via a modalidade) e `getEventModality(event)`.
 
-**Modalidade cadastrada: 100 m rasos** (`MOD-ATL-100M`, do Atletismo). Resolução:
-métrica tempo, **menor vence**, resultado único, 2 casas. Modelo de desempenho:
+**Evento cadastrado: 100 m rasos** (`EVT-ATL-100M`, da modalidade **Velocidade**
+do Atletismo). Resolução: métrica tempo, **menor vence**, resultado único, 2
+casas. Modelo de desempenho:
 
 - **Força efetiva** = `Força − redutor de fadiga − redutor de forma`.
   - **Redutor de fadiga** = `(100 − fatigue) × fatiguePenaltyPerPoint`. O stat
@@ -671,9 +698,9 @@ métrica tempo, **menor vence**, resultado único, 2 casas. Modelo de desempenho
   `secondsPerStrengthPoint = 0.05`. Força efetiva 100 → 9,58 s; quanto menor,
   mais lento.
 
-Funções do modelo: `effectiveStrengthForModality`, `computeModalityResult` (o
-número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) e
-`resolveModality(athletes, modality)` (gera os tempos e resolve o ranking pela
+Funções do modelo: `effectiveStrengthForEvent`, `computeEventResult` (o número do
+resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
+`resolveEvent(athletes, event)` (gera os tempos e resolve o ranking pela
 `ResultsEngine`, retornando `{ id, result, position }` com `result` = tempo).
 
 ---
@@ -920,6 +947,39 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 43 — Hierarquia Esporte → Modalidade → Evento
+
+- Estabelecida a hierarquia **Esporte → Modalidade → Evento**. Antes o que
+  `modalities.js` chamava de "modalidade" (os 100 m, com resolução/modelo) era, na
+  verdade, uma **prova resolvível** — agora corretamente classificada como
+  **evento**. Entre o esporte e o evento entra a **modalidade** (agrupamento).
+- **`modalities.js` reconstruído** como o **agrupamento**: **72 modalidades**
+  (a lista olímpica por esporte, a partir da tabela pedida), cada uma com
+  `{ id, name, sportId }`. Ex.: Atletismo → Velocidade, Meio-fundo, Fundo,
+  Barreiras, Obstáculos, Revezamentos, Saltos, Arremessos/Lançamentos, Marcha
+  Atlética, Provas Combinadas. Helpers `getModality`, `getModalitiesBySport`,
+  `getModalitySport`.
+- **Novo `events.js`** (nível resolvível): o **modelo de resultado** (resolution +
+  performance + funções) migrou para cá. O antigo `MOD-ATL-100M` virou
+  **`EVT-ATL-100M`** (evento "100 metros rasos", `modalityId`
+  `MOD-ATL-VELOCIDADE`). Helpers `getEvent`, `getEventsByModality`,
+  `getEventsBySport`, `getEventModality`, e o modelo `effectiveStrengthForEvent`/
+  `computeEventResult`/`formatEventResult`/`resolveEvent`.
+- **Plumbing atualizado, comportamento preservado**: o campeonato passou a usar o
+  campo **`events`** (o `CNA-2026` = `["EVT-ATL-100M"]`; removido o antigo
+  `modalities`); o gerador recebe `eventId`; `participation.getStageEvent` +
+  `resolveEvent`; o **ranking de marcas** passou a ser **por evento** (`eventId`);
+  a UI (`renderStageResults`, `renderMarksRanking`) e o card do campeonato
+  (linha **Provas**) apontam para eventos. **Nenhuma mecânica não relacionada foi
+  tocada** (fadiga, ritmo, pontos, contratos, elegibilidade, calendário intactos).
+- **Sem UI de modalidades/eventos** ainda (a pedido) — registrada no `TODO.md`.
+- **Verificado** (navegador headless, tempo avançado por várias etapas): 72
+  modalidades; Atletismo com as 10 corretas; 100 m resolve para o evento
+  `EVT-ATL-100M` → modalidade Velocidade → esporte Atletismo; a etapa resolve o
+  resultado (ex.: 9,94 s), os rankings de **marcas** (melhor 9,85) e de **pontos**
+  seguem populando; **sem erros de JS**. Screenshot do Atletismo gerado como
+  exemplo (Esporte → Modalidade → Evento).
 
 ### Etapa 42 — Esportes olímpicos + campo `resultSystems` (indicador)
 
@@ -1413,7 +1473,7 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `refreshClubView()` / `refreshAthleteView()` | Reavaliam as abas Clubes/Atletas após a passagem de tempo. |
 | `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
 | `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
-| `renderMarksRanking(modalityId)`    | Ranking de marcas de uma modalidade (posição/atleta/clube/data clicável/marca). |
+| `renderMarksRanking(eventId)`       | Ranking de marcas de um evento (posição/atleta/clube/data clicável/marca). |
 
 ---
 

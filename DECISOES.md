@@ -205,6 +205,37 @@ Regras a seguir sempre, salvo instrução em contrário:
     - **Criados em lotes de 5, verificando cada lote** (a pedido), conferindo os
       `resultSystems` contra a tabela antes de seguir.
 
+19ch. **Hierarquia Esporte → Modalidade → Evento; o 100 m virou EVENTO.** A pedido
+    ("esporte tem modalidade e modalidade tem eventos; os 100 m são um evento da
+    modalidade Velocidade"), separei o que antes era uma "modalidade" resolvível em
+    **dois níveis**: a **modalidade** (agrupamento, `modalities.js`) e o **evento**
+    (a prova resolvível, `events.js`). Decisões:
+    - **Dois arquivos**: `modalities.js` guarda só a estrutura de agrupamento
+      (`id/name/sportId`, 72 modalidades da tabela); `events.js` guarda as provas
+      com o **modelo de resultado** (`resolution`/`performance` + funções). Assim
+      cada nível tem uma responsabilidade clara e o modelo fica junto de quem
+      resolve (o evento).
+    - **Renomeei em vez de duplicar**: o antigo `MOD-ATL-100M` (modalidade
+      resolvível) virou `EVT-ATL-100M` (evento), e as funções do modelo passaram de
+      `*Modality` para `*Event`. Preferi renomear para o código refletir o modelo
+      correto, em vez de manter um nome enganoso.
+    - **Comportamento preservado**: a resolução dos 100 m, a fadiga, o ritmo, os
+      rankings de pontos e de marcas continuam **idênticos** — só mudou a
+      **classificação** (modalidade→evento) e o **encanamento** (campeonato usa o
+      campo `events`; marcas indexadas por `eventId`). Só toquei mecânicas
+      **relacionadas** a modalidade/evento; nada de fadiga/ritmo/contratos/
+      elegibilidade/calendário.
+    - **Modalidade só com id/nome/esporte** (sem popularidade inventada), seguindo
+      a diretriz de não criar dados não solicitados: a tabela só deu nome e esporte.
+      A popularidade/relação por país fica no **evento** (onde já existia) e para o
+      futuro.
+    - **Ids**: `MOD-<esporte>-<modalidade>` e `EVT-<...>`; onde a modalidade tem o
+      mesmo nome do esporte (Boxe, Futebol, …), criei a modalidade mesmo assim, para
+      todo esporte ter ao menos uma (a estrutura fica uniforme).
+    - **Sem UI** (a pedido) — registrada no `TODO.md`. Para o pedido de
+      "screenshot do Atletismo", gerei uma visualização **descartável** (fora do
+      repositório) a partir dos dados reais, sem adicionar tela ao app.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

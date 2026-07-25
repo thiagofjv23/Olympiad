@@ -98,9 +98,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       Rankings): por modalidade, só a **melhor marca** do atleta na temporada;
       ordenado por marca, com posição, atleta, clube, data (clicável → campeonato/
       etapa) e a marca. **Template genérico** por modalidade; exibido para os 100 m.
-- [ ] **Seletor de modalidade no ranking de marcas.** Hoje o ranking de marcas
-      mostra a única modalidade existente (100 m, `MARKS_DISPLAY_MODALITY_ID` em
-      `script.js`). Quando houver mais modalidades, adicionar um seletor.
+- [ ] **Seletor de evento no ranking de marcas.** Hoje o ranking de marcas
+      mostra o único evento existente (100 m, `MARKS_DISPLAY_EVENT_ID` em
+      `script.js`). Quando houver mais eventos, adicionar um seletor. (Também
+      listado na seção Modalidades e Eventos.)
 - [x] **Histórico de temporada salvo para uso posterior.** DECISÃO: ao virar o ano,
       os rankings da temporada (pontos em `RANKING_HISTORY`, marcas em
       `MARKS_HISTORY`) são arquivados. **Ficam guardados de propósito para uso
@@ -253,26 +254,33 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       alta** "Criar a mecânica de ResultSystem" no topo.
 - [ ] **UI dos esportes.** Ainda não existe tela para esportes.
 
-## Modalidades
+## Modalidades e Eventos
 
-- [ ] **Popularidade por país da modalidade.** O campo `countryPopularity` faz
-      parte da entidade, mas a **relação modalidade ↔ país** ainda **não foi
+Hierarquia **Esporte → Modalidade → Evento** criada (`modalities.js` = 72
+modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só os
+100 m). Pendências:
+
+- [ ] **UI de Modalidades/Eventos.** Ainda **não existe tela** para modalidades
+      nem eventos (lista/detalhe por esporte, provas de cada modalidade). Criar
+      depois — é o próximo passo natural da estrutura recém-criada.
+- [ ] **Popular os eventos das modalidades.** Hoje só existe o evento **100 m**
+      (`EVT-ATL-100M`, modalidade Velocidade). Criar os demais eventos de cada
+      modalidade (ex.: 200 m, 400 m em Velocidade; salto em distância em Saltos;
+      etc.), cada um com sua `resolution` e `performance`.
+- [ ] **Popularidade por país do evento.** O campo `countryPopularity` faz parte
+      da entidade **Evento**, mas a **relação evento ↔ país** ainda **não foi
       feita** — construir depois.
-- [ ] **Popular a database de modalidades.** Já existe a **100 m rasos**; criar as
-      demais modalidades (ex.: outras provas do Atletismo) quando solicitado, cada
-      uma com sua `resolution` e `performance`.
 - [x] **UI de resultados de uma etapa.** Feito: na aba Campeonatos, a etapa
       realizada tem o link "Ver" que abre a classificação (posição, atleta,
-      resultado). Falta ainda a **UI das modalidades** em si (lista/detalhe das
-      provas).
-- [ ] **Modalidade por etapa.** Hoje todas as etapas do campeonato disputam a
-      **mesma** modalidade (a primeira de `championship.modalities`,
-      `getStageModality`). Depois, permitir que cada etapa seja uma prova
-      diferente (várias modalidades ao longo do campeonato).
+      resultado).
+- [ ] **Evento por etapa.** Hoje todas as etapas do campeonato disputam o **mesmo**
+      evento (o primeiro de `championship.events`, `getStageEvent`). Depois,
+      permitir que cada etapa seja uma prova diferente (vários eventos ao longo do
+      campeonato).
 - [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
       `participation.js`: `getStageParticipants` define quem disputa cada etapa
       (regra de teste "todos os contratados via clube"), o **resultado é resolvido
-      e travado** ao realizar a etapa (`processStage` + `resolveModality`) e a
+      e travado** ao realizar a etapa (`processStage` + `resolveEvent`) e a
       fadiga é aplicada aos participantes. Falta só a mecânica **real** de cadastro
       (prioridade média).
 - [ ] **Modelos de desempenho por métrica.** O modelo atual cobre **tempo**

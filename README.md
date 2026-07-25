@@ -27,7 +27,7 @@ A interface tem as seguintes abas:
 - **Clubes** — seletor por país; lista os clubes daquele país (nome, país e prestígio), com clique para expandir e ver as demais informações. No detalhe do clube há o link **"Atletas do clube"**, que mostra os atletas contratados (nome + **duração e término do contrato**; nomes clicáveis que levam ao perfil do atleta). Abaixo dos clubes, a lista de **Agentes livres** do país. As telas são reativas à passagem de tempo (contratos expiram/entram em vigor).
 - **Rankings** — ao abrir, o jogador escolhe qual ranking ver: **Pontos** ou **Marcas** (da temporada corrente).
   - **Pontos**: posição, atleta, clube, **etapas disputadas** e **pontos** (por etapa, conforme a **categoria/tier** do campeonato — maiores valem mais).
-  - **Marcas**: por modalidade (100 m), só a **melhor marca** do atleta na temporada — posição, atleta, clube, **data** (clicável: mostra data, campeonato e etapa) e a **marca**.
+  - **Marcas**: por evento (100 m), só a **melhor marca** do atleta na temporada — posição, atleta, clube, **data** (clicável: mostra data, campeonato e etapa) e a **marca**.
   - Ambos **atualizam a cada etapa**; na virada de ano são arquivados (histórico para uso posterior).
 
 ## Entidades (dados)
@@ -47,8 +47,9 @@ A interface tem as seguintes abas:
 - **`participation.js`** — **participação atleta ↔ etapa**: define quais atletas disputam cada etapa (regra de **teste**: cada clube inscreve todos os seus atletas em todas as etapas) **respeitando a trava geográfica**, **resolve e trava o resultado** de cada etapa realizada (via `resolveModality`) e aplica a **fadiga** aos participantes. A mecânica real de cadastro é prioridade média (ver `TODO.md`).
 - **`eligibility.js`** — **travas de inscrição**: só disputa quem é **elegível** à abrangência (`scope`) do campeonato — atletas daquele **país/região/estado/cidade**, pela **cidade de nascimento** — e à **faixa etária** (uso futuro). Ver `CALENDARIO_DE_COMPETICOES.md`.
 - **`ranking.js`** — **ranking de pontos** (cálculo, separado da UI): acumula **pontos por atleta** na temporada conforme a **tier** do campeonato (maiores valem mais); ordena e **arquiva** a temporada na virada de ano (histórico para uso posterior).
-- **`marksRanking.js`** — **ranking de marcas** (cálculo, separado da UI): por modalidade, guarda a **melhor marca** de cada atleta na temporada (com data/campeonato/etapa), ordena por marca e arquiva por temporada. **Template genérico** para qualquer modalidade.
-- **`modalities.js`** — entidade **Modalidades**: variações de prática de um esporte (id, nome, esporte primário, forma de resolução, modelo de desempenho, popularidade geral e por país). Já inclui os **100 m rasos** do Atletismo, com o cálculo de tempo (Força − fadiga → tempo, tendo o recorde 9,58 s como piso). Sem tela ainda. Ver `TODO.md`.
+- **`marksRanking.js`** — **ranking de marcas** (cálculo, separado da UI): por evento, guarda a **melhor marca** de cada atleta na temporada (com data/campeonato/etapa), ordena por marca e arquiva por temporada. **Template genérico** para qualquer evento.
+- **`modalities.js`** — entidade **Modalidades**: o nível intermediário da hierarquia **Esporte → Modalidade → Evento**. A modalidade **agrupa os eventos** de um esporte (id, nome, esporte). Database com **72 modalidades** olímpicas (ex.: Atletismo → Velocidade, Meio-fundo, Saltos, …). Sem tela ainda. Ver `TODO.md`.
+- **`events.js`** — entidade **Eventos**: as **provas resolvíveis** de uma modalidade (Modalidade → Evento). O evento carrega o **modelo de resultado** (forma de resolução + desempenho). Já inclui os **100 m rasos** (`EVT-ATL-100M`, da modalidade Velocidade do Atletismo), com o cálculo de tempo (Força − fadiga → tempo, recorde 9,58 s como piso). Sem tela ainda. Ver `TODO.md`.
 
 Consulte **`DOCUMENTACAO.md`** (controle do projeto), **`TODO.md`** (pendências) e
 **`CALENDARIO_DE_COMPETICOES.md`** (desenho do calendário de competições).

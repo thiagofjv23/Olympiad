@@ -1,14 +1,14 @@
 // -----------------------------------------------------------------------------
 // Ranking de Marcas (cálculo) — SEPARADO da UI
 //
-// Para cada MODALIDADE, guarda a MELHOR MARCA de cada atleta na TEMPORADA
+// Para cada EVENTO (prova), guarda a MELHOR MARCA de cada atleta na TEMPORADA
 // (ano-calendário) e monta o ranking ordenado da melhor para a pior marca.
-// "Melhor" depende da modalidade (ver resolution.order na ResultsEngine): nos
+// "Melhor" depende do evento (ver resolution.order na ResultsEngine): nos
 // 100 m (tempo) a menor marca é a melhor; num salto, a maior.
 //
-// É um TEMPLATE GENÉRICO: funciona para qualquer modalidade (indexado por
-// `modalityId`, usando a ordem e o formatador da própria modalidade). A UI (aba
-// Rankings) apenas LÊ `getSeasonMarksRanking(modalityId)` e exibe — nada de
+// É um TEMPLATE GENÉRICO: funciona para qualquer evento (indexado por
+// `eventId`, usando a ordem e o formatador do próprio evento). A UI (aba
+// Rankings) apenas LÊ `getSeasonMarksRanking(eventId)` e exibe — nada de
 // cálculo na tela.
 //
 // De cada melhor marca guardamos também ONDE/QUANDO foi alcançada (data,
@@ -19,20 +19,20 @@
 // A orquestração fica em participation.js (`processDay`).
 // -----------------------------------------------------------------------------
 
-// Melhor marca da temporada CORRENTE: modalityId -> { athleteId -> registro }.
+// Melhor marca da temporada CORRENTE: eventId -> { athleteId -> registro }.
 // registro = { value, date, championshipId, stageNumber }.
 const MARKS_RANKING = {};
 
-// Histórico de temporadas encerradas: year -> { modalityId -> ranking snapshot }.
+// Histórico de temporadas encerradas: year -> { eventId -> ranking snapshot }.
 const MARKS_HISTORY = {};
 
 // Registra as marcas de uma etapa JÁ RESOLVIDA. Para cada atleta, guarda a marca
-// apenas se for MELHOR que a atual da temporada (conforme a ordem da modalidade).
+// apenas se for MELHOR que a atual da temporada (conforme a ordem do evento).
 // `results` = [{ id, result, position }] (result = a marca; null = sem marca).
-function recordStageMarks(championship, stage, modality, results) {
-  if (!modality) return;
-  const order = modality.resolution.order;
-  const table = MARKS_RANKING[modality.id] || (MARKS_RANKING[modality.id] = {});
+function recordStageMarks(championship, stage, event, results) {
+  if (!event) return;
+  const order = event.resolution.order;
+  const table = MARKS_RANKING[event.id] || (MARKS_RANKING[event.id] = {});
   for (const entry of results) {
     if (entry.result == null) continue; // sem marca (ex.: DNF) não entra
     const current = table[entry.id];
@@ -47,15 +47,15 @@ function recordStageMarks(championship, stage, modality, results) {
   }
 }
 
-// Ranking de marcas da temporada corrente para uma modalidade, ordenado da melhor
+// Ranking de marcas da temporada corrente para um evento, ordenado da melhor
 // para a pior marca. Empates na MARCA compartilham a posição (1, 2, 2, 4).
 // Retorna [{ position, athleteId, value, date, championshipId, stageNumber }].
-function getSeasonMarksRanking(modalityId) {
-  const table = MARKS_RANKING[modalityId];
+function getSeasonMarksRanking(eventId) {
+  const table = MARKS_RANKING[eventId];
   if (!table) return [];
-  const modality = getModality(modalityId);
-  const order = modality
-    ? modality.resolution.order
+  const event = getEvent(eventId);
+  const order = event
+    ? event.resolution.order
     : ResultsEngine.ORDERS.ASCENDING;
 
   const entries = Object.keys(table).map((id) => ({
@@ -84,19 +84,19 @@ function getSeasonMarksRanking(modalityId) {
   return entries;
 }
 
-// Modalidades que já têm marcas registradas na temporada corrente.
-function getModalitiesWithMarks() {
+// Eventos que já têm marcas registradas na temporada corrente.
+function getEventsWithMarks() {
   return Object.keys(MARKS_RANKING);
 }
 
-// Arquiva as marcas da temporada que terminou (snapshot por modalidade). Não
+// Arquiva as marcas da temporada que terminou (snapshot por evento). Não
 // arquiva temporada vazia.
 function archiveMarksSeason(year) {
-  const modalityIds = Object.keys(MARKS_RANKING);
-  if (modalityIds.length === 0) return;
+  const eventIds = Object.keys(MARKS_RANKING);
+  if (eventIds.length === 0) return;
   const snapshot = {};
-  for (const modalityId of modalityIds) {
-    snapshot[modalityId] = getSeasonMarksRanking(modalityId);
+  for (const eventId of eventIds) {
+    snapshot[eventId] = getSeasonMarksRanking(eventId);
   }
   MARKS_HISTORY[year] = snapshot;
 }

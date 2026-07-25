@@ -2,7 +2,7 @@
 // Participação atleta ↔ etapa
 // Define QUAIS atletas disputam cada etapa de um campeonato — a ponte entre
 // atletas (via clube/contrato) e as etapas. Com os participantes definidos,
-// resolve o RESULTADO da etapa (via modalidade + ResultsEngine) e desgasta os
+// resolve o RESULTADO da etapa (via evento + ResultsEngine) e desgasta os
 // participantes (fadiga).
 //
 // REGRA DE TESTE (temporária): cada clube inscreve TODOS os seus atletas em
@@ -70,16 +70,16 @@ function getStageParticipantCount(championship, stage) {
   return getStageParticipants(championship, stage).length;
 }
 
-// Modalidade (prova) que uma etapa disputa. Por ora, a primeira modalidade do
-// campeonato; na falta, a primeira modalidade do esporte do campeonato.
-// TODO: modalidade por etapa (cada etapa uma prova diferente) — ver TODO.md.
-function getStageModality(championship, stage) {
-  if (championship.modalities && championship.modalities.length > 0) {
-    const modality = getModality(championship.modalities[0]);
-    if (modality) return modality;
+// Evento (prova) que uma etapa disputa. Por ora, o primeiro evento do campeonato;
+// na falta, o primeiro evento do esporte do campeonato.
+// TODO: evento por etapa (cada etapa uma prova diferente) — ver TODO.md.
+function getStageEvent(championship, stage) {
+  if (championship.events && championship.events.length > 0) {
+    const event = getEvent(championship.events[0]);
+    if (event) return event;
   }
-  const sportModalities = getModalitiesBySport(championship.sportId);
-  return sportModalities.length > 0 ? sportModalities[0] : null;
+  const sportEvents = getEventsBySport(championship.sportId);
+  return sportEvents.length > 0 ? sportEvents[0] : null;
 }
 
 // --- resolução de resultados e fadiga por etapa -------------------------------
@@ -100,14 +100,14 @@ function processStage(championship, stage) {
   if (_stageResults.has(key)) return _stageResults.get(key);
 
   const participants = getStageParticipants(championship, stage);
-  const modality = getStageModality(championship, stage);
+  const event = getStageEvent(championship, stage);
   // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos desta etapa).
-  const results = modality ? resolveModality(participants, modality) : [];
+  const results = event ? resolveEvent(participants, event) : [];
   _stageResults.set(key, results);
   // Ranking de pontos: soma os pontos desta etapa (conforme a tier do campeonato).
   recordStageForRanking(championship, results);
-  // Ranking de marcas: registra a melhor marca de cada atleta na modalidade.
-  recordStageMarks(championship, stage, modality, results);
+  // Ranking de marcas: registra a melhor marca de cada atleta no evento.
+  recordStageMarks(championship, stage, event, results);
   // Depois de competir: os participantes se cansam (fadiga) e ganham ritmo (forma).
   applyStageFatigueToParticipants(participants);
   applyRaceRitmoToParticipants(participants);

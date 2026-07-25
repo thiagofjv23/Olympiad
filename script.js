@@ -72,9 +72,9 @@ const freeAgentsEl = document.getElementById("free-agents");
 // Elementos — rankings.
 const rankingTypeSelect = document.getElementById("ranking-type-select");
 const rankingContent = document.getElementById("ranking-content");
-// Modalidade exibida no ranking de marcas. Por ora só existe a dos 100 m; quando
-// houver mais modalidades, um seletor escolherá qual mostrar (ver TODO.md).
-const MARKS_DISPLAY_MODALITY_ID = "MOD-ATL-100M";
+// Evento exibido no ranking de marcas. Por ora só existe o dos 100 m; quando
+// houver mais eventos, um seletor escolherá qual mostrar (ver TODO.md).
+const MARKS_DISPLAY_EVENT_ID = "EVT-ATL-100M";
 
 function sameDay(a, b) {
   return (
@@ -419,7 +419,7 @@ function renderChampionship(id, highlightStage) {
       <ul class="detail-list">
         <li><span>Categoria</span><strong>${categoryName}</strong></li>
         <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
-        <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
+        <li><span>Provas</span><strong>${championship.events.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
       </ul>
     </div>
@@ -467,10 +467,10 @@ function renderStageResults(championship, stage) {
   const panel = document.getElementById("stage-results");
   if (!panel) return;
 
-  const modality = getStageModality(championship, stage);
-  const modalityName = modality ? modality.name : "—";
+  const event = getStageEvent(championship, stage);
+  const eventName = event ? event.name : "—";
   const results = getStageResult(championship, stage);
-  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number} · ${modalityName}</h4>`;
+  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number} · ${eventName}</h4>`;
 
   if (!results || results.length === 0) {
     panel.innerHTML =
@@ -482,7 +482,7 @@ function renderStageResults(championship, stage) {
     .map((entry) => {
       const athlete = ATHLETES.find((a) => a.id === entry.id);
       const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
-      const value = formatModalityResult(entry.result, modality);
+      const value = formatEventResult(entry.result, event);
       return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
     })
     .join("");
@@ -752,7 +752,7 @@ function renderRanking() {
   if (type === "points") {
     renderPointsRanking();
   } else if (type === "marks") {
-    renderMarksRanking(MARKS_DISPLAY_MODALITY_ID);
+    renderMarksRanking(MARKS_DISPLAY_EVENT_ID);
   } else {
     rankingContent.innerHTML = `<p class="ranking-hint">Escolha um ranking acima para visualizar.</p>`;
   }
@@ -796,19 +796,19 @@ function renderPointsRanking() {
     </table>`;
 }
 
-// Ranking de MARCAS de uma modalidade: só a MELHOR marca do atleta na temporada.
+// Ranking de MARCAS de um evento: só a MELHOR marca do atleta na temporada.
 // Colunas: posição, atleta, clube, data (clicável) e marca. Ao clicar na data,
 // mostra data + campeonato + etapa em que a marca foi alcançada. Genérico: serve
-// qualquer modalidade (usa a ordem e o formatador da própria modalidade).
-function renderMarksRanking(modalityId) {
+// qualquer evento (usa a ordem e o formatador do próprio evento).
+function renderMarksRanking(eventId) {
   const season = currentDate.getFullYear();
-  const modality = getModality(modalityId);
-  const modalityName = modality ? modality.name : modalityId;
-  const ranking = getSeasonMarksRanking(modalityId);
+  const event = getEvent(eventId);
+  const eventName = event ? event.name : eventId;
+  const ranking = getSeasonMarksRanking(eventId);
 
   if (ranking.length === 0) {
     rankingContent.innerHTML = `
-      <h2 class="ranking-title">Ranking de Marcas — ${modalityName} · Temporada ${season}</h2>
+      <h2 class="ranking-title">Ranking de Marcas — ${eventName} · Temporada ${season}</h2>
       <p class="ranking-empty">Nenhuma marca registrada nesta temporada ainda.</p>`;
     return;
   }
@@ -817,8 +817,8 @@ function renderMarksRanking(modalityId) {
     .map((entry) => {
       const club = getAthleteClub(entry.athleteId, currentDate);
       const clubName = club ? club.name : "Agente livre";
-      const markText = modality
-        ? formatModalityResult(entry.value, modality)
+      const markText = event
+        ? formatEventResult(entry.value, event)
         : String(entry.value);
       return `
         <tr>
@@ -832,7 +832,7 @@ function renderMarksRanking(modalityId) {
     .join("");
 
   rankingContent.innerHTML = `
-    <h2 class="ranking-title">Ranking de Marcas — ${modalityName} · Temporada ${season}</h2>
+    <h2 class="ranking-title">Ranking de Marcas — ${eventName} · Temporada ${season}</h2>
     <p class="ranking-hint">Melhor marca de cada atleta na temporada. Clique na data para ver onde foi alcançada.</p>
     <table class="stages-table ranking-table marks-table">
       <thead>

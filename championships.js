@@ -72,8 +72,7 @@ const CHAMPIONSHIPS = {
     scope: { level: "country", placeId: "BRA" },
     // Trava de cota: cada clube inscreve no máximo 1 atleta por etapa.
     clubQuota: 1,
-    events: [],
-    modalities: ["MOD-ATL-100M"], // provas disputadas (ver modalities.js)
+    events: ["EVT-ATL-100M"], // provas (eventos) disputadas (ver events.js)
     competitors: [],
     // 10 etapas, sempre no segundo sábado de cada mês, começando em janeiro/2026.
     stages: buildMonthlyStages(2026, 0, 10),
@@ -159,7 +158,7 @@ function championshipProgress(championship, referenceDate) {
 // A partir da GEOGRAFIA de um país (regiões e estados — ver regions.js/states.js)
 // e das CIDADES que existem na database (cities.js), cria os campeonatos
 // Estaduais (um por estado) e Regionais (um por região). É GENÉRICO: serve
-// qualquer país; basta informar o esporte/modalidade e o país. Os campeonatos
+// qualquer país; basta informar o esporte/evento e o país. Os campeonatos
 // gerados recebem `categoryId` (Estadual/Regional) e `scope` (a trava de
 // inscrição), e são registrados em CHAMPIONSHIPS.
 //
@@ -171,7 +170,7 @@ function buildCountryGeographicChampionships(config) {
   const {
     countryId,
     sportId,
-    modalityId,
+    eventId,
     startYear = 2026,
     startMonth = 0,
     stageCount = 10,
@@ -179,7 +178,7 @@ function buildCountryGeographicChampionships(config) {
     regionalNthSaturday = 3, // regionais no 3º sábado (nacional fica no 2º)
   } = config;
 
-  const modalities = modalityId ? [modalityId] : [];
+  const events = eventId ? [eventId] : [];
   const created = [];
 
   // Estaduais: um por estado do país que possua ao menos uma cidade na database.
@@ -193,8 +192,7 @@ function buildCountryGeographicChampionships(config) {
       sportId,
       categoryId: "CAT-ESTADUAL",
       scope: { level: "state", placeId: state.id },
-      events: [],
-      modalities,
+      events,
       competitors: [],
       stages: buildMonthlyStagesOn(startYear, startMonth, stageCount, estadualNthSaturday),
     };
@@ -217,8 +215,7 @@ function buildCountryGeographicChampionships(config) {
       sportId,
       categoryId: "CAT-REGIONAL",
       scope: { level: "region", placeId: region.id },
-      events: [],
-      modalities,
+      events,
       competitors: [],
       stages: buildMonthlyStagesOn(startYear, startMonth, stageCount, regionalNthSaturday),
     };
@@ -230,11 +227,11 @@ function buildCountryGeographicChampionships(config) {
 }
 
 // Popula o calendário do Brasil (único país atual) a partir da sua geografia:
-// campeonatos Estaduais e Regionais de Atletismo (100 m). O Nacional (CNA-2026)
-// já está na database acima. Ao adicionar outros países, chamar este gerador
-// para cada um.
+// campeonatos Estaduais e Regionais de Atletismo (evento dos 100 m). O Nacional
+// (CNA-2026) já está na database acima. Ao adicionar outros países, chamar este
+// gerador para cada um.
 buildCountryGeographicChampionships({
   countryId: "BRA",
   sportId: "SPT-ATLETISMO",
-  modalityId: "MOD-ATL-100M",
+  eventId: "EVT-ATL-100M",
 });
