@@ -873,11 +873,11 @@ function renderMarksRanking(eventId) {
 // -----------------------------------------------------------------------------
 // Esportes
 // Mostra a hierarquia Esporte → Modalidade → Evento. Os esportes vêm em ordem
-// alfabética; cada um é um <details> que revela suas modalidades (também em
-// <details>, com seus atributos), e cada modalidade revela seus eventos (também
-// <details>, com seus atributos). Lê SEMPRE das databases vivas (getAllSports /
-// getModalitiesBySport / getEventsByModality), então novos esportes/modalidades/
-// eventos aparecem sozinhos — sem lista fixa na tela.
+// alfabética; cada um é um <details> que mostra seus ATRIBUTOS e revela suas
+// modalidades (também em <details>, com atributos), e cada modalidade revela seus
+// eventos (também <details>, com atributos). Lê SEMPRE das databases vivas
+// (getAllSports / getModalitiesBySport / getEventsByModality), então novos
+// esportes/modalidades/eventos aparecem sozinhos — sem lista fixa na tela.
 // -----------------------------------------------------------------------------
 
 // Ordenação alfabética por nome (acentos-cientes, pt-BR).
@@ -904,6 +904,12 @@ function formatEventResolution(event) {
   return `${metricLabelPtBr(event.resolution.metric)} · ${orderLabelPtBr(event.resolution.order)}`;
 }
 
+// Texto do ano de início da prática de um esporte (negativo = a.C.).
+function formatPracticeStartYear(year) {
+  if (year == null) return "—";
+  return year < 0 ? `${Math.abs(year)} a.C.` : String(year);
+}
+
 // Bloco de atributos (lista <li><span>rótulo</span><strong>valor</strong></li>).
 function attrList(pairs) {
   const items = pairs
@@ -928,11 +934,25 @@ function renderSports() {
             .map((modality) => renderModalityDetails(modality, sport))
             .join("")
         : `<p class="sport__empty">Nenhuma modalidade cadastrada.</p>`;
+      const resultSystems =
+        sport.resultSystems && sport.resultSystems.length
+          ? sport.resultSystems.join(", ")
+          : "—";
+      const sportAttrs = attrList([
+        ["ID", sport.id],
+        ["Descrição", sport.description || "—"],
+        ["Popularidade", sport.generalPopularity != null ? `${sport.generalPopularity}/100` : "—"],
+        ["Início da prática", formatPracticeStartYear(sport.practiceStartYear)],
+        ["País de origem", sport.originCountry || "—"],
+        ["ResultSystems", resultSystems],
+        ["Modalidades", modalities.length],
+      ]);
       return `
         <details class="sport">
           <summary class="sport__summary">
             <span class="sport__name">${sport.name}</span>
           </summary>
+          ${sportAttrs}
           <div class="sport__modalities">${modalitiesHtml}</div>
         </details>`;
     })

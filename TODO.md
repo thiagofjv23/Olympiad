@@ -254,10 +254,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       alta** "Criar a mecânica de ResultSystem" no topo.
 - [x] **UI dos esportes.** Feita: aba **Esportes** lista os esportes em ordem
       alfabética (`<details>`), abrindo as modalidades e, nelas, os eventos
-      (`renderSports`). Reconhece novos dados automaticamente. As **modalidades e
-      eventos já mostram atributos**; o **esporte** segue só com o nome — se
-      desejado, mostrar depois os atributos do esporte (popularidade, origem,
-      `resultSystems`).
+      (`renderSports`). Reconhece novos dados automaticamente. **Esporte,
+      modalidade e evento mostram seus atributos** (o esporte: ID, descrição,
+      popularidade, início da prática, país de origem, `resultSystems` e nº de
+      modalidades).
 
 ## Modalidades e Eventos
 

@@ -958,6 +958,23 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 47 — Atributos dos esportes na aba Esportes
+
+- Completando a Etapa 46, o **esporte** passou a mostrar seus **atributos** ao
+  abrir (antes só o nome), no mesmo padrão de modalidades/eventos: **ID**,
+  **Descrição**, **Popularidade** (0–100), **Início da prática** (negativo → "N
+  a.C."), **País de origem**, **ResultSystems** (lista) e **nº de Modalidades**
+  (derivado). As modalidades continuam listadas logo abaixo.
+- **Derivado das databases**: os atributos vêm do próprio esporte + a contagem de
+  modalidades (`getModalitiesBySport`), então segue reativo. Helper novo:
+  `formatPracticeStartYear`.
+- **Só UI**: apenas `script.js` (o `renderSports` monta o bloco `.sport-attrs` do
+  esporte, reusando o estilo já existente — sem CSS novo). Nenhuma
+  entidade/mecânica foi tocada.
+- **Verificado** (navegador headless): Atletismo mostra os 7 atributos corretos
+  (popularidade 85/100, "776 a.C.", os 4 ResultSystems, 10 modalidades) e as
+  modalidades seguem listadas abaixo; sem erros de JS. Screenshot enviado.
+
 ### Etapa 46 — Atributos de modalidades e eventos na aba Esportes
 
 - A aba **Esportes** passou a mostrar os **atributos** das modalidades e dos
@@ -1548,11 +1565,12 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
 | `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
 | `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
 | `renderMarksRanking(eventId)`       | Ranking de marcas de um evento (posição/atleta/clube/data clicável/marca). |
-| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um abrindo suas modalidades (`<details>`, com **atributos**) e cada modalidade seus eventos (`<details>`, com **atributos**). Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
+| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um mostrando seus **atributos** e abrindo suas modalidades (`<details>`, com **atributos**) e cada modalidade seus eventos (`<details>`, com **atributos**). Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
 | `renderModalityDetails(modality, sport)` | Uma modalidade na aba Esportes: atributos (ID, esporte, nº de eventos) + os eventos. |
 | `renderEventDetails(event, modality, sport)` | Um evento na aba Esportes: atributos (ID, modalidade, esporte, modelo de resultado, popularidade). |
 | `byNamePtBr(a, b)`                  | Comparador de ordenação alfabética por `name` (pt-BR, acentos-ciente).       |
 | `metricLabelPtBr` / `orderLabelPtBr` / `formatEventResolution(event)` | Rótulos em pt-BR da métrica/direção e o texto do modelo de resolução de um evento (ou "— (pendente)"). |
+| `formatPracticeStartYear(year)`     | Texto do ano de início da prática de um esporte (negativo → "N a.C.").       |
 | `attrList(pairs)`                   | Monta uma lista de atributos `<li><span>rótulo</span><strong>valor</strong></li>`. |
 
 ---

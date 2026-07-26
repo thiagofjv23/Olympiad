@@ -293,6 +293,15 @@ Regras a seguir sempre, salvo instrução em contrário:
     - **Escopo**: só `script.js` (render + helpers) e `styles.css`. Nenhuma
       entidade/mecânica tocada.
 
+19cl. **Atributos do esporte na aba Esportes (só UI).** A pedido, o nível esporte
+    passou a exibir seus atributos também (antes só o nome), fechando os três
+    níveis. Mostro todos os campos da entidade Esporte (ID, descrição,
+    popularidade, `practiceStartYear`, origem, `resultSystems`) + o nº de
+    modalidades (derivado de `getModalitiesBySport`). Reusei o mesmo bloco
+    `.sport-attrs` e o `attrList` das modalidades/eventos — **sem CSS novo**. O
+    ano negativo (a.C.) ganhou um helper `formatPracticeStartYear` para exibir "776
+    a.C." em vez de "-776". Escopo: só `script.js`; nenhuma mecânica tocada.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em
