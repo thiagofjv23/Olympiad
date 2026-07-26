@@ -330,6 +330,30 @@ Regras a seguir sempre, salvo instrução em contrário:
       resolva (params presentes) — deixa explícito por que a maioria dos ~190
       eventos ainda não joga (faltam os parâmetros, que entram evento a evento).
 
+19cn. **Parametrização das provas de tempo do Atletismo (recorde real + escala
+    proporcional + fábrica).** A pedido, tornei disputáveis as 16 provas de tempo
+    do Atletismo (os 100 m ficaram **intactos**), de 2 em 2 e verificando cada par.
+    Decisões:
+    - **`recordTime` = recorde mundial real** (o piso da prova), então Força
+      efetiva 100 → o recorde e os tempos batem com a vida real. Usei o recorde
+      **absoluto** (o melhor entre M/F) como piso, pois o simulador não separa
+      gênero — coerente com os 100 m (9,58 s, recorde masculino).
+    - **Escala `secondsPerStrengthPoint ≈ recordTime × 0,005`**: mantém a mesma
+      dispersão relativa dos 100 m (~10% para 20 pontos de Força) em qualquer
+      distância — sem isso, provas longas com o default 0,05 ficariam apertadas
+      demais. Dá spreads plausíveis (Força 85 corre 200 m ~20,7 s, Maratona
+      ~2:09:35). Valores de balanceamento, fáceis de recalibrar.
+    - **Fábrica `makeTimeEvent(...)`** em vez de repetir o bloco
+      `resultSystem`+`resolution`+`time` em cada evento: cada prova de tempo vira
+      **uma linha** com só o que a distingue (recorde, escala). Prioriza
+      manutenção e facilita inserir novas provas/esportes de tempo. Deixei os
+      100 m como literal (não converti para a fábrica) para **não tocar** no que já
+      funciona.
+    - **Só dados**: mexi só em `events.js`; nenhuma outra mecânica. Provas
+      não-tempo (saltos, lançamentos, combinadas) seguem sem sistema (não
+      disputáveis) — elas usarão Distance/Height/Points quando esses sistemas
+      existirem.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

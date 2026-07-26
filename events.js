@@ -38,6 +38,32 @@
 // guarda os eventos e DESPACHA a resolução para o sistema certo.
 // -----------------------------------------------------------------------------
 
+// Fábrica de EVENTO DE TEMPO (resolvido pelo TimeResultSystem). Mantém cada prova
+// de tempo em uma linha só, com o que a distingue:
+//   - recordTime               : o piso/recorde da prova (em segundos)
+//   - secondsPerStrengthPoint  : escala — quanto cada ponto de Força efetiva
+//                                abaixo de 100 acrescenta ao tempo (provas mais
+//                                longas usam escala maior). Convenção do projeto:
+//                                ~= recordTime × 0,005 (o mesmo ~10% de dispersão
+//                                para 20 pontos que os 100 m já usam).
+// O resto (penalidades de fadiga/forma) usa os defaults do TimeResultSystem, e a
+// forma de resolução é a mesma (métrica tempo, menor vence).
+function makeTimeEvent(id, name, modalityId, recordTime, secondsPerStrengthPoint) {
+  return {
+    id,
+    name,
+    modalityId,
+    resultSystem: "TimeResultSystem",
+    resolution: {
+      metric: ResultsEngine.METRICS.TIME,
+      order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
+      aggregation: ResultsEngine.AGGREGATIONS.SINGLE,
+      precision: 2,
+    },
+    time: { recordTime, secondsPerStrengthPoint },
+  };
+}
+
 const EVENTS = {
   // === Atletismo =============================================================
   // Velocidade
@@ -63,25 +89,25 @@ const EVENTS = {
     generalPopularity: 95,
     countryPopularity: null, // relação futura (ver TODO.md)
   },
-  "EVT-ATL-200M": { id: "EVT-ATL-200M", name: "200 metros rasos", modalityId: "MOD-ATL-VELOCIDADE" },
-  "EVT-ATL-400M": { id: "EVT-ATL-400M", name: "400 metros rasos", modalityId: "MOD-ATL-VELOCIDADE" },
+  "EVT-ATL-200M": makeTimeEvent("EVT-ATL-200M", "200 metros rasos", "MOD-ATL-VELOCIDADE", 19.19, 0.10),
+  "EVT-ATL-400M": makeTimeEvent("EVT-ATL-400M", "400 metros rasos", "MOD-ATL-VELOCIDADE", 43.03, 0.22),
   // Meio-fundo
-  "EVT-ATL-800M": { id: "EVT-ATL-800M", name: "800 metros", modalityId: "MOD-ATL-MEIO-FUNDO" },
-  "EVT-ATL-1500M": { id: "EVT-ATL-1500M", name: "1500 metros", modalityId: "MOD-ATL-MEIO-FUNDO" },
+  "EVT-ATL-800M": makeTimeEvent("EVT-ATL-800M", "800 metros", "MOD-ATL-MEIO-FUNDO", 100.91, 0.5),
+  "EVT-ATL-1500M": makeTimeEvent("EVT-ATL-1500M", "1500 metros", "MOD-ATL-MEIO-FUNDO", 206.0, 1.0),
   // Fundo
-  "EVT-ATL-5000M": { id: "EVT-ATL-5000M", name: "5000 metros", modalityId: "MOD-ATL-FUNDO" },
-  "EVT-ATL-10000M": { id: "EVT-ATL-10000M", name: "10000 metros", modalityId: "MOD-ATL-FUNDO" },
-  "EVT-ATL-MARATONA": { id: "EVT-ATL-MARATONA", name: "Maratona", modalityId: "MOD-ATL-FUNDO" },
+  "EVT-ATL-5000M": makeTimeEvent("EVT-ATL-5000M", "5000 metros", "MOD-ATL-FUNDO", 755.36, 3.8),
+  "EVT-ATL-10000M": makeTimeEvent("EVT-ATL-10000M", "10000 metros", "MOD-ATL-FUNDO", 1571.0, 7.9),
+  "EVT-ATL-MARATONA": makeTimeEvent("EVT-ATL-MARATONA", "Maratona", "MOD-ATL-FUNDO", 7235.0, 36.0),
   // Barreiras
-  "EVT-ATL-100MB": { id: "EVT-ATL-100MB", name: "100 metros com barreiras", modalityId: "MOD-ATL-BARREIRAS" },
-  "EVT-ATL-110MB": { id: "EVT-ATL-110MB", name: "110 metros com barreiras", modalityId: "MOD-ATL-BARREIRAS" },
-  "EVT-ATL-400MB": { id: "EVT-ATL-400MB", name: "400 metros com barreiras", modalityId: "MOD-ATL-BARREIRAS" },
+  "EVT-ATL-100MB": makeTimeEvent("EVT-ATL-100MB", "100 metros com barreiras", "MOD-ATL-BARREIRAS", 12.12, 0.06),
+  "EVT-ATL-110MB": makeTimeEvent("EVT-ATL-110MB", "110 metros com barreiras", "MOD-ATL-BARREIRAS", 12.8, 0.065),
+  "EVT-ATL-400MB": makeTimeEvent("EVT-ATL-400MB", "400 metros com barreiras", "MOD-ATL-BARREIRAS", 45.94, 0.23),
   // Obstáculos
-  "EVT-ATL-3000MO": { id: "EVT-ATL-3000MO", name: "3000 metros com obstáculos", modalityId: "MOD-ATL-OBSTACULOS" },
+  "EVT-ATL-3000MO": makeTimeEvent("EVT-ATL-3000MO", "3000 metros com obstáculos", "MOD-ATL-OBSTACULOS", 472.11, 2.4),
   // Revezamentos
-  "EVT-ATL-4X100": { id: "EVT-ATL-4X100", name: "Revezamento 4x100 metros", modalityId: "MOD-ATL-REVEZAMENTOS" },
-  "EVT-ATL-4X400": { id: "EVT-ATL-4X400", name: "Revezamento 4x400 metros", modalityId: "MOD-ATL-REVEZAMENTOS" },
-  "EVT-ATL-4X400-MISTO": { id: "EVT-ATL-4X400-MISTO", name: "Revezamento 4x400 metros misto", modalityId: "MOD-ATL-REVEZAMENTOS" },
+  "EVT-ATL-4X100": makeTimeEvent("EVT-ATL-4X100", "Revezamento 4x100 metros", "MOD-ATL-REVEZAMENTOS", 36.84, 0.18),
+  "EVT-ATL-4X400": makeTimeEvent("EVT-ATL-4X400", "Revezamento 4x400 metros", "MOD-ATL-REVEZAMENTOS", 174.29, 0.87),
+  "EVT-ATL-4X400-MISTO": makeTimeEvent("EVT-ATL-4X400-MISTO", "Revezamento 4x400 metros misto", "MOD-ATL-REVEZAMENTOS", 188.8, 0.94),
   // Saltos
   "EVT-ATL-SALTO-DISTANCIA": { id: "EVT-ATL-SALTO-DISTANCIA", name: "Salto em distância", modalityId: "MOD-ATL-SALTOS" },
   "EVT-ATL-SALTO-TRIPLO": { id: "EVT-ATL-SALTO-TRIPLO", name: "Salto triplo", modalityId: "MOD-ATL-SALTOS" },
@@ -93,8 +119,8 @@ const EVENTS = {
   "EVT-ATL-MARTELO": { id: "EVT-ATL-MARTELO", name: "Lançamento de martelo", modalityId: "MOD-ATL-LANCAMENTOS" },
   "EVT-ATL-DARDO": { id: "EVT-ATL-DARDO", name: "Lançamento de dardo", modalityId: "MOD-ATL-LANCAMENTOS" },
   // Marcha Atlética
-  "EVT-ATL-MARCHA-20KM": { id: "EVT-ATL-MARCHA-20KM", name: "Marcha atlética 20 km", modalityId: "MOD-ATL-MARCHA" },
-  "EVT-ATL-MARCHA-35KM": { id: "EVT-ATL-MARCHA-35KM", name: "Marcha atlética 35 km", modalityId: "MOD-ATL-MARCHA" },
+  "EVT-ATL-MARCHA-20KM": makeTimeEvent("EVT-ATL-MARCHA-20KM", "Marcha atlética 20 km", "MOD-ATL-MARCHA", 4596.0, 23.0),
+  "EVT-ATL-MARCHA-35KM": makeTimeEvent("EVT-ATL-MARCHA-35KM", "Marcha atlética 35 km", "MOD-ATL-MARCHA", 8500.0, 42.5),
   // Provas Combinadas
   "EVT-ATL-DECATLO": { id: "EVT-ATL-DECATLO", name: "Decatlo", modalityId: "MOD-ATL-COMBINADAS" },
   "EVT-ATL-HEPTATLO": { id: "EVT-ATL-HEPTATLO", name: "Heptatlo", modalityId: "MOD-ATL-COMBINADAS" },

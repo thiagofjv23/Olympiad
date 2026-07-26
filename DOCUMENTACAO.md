@@ -696,13 +696,22 @@ registrá-lo em `EVENT_RESULT_SYSTEMS`.
 **Database: ~190 eventos** seguindo o **calendário olímpico** — cada modalidade
 recebe as suas provas (ex.: Velocidade → 100 m, 200 m, 400 m; Natação → 50 m
 livre … revezamentos; Judô/Boxe/Lutas → categorias de peso; coletivos →
-"Torneio …"). Por ora os eventos guardam só a **estrutura** (`id/name/modalityId`);
-o **sistema/parâmetros** (`resultSystem` + `resolution` + `time`) está definido
-apenas onde já existe — hoje, os **100 m** (via `TimeResultSystem`). Os demais
-ganham o seu à medida que forem parametrizados (as diferenças entram **evento a
-evento** — ver `TODO.md`). Eventos sem sistema **não são resolvidos** (nenhum
-campeonato os disputa ainda) — só compõem a estrutura Esporte → Modalidade →
-Evento (e aparecem na aba Esportes).
+"Torneio …"). Um evento vira **disputável** quando ganha `resultSystem` +
+`resolution` + os seus parâmetros. Já são disputáveis **todas as provas de tempo
+do Atletismo** (17: os 100 m + 200/400 m, 800/1500 m, 5000/10000 m, Maratona, as
+3 de barreiras, obstáculos, os 3 revezamentos e as 2 de marcha) — via
+`TimeResultSystem`, cada uma com o seu recorde. Os demais eventos ganham o seu à
+medida que forem parametrizados (as diferenças entram **evento a evento** — ver
+`TODO.md`). Eventos ainda sem sistema **não são resolvidos** (nenhum campeonato os
+disputa ainda) — só compõem a estrutura Esporte → Modalidade → Evento (e aparecem
+na aba Esportes).
+
+Provas de tempo são criadas com a **fábrica `makeTimeEvent(id, name, modalityId,
+recordTime, secondsPerStrengthPoint)`** — cada uma numa linha só, com o **recorde**
+(piso) e a **escala** próprios; o resto herda os defaults do `TimeResultSystem`.
+Convenção de escala: `secondsPerStrengthPoint ≈ recordTime × 0,005` (mesma
+dispersão relativa dos 100 m ~10% para 20 pontos de Força), o que dá tempos
+coerentes com a vida real em todas as distâncias.
 
 ### TimeResultSystem — `timeResultSystem.js`
 
@@ -981,6 +990,30 @@ tempo vence).
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 49 — Parametrização das provas de tempo do Atletismo
+
+- Todas as **16 provas de tempo do Atletismo** (além dos 100 m, que ficaram
+  **intactos**) foram parametrizadas para o `TimeResultSystem` e agora são
+  **disputáveis**: 200/400 m, 800/1500 m, 5000/10000 m, Maratona, 100/110/400 m
+  com barreiras, 3000 m com obstáculos, revezamentos 4x100/4x400/4x400 misto e
+  marcha 20/35 km. **17 eventos jogáveis** no total.
+- **Recordes reais como piso**: cada prova usa o **recorde mundial** como
+  `recordTime` (ex.: 200 m 19,19 s; 800 m 1:40,91; Maratona 2:00:35; 4x100 m
+  36,84 s), então Força efetiva 100 → o recorde e os tempos batem com a vida real.
+- **Escala coerente por distância**: `secondsPerStrengthPoint ≈ recordTime ×
+  0,005` (a mesma dispersão relativa dos 100 m), dando spreads realistas (ex.: uma
+  Força 85 corre 200 m em ~20,7 s, 800 m em ~1:48, Maratona em ~2:09:35).
+- **Fábrica `makeTimeEvent(...)`** (nova, em `events.js`): cria cada prova de tempo
+  em **uma linha**, com o recorde e a escala próprios; garante a mesma forma de
+  resolução (métrica tempo, menor vence). Facilita manutenção e novas provas.
+- **Escopo**: só `events.js` (dados/fábrica) e a documentação. **Os 100 m não
+  foram tocados** (seguem com `recordTime 9.58` e o default de escala 0,05).
+  Nenhuma outra mecânica alterada.
+- **Processo/verificação**: feito **de 2 em 2**, verificando cada par (Força 100 →
+  recorde; monotonicidade Força↑→tempo↓; ranking correto; tempos plausíveis). O
+  100 m segue idêntico (Força 80 → 10,58 s); provas não-tempo (salto, lançamento)
+  seguem **não** disputáveis; o CNA resolve normalmente; sem erros de JS.
 
 ### Etapa 48 — TimeResultSystem (resolução genérica por tempo)
 

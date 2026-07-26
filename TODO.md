@@ -14,11 +14,14 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       `WeightResultSystem`, `CombinedResultSystem`) — cada um: como resolve a prova
       (sobre a `ResultsEngine`) e o seu bloco de parâmetros no evento. Basta criar
       o módulo e registrá-lo (mesmo molde do `TimeResultSystem`).
-- [ ] **Parametrizar as provas de tempo (evento a evento).** O `TimeResultSystem`
-      resolve qualquer prova de tempo, mas só os **100 m** têm parâmetros
-      (`time: { recordTime }`) hoje. Cadastrar os `time` das demais provas de tempo
-      (200 m, 400 m, 800 m…, natação, remo, contrarrelógio, triatlo…) para elas
-      ficarem disputáveis — cada uma com o seu recorde/escala.
+- [ ] **Parametrizar as provas de tempo dos demais esportes (evento a evento).**
+      As **provas de tempo do Atletismo já estão parametrizadas** (17 eventos, via
+      `makeTimeEvent` — corridas, barreiras, obstáculos, revezamentos, marcha).
+      Faltam as de **outros esportes** de tempo: **Natação** (piscina + maratona
+      aquática), **Remo**, **Canoagem** (velocidade/slalom), **Ciclismo**
+      (contrarrelógio/pista), **Triatlo** — cada prova com o seu `recordTime` e
+      escala (mesma fábrica). Provas com regra especial (slalom com penalidades,
+      estrada em pelotão) podem precisar de ajuste próprio depois.
 - [ ] **Usar o Prestígio dos clubes.** O atributo `prestige` (0-100) já existe em
       todos os clubes (`clubs.js`) com valores iniciais aproximados, **mas ainda
       não é utilizado**. Ele será a base das próximas features:
