@@ -49,6 +49,14 @@ const TABS = {
     btn: document.getElementById("tab-btn-clubs"),
     panel: document.getElementById("tab-clubs"),
   },
+  rankings: {
+    btn: document.getElementById("tab-btn-rankings"),
+    panel: document.getElementById("tab-rankings"),
+  },
+  sports: {
+    btn: document.getElementById("tab-btn-sports"),
+    panel: document.getElementById("tab-sports"),
+  },
 };
 
 // Elementos — campeonatos.
@@ -63,6 +71,17 @@ const athleteList = document.getElementById("athlete-list");
 // Elementos — clubes.
 const clubCountrySelect = document.getElementById("club-country-select");
 const clubList = document.getElementById("club-list");
+const freeAgentsEl = document.getElementById("free-agents");
+
+// Elementos — esportes.
+const sportList = document.getElementById("sport-list");
+
+// Elementos — rankings.
+const rankingTypeSelect = document.getElementById("ranking-type-select");
+const rankingContent = document.getElementById("ranking-content");
+// Evento exibido no ranking de marcas. Por ora só existe o dos 100 m; quando
+// houver mais eventos, um seletor escolherá qual mostrar (ver TODO.md).
+const MARKS_DISPLAY_EVENT_ID = "EVT-ATL-100M";
 
 function sameDay(a, b) {
   return (
@@ -144,19 +163,46 @@ function render() {
 }
 
 function advanceDays(days) {
-  currentDate.setDate(currentDate.getDate() + days);
+  // Avança dia a dia: cada dia resolve as etapas que nele ocorrem (desgastando
+  // os participantes) e faz os demais atletas descansarem (recuperar Cansaço).
+  // Ver participation.js (processDay).
+  for (let i = 0; i < days; i++) {
+    currentDate.setDate(currentDate.getDate() + 1);
+    processDay(currentDate);
+  }
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
-  // O status das etapas depende da data atual: atualiza as visões que o exibem.
+  // Status de etapas e situação de contratos dependem da data atual: atualiza
+  // as visões que os exibem (contratos podem ter expirado/entrado em vigor;
+  // a fadiga dos participantes pode ter mudado).
   refreshChampionshipView();
   refreshDayDetail();
+  refreshClubView();
+  refreshAthleteView();
+  renderRanking(); // o ranking muda a cada etapa resolvida na passagem de tempo
 }
 
 // Re-renderiza o campeonato atualmente selecionado (mantém a data em dia).
 function refreshChampionshipView() {
   if (championshipSelect.value) {
     renderChampionship(championshipSelect.value);
+  }
+}
+
+// Re-renderiza a aba Clubes (elenco e agentes livres) após a passagem de tempo,
+// pois a situação dos contratos é relativa à data atual.
+function refreshClubView() {
+  if (clubCountrySelect.value) {
+    renderClubs(clubCountrySelect.value);
+  }
+}
+
+// Re-renderiza a aba Atletas após a passagem de tempo (o "Clube atual" de cada
+// atleta é derivado do contrato ativo na data atual).
+function refreshAthleteView() {
+  if (athleteCountrySelect.value) {
+    renderAthletes(athleteCountrySelect.value);
   }
 }
 
@@ -263,6 +309,51 @@ function formatDate(date) {
   return `${day}/${month}/${date.getFullYear()}`;
 }
 
+// Texto da abrangência (trava) de um campeonato: o lugar do seu escopo.
+// Ex.: "Brasil", "Sudeste", "São Paulo (SP)".
+function formatChampionshipScopeText(championship) {
+  const scope = getChampionshipScope(championship);
+  if (!scope) return "Sem trava";
+  switch (scope.level) {
+    case "country": {
+      const c = getCountry(scope.placeId);
+      return c ? c.name : scope.placeId;
+    }
+    case "region": {
+      const r = getRegion(scope.placeId);
+      return r ? r.name : scope.placeId;
+    }
+    case "state": {
+      const s = getState(scope.placeId);
+      return s ? `${s.name} (${s.abbreviation})` : scope.placeId;
+    }
+    case "city": {
+      const ci = getCity(scope.placeId);
+      return ci ? ci.name : scope.placeId;
+    }
+    default:
+      return scope.placeId;
+  }
+}
+
+// Texto da trava de idade. Sem restrição → "Sem restrição".
+function formatAgeRestriction(ageRestriction) {
+  if (!ageRestriction) return "Sem restrição";
+  const { minAge, maxAge } = ageRestriction;
+  if (minAge != null && maxAge != null) return `${minAge} a ${maxAge} anos`;
+  if (maxAge != null) return `Até ${maxAge} anos`;
+  if (minAge != null) return `A partir de ${minAge} anos`;
+  return "Sem restrição";
+}
+
+// Texto da trava de cota por clube. Sem cota → "Sem limite".
+function formatClubQuota(quota) {
+  if (quota == null) return "Sem limite";
+  return quota === 1
+    ? "1 atleta por clube por etapa"
+    : `${quota} atletas por clube por etapa`;
+}
+
 function populateChampionshipSelect() {
   championshipSelect.innerHTML = "";
   for (const championship of Object.values(CHAMPIONSHIPS)) {
@@ -279,6 +370,12 @@ function renderChampionship(id, highlightStage) {
 
   const country = getCountry(championship.countryId);
   const progress = championshipProgress(championship, currentDate);
+  const category = getChampionshipCategory(championship);
+  const categoryName = category ? category.name : "—";
+  const scopeText = formatChampionshipScopeText(championship);
+  const ageText = formatAgeRestriction(getChampionshipAgeRestriction(championship));
+  const quotaText = formatClubQuota(getChampionshipClubQuota(championship));
+  const eligibleCount = getChampionshipEligibleAthletes(championship).length;
 
   const stagesRows = championship.stages
     .map((stage) => {
@@ -286,6 +383,9 @@ function renderChampionship(id, highlightStage) {
       const status = done
         ? `<span class="stage-status stage-status--done">✓ Realizada</span>`
         : `<span class="stage-status">Agendada</span>`;
+      const resultsCell = done
+        ? `<button type="button" class="stage-result-link link-button" data-stage="${stage.number}">Ver</button>`
+        : `<span class="stage-status">—</span>`;
       const rowAttrs =
         stage.number === highlightStage
           ? ' class="stage-row--highlight" id="stage-row"'
@@ -295,6 +395,7 @@ function renderChampionship(id, highlightStage) {
           <td>${stage.number}</td>
           <td>${formatDate(stage.date)}</td>
           <td>${status}</td>
+          <td>${resultsCell}</td>
         </tr>`;
     })
     .join("");
@@ -323,10 +424,19 @@ function renderChampionship(id, highlightStage) {
       <p class="detail-card__title">${championship.name}</p>
       <p class="detail-card__id">ID: ${championship.id}</p>
       <ul class="detail-list">
-        <li><span>Participantes</span><strong>${championship.participants}</strong></li>
-        <li><span>Eventos</span><strong>${championship.events.length}</strong></li>
-        <li><span>Modalidades</span><strong>${championship.modalities.length}</strong></li>
+        <li><span>Categoria</span><strong>${categoryName}</strong></li>
+        <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
+        <li><span>Provas</span><strong>${championship.events.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
+      </ul>
+    </div>
+
+    <div class="detail-card">
+      <h3>Regras de Inscrição</h3>
+      <ul class="detail-list">
+        <li><span>Abrangência</span><strong>${scopeText}</strong></li>
+        <li><span>Faixa etária</span><strong>${ageText}</strong></li>
+        <li><span>Limite por clube</span><strong>${quotaText}</strong></li>
       </ul>
     </div>
 
@@ -336,17 +446,60 @@ function renderChampionship(id, highlightStage) {
       <h3>Etapas</h3>
       <table class="stages-table">
         <thead>
-          <tr><th>Etapa</th><th>Data</th><th>Status</th></tr>
+          <tr><th>Etapa</th><th>Data</th><th>Status</th><th>Resultados</th></tr>
         </thead>
         <tbody>${stagesRows}</tbody>
       </table>
+      <div id="stage-results" class="stage-results"></div>
     </div>
   `;
+
+  championshipDetails.querySelectorAll(".stage-result-link").forEach((button) => {
+    button.addEventListener("click", () => {
+      const stage = championship.stages.find(
+        (s) => s.number === Number(button.dataset.stage)
+      );
+      if (stage) renderStageResults(championship, stage);
+    });
+  });
 
   if (highlightStage) {
     const row = document.getElementById("stage-row");
     if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+}
+
+// Mostra a classificação de uma etapa realizada (posição, atleta e resultado).
+function renderStageResults(championship, stage) {
+  const panel = document.getElementById("stage-results");
+  if (!panel) return;
+
+  const event = getStageEvent(championship, stage);
+  const eventName = event ? event.name : "—";
+  const results = getStageResult(championship, stage);
+  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number} · ${eventName}</h4>`;
+
+  if (!results || results.length === 0) {
+    panel.innerHTML =
+      heading + `<p class="stage-results__empty">Sem participantes nesta etapa.</p>`;
+    return;
+  }
+
+  const rows = results
+    .map((entry) => {
+      const athlete = ATHLETES.find((a) => a.id === entry.id);
+      const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
+      const value = formatEventResult(entry.result, event);
+      return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
+    })
+    .join("");
+
+  panel.innerHTML =
+    heading +
+    `<table class="results-table">
+      <thead><tr><th>Pos.</th><th>Atleta</th><th>Resultado</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 // -----------------------------------------------------------------------------
@@ -363,6 +516,19 @@ function populateAthleteCountrySelect() {
 }
 
 // Lista os atletas de um país. Cada atleta mostra nome, idade e força;
+// Texto de localização de uma cidade, mostrando a hierarquia geográfica:
+// "Cidade — SIGLA · Região" (com o que estiver disponível). Ex.:
+// "São Paulo — SP · Sudeste". Ver a hierarquia país → região → estado → cidade.
+function formatCityLocation(city) {
+  if (!city) return "—";
+  const state = getCityState(city);
+  const region = getCityRegion(city);
+  const parts = [];
+  if (state) parts.push(state.abbreviation);
+  if (region) parts.push(region.name);
+  return parts.length ? `${city.name} — ${parts.join(" · ")}` : city.name;
+}
+
 // ao clicar, expande para os demais atributos (inclui o clube atual).
 // Se `highlightAthleteId` for informado, o atleta correspondente já vem aberto
 // e a visualização rola até ele (usado ao vir da tela de Clubes).
@@ -378,7 +544,7 @@ function renderAthletes(countryId, highlightAthleteId) {
   athleteList.innerHTML = list
     .map((athlete) => {
       const birthCity = getCity(athlete.birthCityId);
-      const birthPlace = birthCity ? birthCity.name : "—";
+      const birthPlace = formatCityLocation(birthCity);
       const favoriteSport = getAthleteFavoriteSport(athlete);
       const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
       // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
@@ -396,7 +562,8 @@ function renderAthletes(countryId, highlightAthleteId) {
             <li><span>Força</span><strong>${athlete.strength}</strong></li>
             <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
             <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
-            <li><span>Cansaço</span><strong>${athlete.fatigue}%</strong></li>
+            <li><span>Cansaço</span><strong>${Math.round(athlete.fatigue)}%</strong></li>
+            <li><span>Ritmo</span><strong>${Math.round(athlete.ritmo)}/100</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
             <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
             <li><span>Clube atual</span><strong>${clubName}</strong></li>
@@ -439,6 +606,9 @@ function populateClubCountrySelect() {
 function renderClubs(countryId) {
   const list = getClubsByCountry(countryId);
 
+  // Os agentes livres do país são exibidos junto (mesma aba), sempre em sincronia.
+  renderFreeAgents(countryId);
+
   if (list.length === 0) {
     clubList.innerHTML = `<p class="clubs__empty">Nenhum clube para este país.</p>`;
     return;
@@ -451,6 +621,11 @@ function renderClubs(countryId) {
       const ioc = country ? country.iocCode : club.countryId;
       const city = getCity(club.cityId);
       const cityName = city ? city.name : "—";
+      const state = getCityState(city);
+      const region = getCityRegion(city);
+      const stateName = state ? `${state.name} (${state.abbreviation})` : "—";
+      const regionName = region ? region.name : "—";
+      const citySummary = state ? `${cityName} (${state.abbreviation})` : cityName;
       const president = club.president || "—";
       const finances = club.finances != null ? club.finances : "—";
       const rivals = club.rivals.length > 0 ? club.rivals.join(", ") : "—";
@@ -458,12 +633,14 @@ function renderClubs(countryId) {
         <details class="club">
           <summary class="club__summary">
             <span class="club__name">${club.name}</span>
-            <span class="club__brief">${cityName}, ${ioc} · Prestígio ${club.prestige}</span>
+            <span class="club__brief">${citySummary}, ${ioc} · Prestígio ${club.prestige}</span>
           </summary>
           <ul class="club__stats">
             <li><span>ID</span><strong>${club.id}</strong></li>
             <li><span>País</span><strong>${countryName}</strong></li>
             <li><span>Cidade</span><strong>${cityName}</strong></li>
+            <li><span>Estado</span><strong>${stateName}</strong></li>
+            <li><span>Região</span><strong>${regionName}</strong></li>
             <li><span>Prestígio</span><strong>${club.prestige}/100</strong></li>
             <li><span>Ano de fundação</span><strong>${club.foundationYear}</strong></li>
             <li><span>Infraestrutura</span><strong>${club.infrastructureLevel}/100</strong></li>
@@ -498,8 +675,14 @@ function toggleClubAthletes(button) {
   if (show) renderClubAthletes(clubId, container);
 }
 
+// Texto da duração de um contrato ("1 ano" / "2 anos").
+function contractDurationText(contract) {
+  return `${contract.durationYears} ${contract.durationYears === 1 ? "ano" : "anos"}`;
+}
+
 // Preenche a lista com os atletas contratados do clube (contratos ativos na data
-// atual). Cada nome é clicável e leva ao perfil do atleta.
+// atual). Cada item mostra o nome do atleta (clicável, leva ao perfil) e os
+// dados do contrato: duração, término e, se for renovação, uma marca "renovado".
 function renderClubAthletes(clubId, container) {
   const contracts = getContractsByClub(clubId, currentDate);
   if (contracts.length === 0) {
@@ -512,7 +695,13 @@ function renderClubAthletes(clubId, container) {
     .map((contract) => {
       const athlete = ATHLETES.find((a) => a.id === contract.athleteId);
       const name = athlete ? getAthleteName(athlete) : `Atleta ${contract.athleteId}`;
-      return `<li><button type="button" class="club-athlete-link link-button" data-athlete="${contract.athleteId}">${name}</button></li>`;
+      const renewal = contract.renewalOf ? " · renovado" : "";
+      const contractInfo = `${contractDurationText(contract)} · até ${formatDate(contract.endDate)}${renewal}`;
+      return `
+        <li class="club-athlete">
+          <button type="button" class="club-athlete-link link-button" data-athlete="${contract.athleteId}">${name}</button>
+          <span class="club-athlete__contract">${contractInfo}</span>
+        </li>`;
     })
     .join("");
 
@@ -521,6 +710,296 @@ function renderClubAthletes(clubId, container) {
       goToAthlete(Number(button.dataset.athlete))
     );
   });
+}
+
+// Lista os AGENTES LIVRES do país (atletas sem contrato ativo na data atual).
+// Cada nome é clicável e leva ao perfil do atleta.
+function renderFreeAgents(countryId) {
+  const athletes = ATHLETES.filter((athlete) => athlete.countryId === countryId);
+  const free = getFreeAgents(athletes, currentDate);
+  const heading = `<h3 class="free-agents__title">Agentes livres</h3>`;
+
+  if (free.length === 0) {
+    freeAgentsEl.innerHTML =
+      heading + `<p class="free-agents__empty">Nenhum agente livre.</p>`;
+    return;
+  }
+
+  const items = free
+    .map(
+      (athlete) =>
+        `<li><button type="button" class="free-agent-link link-button" data-athlete="${athlete.id}">${getAthleteName(athlete)}</button></li>`
+    )
+    .join("");
+  freeAgentsEl.innerHTML =
+    heading + `<ul class="free-agents__list">${items}</ul>`;
+
+  freeAgentsEl.querySelectorAll(".free-agent-link").forEach((button) => {
+    button.addEventListener("click", () =>
+      goToAthlete(Number(button.dataset.athlete))
+    );
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Rankings (UI) — apenas LÊ os motores (ranking.js / marksRanking.js) e exibe.
+// Nada de cálculo aqui: é só um indicador visual do que o sistema fez.
+// Ao abrir a aba, o jogador escolhe qual ranking ver (pontos ou marcas).
+// -----------------------------------------------------------------------------
+
+// Nome de exibição do atleta (com fallback) — usado pelos rankings.
+function rankingAthleteName(athleteId) {
+  const athlete = ATHLETES.find((a) => a.id === athleteId);
+  return athlete ? getAthleteName(athlete) : `Atleta ${athleteId}`;
+}
+
+// Despacha para o ranking escolhido no seletor (ou mostra a instrução inicial).
+function renderRanking() {
+  const type = rankingTypeSelect.value;
+  if (type === "points") {
+    renderPointsRanking();
+  } else if (type === "marks") {
+    renderMarksRanking(MARKS_DISPLAY_EVENT_ID);
+  } else {
+    rankingContent.innerHTML = `<p class="ranking-hint">Escolha um ranking acima para visualizar.</p>`;
+  }
+}
+
+// Ranking de PONTOS da temporada: posição, atleta, clube, etapas disputadas, pontos.
+function renderPointsRanking() {
+  const season = currentDate.getFullYear();
+  const ranking = getSeasonRanking();
+
+  if (ranking.length === 0) {
+    rankingContent.innerHTML = `
+      <h2 class="ranking-title">Ranking de Pontos — Temporada ${season}</h2>
+      <p class="ranking-empty">Nenhuma etapa disputada nesta temporada ainda.</p>`;
+    return;
+  }
+
+  const rows = ranking
+    .map((entry) => {
+      const club = getAthleteClub(entry.athleteId, currentDate);
+      const clubName = club ? club.name : "Agente livre";
+      return `
+        <tr>
+          <td>${entry.position}</td>
+          <td>${rankingAthleteName(entry.athleteId)}</td>
+          <td>${clubName}</td>
+          <td>${entry.stages}</td>
+          <td>${entry.points}</td>
+        </tr>`;
+    })
+    .join("");
+
+  rankingContent.innerHTML = `
+    <h2 class="ranking-title">Ranking de Pontos — Temporada ${season}</h2>
+    <p class="ranking-hint">Pontuação por etapa conforme a categoria do campeonato (maiores valem mais).</p>
+    <table class="stages-table ranking-table points-table">
+      <thead>
+        <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Etapas</th><th>Pontos</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// Ranking de MARCAS de um evento: só a MELHOR marca do atleta na temporada.
+// Colunas: posição, atleta, clube, data (clicável) e marca. Ao clicar na data,
+// mostra data + campeonato + etapa em que a marca foi alcançada. Genérico: serve
+// qualquer evento (usa a ordem e o formatador do próprio evento).
+function renderMarksRanking(eventId) {
+  const season = currentDate.getFullYear();
+  const event = getEvent(eventId);
+  const eventName = event ? event.name : eventId;
+  const ranking = getSeasonMarksRanking(eventId);
+
+  if (ranking.length === 0) {
+    rankingContent.innerHTML = `
+      <h2 class="ranking-title">Ranking de Marcas — ${eventName} · Temporada ${season}</h2>
+      <p class="ranking-empty">Nenhuma marca registrada nesta temporada ainda.</p>`;
+    return;
+  }
+
+  const rows = ranking
+    .map((entry) => {
+      const club = getAthleteClub(entry.athleteId, currentDate);
+      const clubName = club ? club.name : "Agente livre";
+      const markText = event
+        ? formatEventResult(entry.value, event)
+        : String(entry.value);
+      return `
+        <tr>
+          <td>${entry.position}</td>
+          <td>${rankingAthleteName(entry.athleteId)}</td>
+          <td>${clubName}</td>
+          <td><button type="button" class="link-button mark-date" data-champ="${entry.championshipId}" data-stage="${entry.stageNumber}" data-date="${formatDate(entry.date)}">${formatDate(entry.date)}</button></td>
+          <td>${markText}</td>
+        </tr>`;
+    })
+    .join("");
+
+  rankingContent.innerHTML = `
+    <h2 class="ranking-title">Ranking de Marcas — ${eventName} · Temporada ${season}</h2>
+    <p class="ranking-hint">Melhor marca de cada atleta na temporada. Clique na data para ver onde foi alcançada.</p>
+    <table class="stages-table ranking-table marks-table">
+      <thead>
+        <tr><th>#</th><th>Atleta</th><th>Clube</th><th>Data</th><th>Marca</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+
+  // Ao clicar na data, mostra o detalhe (data + campeonato + etapa) numa linha
+  // logo ABAIXO da própria marca — sempre visível onde o jogador clicou. Clicar
+  // de novo na mesma data fecha o detalhe.
+  rankingContent.querySelectorAll(".mark-date").forEach((button) => {
+    button.addEventListener("click", () => {
+      const row = button.closest("tr");
+      const tbody = row.parentNode;
+      const existing = tbody.querySelector(".mark-detail-row");
+      const wasSameRow = existing && existing.previousElementSibling === row;
+      if (existing) existing.remove();
+      if (wasSameRow) return; // clicou de novo na mesma data: fecha
+
+      const champ = CHAMPIONSHIPS[button.dataset.champ];
+      const champName = champ ? champ.name : button.dataset.champ;
+      const detailRow = document.createElement("tr");
+      detailRow.className = "mark-detail-row";
+      detailRow.innerHTML = `<td colspan="5">Marca alcançada em <strong>${button.dataset.date}</strong> — ${champName}, Etapa ${button.dataset.stage}.</td>`;
+      row.after(detailRow);
+    });
+  });
+}
+
+// -----------------------------------------------------------------------------
+// Esportes
+// Mostra a hierarquia Esporte → Modalidade → Evento. Os esportes vêm em ordem
+// alfabética; cada um é um <details> que mostra seus ATRIBUTOS e revela suas
+// modalidades (também em <details>, com atributos), e cada modalidade revela seus
+// eventos (também <details>, com atributos). Lê SEMPRE das databases vivas
+// (getAllSports / getModalitiesBySport / getEventsByModality), então novos
+// esportes/modalidades/eventos aparecem sozinhos — sem lista fixa na tela.
+// -----------------------------------------------------------------------------
+
+// Ordenação alfabética por nome (acentos-cientes, pt-BR).
+function byNamePtBr(a, b) {
+  return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+}
+
+// Rótulo da métrica de um evento (ver ResultsEngine.METRICS).
+function metricLabelPtBr(metric) {
+  const labels = { time: "Tempo", distance: "Distância", height: "Altura", points: "Pontuação" };
+  return labels[metric] || metric;
+}
+
+// Rótulo da direção de vitória de um evento (ver ResultsEngine.ORDERS).
+function orderLabelPtBr(order) {
+  if (order === ResultsEngine.ORDERS.ASCENDING) return "menor vence";
+  if (order === ResultsEngine.ORDERS.DESCENDING) return "maior vence";
+  return "—";
+}
+
+// Texto do modelo de resolução de um evento (ou "pendente" se ainda sem modelo).
+function formatEventResolution(event) {
+  if (!event.resolution) return "— (pendente)";
+  return `${metricLabelPtBr(event.resolution.metric)} · ${orderLabelPtBr(event.resolution.order)}`;
+}
+
+// Texto do ano de início da prática de um esporte (negativo = a.C.).
+function formatPracticeStartYear(year) {
+  if (year == null) return "—";
+  return year < 0 ? `${Math.abs(year)} a.C.` : String(year);
+}
+
+// Bloco de atributos (lista <li><span>rótulo</span><strong>valor</strong></li>).
+function attrList(pairs) {
+  const items = pairs
+    .map(([label, value]) => `<li><span>${label}</span><strong>${value}</strong></li>`)
+    .join("");
+  return `<ul class="sport-attrs">${items}</ul>`;
+}
+
+function renderSports() {
+  const sports = getAllSports().slice().sort(byNamePtBr);
+
+  if (sports.length === 0) {
+    sportList.innerHTML = `<p class="sports__empty">Nenhum esporte cadastrado.</p>`;
+    return;
+  }
+
+  sportList.innerHTML = sports
+    .map((sport) => {
+      const modalities = getModalitiesBySport(sport.id).slice().sort(byNamePtBr);
+      const modalitiesHtml = modalities.length
+        ? modalities
+            .map((modality) => renderModalityDetails(modality, sport))
+            .join("")
+        : `<p class="sport__empty">Nenhuma modalidade cadastrada.</p>`;
+      const resultSystems =
+        sport.resultSystems && sport.resultSystems.length
+          ? sport.resultSystems.join(", ")
+          : "—";
+      const sportAttrs = attrList([
+        ["ID", sport.id],
+        ["Descrição", sport.description || "—"],
+        ["Popularidade", sport.generalPopularity != null ? `${sport.generalPopularity}/100` : "—"],
+        ["Início da prática", formatPracticeStartYear(sport.practiceStartYear)],
+        ["País de origem", sport.originCountry || "—"],
+        ["ResultSystems", resultSystems],
+        ["Modalidades", modalities.length],
+      ]);
+      return `
+        <details class="sport">
+          <summary class="sport__summary">
+            <span class="sport__name">${sport.name}</span>
+          </summary>
+          ${sportAttrs}
+          <div class="sport__modalities">${modalitiesHtml}</div>
+        </details>`;
+    })
+    .join("");
+}
+
+// Uma modalidade: atributos (ID, esporte, nº de eventos) + seus eventos.
+function renderModalityDetails(modality, sport) {
+  const events = getEventsByModality(modality.id).slice().sort(byNamePtBr);
+  const attrs = attrList([
+    ["ID", modality.id],
+    ["Esporte", sport.name],
+    ["Eventos", events.length],
+  ]);
+  const eventsHtml = events.length
+    ? `<div class="modality__events">${events
+        .map((event) => renderEventDetails(event, modality, sport))
+        .join("")}</div>`
+    : `<p class="modality__empty">Nenhum evento cadastrado.</p>`;
+  return `
+    <details class="modality">
+      <summary class="modality__summary">
+        <span class="modality__name">${modality.name}</span>
+      </summary>
+      ${attrs}
+      ${eventsHtml}
+    </details>`;
+}
+
+// Um evento: atributos (ID, modalidade, esporte, modelo de resultado, popularidade).
+function renderEventDetails(event, modality, sport) {
+  const popularity =
+    event.generalPopularity != null ? `${event.generalPopularity}/100` : "—";
+  const attrs = attrList([
+    ["ID", event.id],
+    ["Modalidade", modality.name],
+    ["Esporte", sport.name],
+    ["Modelo de resultado", formatEventResolution(event)],
+    ["Popularidade", popularity],
+  ]);
+  return `
+    <details class="event">
+      <summary class="event__summary">
+        <span class="event__name">${event.name}</span>
+      </summary>
+      ${attrs}
+    </details>`;
 }
 
 // -----------------------------------------------------------------------------
@@ -536,6 +1015,9 @@ TABS.calendar.btn.addEventListener("click", () => activateTab("calendar"));
 TABS.championships.btn.addEventListener("click", () => activateTab("championships"));
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
+TABS.rankings.btn.addEventListener("click", () => activateTab("rankings"));
+TABS.sports.btn.addEventListener("click", () => activateTab("sports"));
+rankingTypeSelect.addEventListener("change", () => renderRanking());
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
 clubCountrySelect.addEventListener("change", (e) => renderClubs(e.target.value));
@@ -554,6 +1036,10 @@ generateAthletes();
 // temporário só para as telas terem dados — substituir pelo fluxo real depois.
 seedTestContracts(ATHLETES, currentDate);
 
+// Na data inicial (01/01/2026) nenhuma etapa ocorreu e todos estão descansados
+// (fatigue 100). A evolução do Cansaço (desgaste/recuperação) passa a acontecer
+// dia a dia pela passagem de tempo — ver advanceDays/participation.js.
+
 populateChampionshipSelect();
 renderChampionship(championshipSelect.value);
 
@@ -562,5 +1048,9 @@ renderAthletes(athleteCountrySelect.value);
 
 populateClubCountrySelect();
 renderClubs(clubCountrySelect.value);
+
+renderRanking();
+
+renderSports();
 
 render();

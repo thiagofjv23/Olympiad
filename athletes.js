@@ -11,6 +11,10 @@
 //   - potential            : Potencial (0-100), teto de crescimento; nunca < Força
 //   - physicalPreparation  : Preparação Física (0-100)
 //   - fatigue              : Cansaço (%), inicia em 100 e cai a cada etapa
+//   - ritmo                : Ritmo/forma (0-100). Começa INTERMEDIÁRIO no ano,
+//                            sobe ao competir e cai em dias parado. Modifica a
+//                            resolução de resultados. Inicial, ganho e queda
+//                            dependem da Preparação Física.
 //   - birthCityId          : cidade de nascimento (ver cities.js)
 //   - favoriteSportId      : esporte favorito (ver sports.js) — a ligação do
 //                            atleta com um esporte. Todo regen recebe um ao ser
@@ -32,7 +36,7 @@ const INITIAL_FAVORITE_SPORT_ID = "SPT-ATLETISMO";
 // TODO: `count` e a faixa de idade abaixo são apenas para testes — tornar
 // configuráveis/dinâmicos depois (ver TODO.md).
 const ATHLETE_GENERATION_CONFIG = {
-  count: 10, // quantidade gerada por simulação (apenas para testes)
+  count: 100, // quantidade gerada por simulação (apenas para testes)
   minAge: 18, // faixa deste exemplo inicial (gerador suporta 12-40)
   maxAge: 35,
 };
@@ -136,13 +140,49 @@ function getAthleteFavoriteSport(athlete) {
   return getSport(athlete.favoriteSportId);
 }
 
-// Redução de Cansaço por etapa concluída: maior com a idade e menor quanto
+// -----------------------------------------------------------------------------
+// Modelo de Cansaço (fatigue)
+//
+// O stat `fatigue` é, na prática, a ENERGIA/FRESCOR do atleta: 100 = totalmente
+// descansado, 0 = exausto. Dois efeitos opostos o movem:
+//   - COMPETIR (participar de uma etapa) DESGASTA → reduz o fatigue.
+//   - DESCANSAR (um dia sem competir) RECUPERA → aumenta o fatigue, até 100.
+//
+// O desgaste é por EVENTO (uma etapa é um esforço pontual). A recuperação é por
+// DIA (o corpo se recupera continuamente, todo dia de descanso) — por isso as
+// magnitudes são diferentes: o desgaste de uma etapa é grande e único; a
+// recuperação é menor, mas se soma ao longo dos vários dias entre as etapas.
+//
+// As duas fórmulas são SIMÉTRICAS nos atributos, com sinais trocados:
+//   - Preparação Física: no desgaste, REDUZ a perda; na recuperação, AUMENTA o
+//     ganho. Tema: quanto melhor o condicionamento, melhor a gestão de fadiga
+//     (cansa menos e se recupera mais rápido).
+//   - Idade: no desgaste, AUMENTA a perda; na recuperação, DIMINUI o ganho.
+//     Tema: quanto mais velho, pior a gestão (cansa mais e se recupera devagar).
+//
+// `fatigue` é guardado como número real (não arredondado) para o acúmulo diário
+// da recuperação não perder precisão; a UI é que arredonda para exibir.
+// -----------------------------------------------------------------------------
+
+// Redução de Cansaço por etapa disputada: maior com a idade e menor quanto
 // melhor a Preparação Física (atleta mais preparado se cansa menos).
 function fatigueReductionForStage(athlete) {
   const base = 4;
   const ageEffect = (athlete.age / ATHLETE_AGE_LIMITS.max) * 6; // +idade => +redução
   const prepRelief = (athlete.physicalPreparation / 100) * 5; // +preparo => -redução
   return clampNumber(base + ageEffect - prepRelief, 1, 20);
+}
+
+// Recuperação de Cansaço por DIA de descanso (dia sem competir). É o oposto do
+// desgaste: espelha os atributos com sinais trocados. Um mínimo (base) garante
+// que todo dia de descanso recupera algo; a Preparação Física acelera e a idade
+// desacelera a recuperação. Clamp em [0.5, 10] (descanso nunca cansa; teto de
+// segurança). Constantes de balanceamento, fáceis de recalibrar.
+function fatigueRecoveryForRestDay(athlete) {
+  const base = 2;
+  const prepBoost = (athlete.physicalPreparation / 100) * 2; // +preparo => +recuperação
+  const agePenalty = (athlete.age / ATHLETE_AGE_LIMITS.max) * 1.5; // +idade => -recuperação
+  return clampNumber(base + prepBoost - agePenalty, 0.5, 10);
 }
 
 // Aplica o desgaste de UMA etapa a UM atleta (individual): reduz o seu Cansaço
@@ -156,7 +196,15 @@ function fatigueReductionForStage(athlete) {
 // nada aqui atrelado a clubes nem que aplique a fadiga em massa a um país.
 function applyStageFatigue(athlete) {
   const reduction = fatigueReductionForStage(athlete);
-  athlete.fatigue = clampNumber(Math.round(athlete.fatigue - reduction), 0, 100);
+  athlete.fatigue = clampNumber(athlete.fatigue - reduction, 0, 100);
+  return athlete.fatigue;
+}
+
+// Aplica UM dia de descanso a UM atleta (individual): recupera o Cansaço em
+// direção a 100 (descansado), sem ultrapassar. Retorna o novo valor de `fatigue`.
+function applyRestDay(athlete) {
+  const recovery = fatigueRecoveryForRestDay(athlete);
+  athlete.fatigue = clampNumber(athlete.fatigue + recovery, 0, 100);
   return athlete.fatigue;
 }
 
@@ -165,6 +213,93 @@ function applyStageFatigue(athlete) {
 function applyStageFatigueToParticipants(participants) {
   for (const athlete of participants) {
     applyStageFatigue(athlete);
+  }
+  return participants;
+}
+
+// -----------------------------------------------------------------------------
+// Ritmo (forma / afiação de competição)
+//
+// O `ritmo` (0-100) mede a FORMA do atleta: quanto mais competindo, mais afiado
+// (marcas melhores); parado, a forma "esfria". Diferente da Força (que é o teto
+// de habilidade) e do Cansaço (energia de curto prazo), o ritmo é uma forma de
+// médio prazo, construída ao longo da temporada.
+//
+// Todos começam o ANO com ritmo INTERMEDIÁRIO e evoluem competindo. Os TRÊS
+// parâmetros abaixo dependem da Preparação Física (atleta mais preparado entra
+// em forma mais fácil e a perde mais devagar):
+//   - ritmo INICIAL: base intermediária + um acréscimo conforme o preparo.
+//   - GANHO por prova: fecha uma fração do que falta para a forma plena (100);
+//     mais preparo => fração maior (entra em forma mais rápido).
+//   - QUEDA por dia parado: perde uma fração do ritmo atual; mais preparo =>
+//     fração menor (mantém a forma por mais tempo).
+//
+// (O EFEITO do ritmo na resolução de resultados fica na modalidade — ver
+// modalities.js —, como um redutor de forma somado ao da fadiga, sem remover
+// nenhuma variável anterior.)
+// -----------------------------------------------------------------------------
+
+const RITMO_INITIAL_BASE = 45; // ritmo mínimo no início do ano (preparo 0)
+const RITMO_INITIAL_PREP_RANGE = 25; // + até isso conforme o preparo (=> 45..70)
+const RITMO_GAIN_PCT_MIN = 0.15; // ganho por prova: fração do gap até 100 (preparo 0)
+const RITMO_GAIN_PCT_MAX = 0.35; // ganho por prova (preparo 100)
+const RITMO_DROP_PCT_MIN = 0.005; // queda por dia parado: fração do ritmo (preparo 100)
+const RITMO_DROP_PCT_MAX = 0.02; // queda por dia parado (preparo 0)
+
+// Ritmo inicial (intermediário), maior quanto melhor a Preparação Física.
+function initialRitmo(physicalPreparation) {
+  return clampNumber(
+    RITMO_INITIAL_BASE + (physicalPreparation / 100) * RITMO_INITIAL_PREP_RANGE,
+    0,
+    100
+  );
+}
+
+// Fração de GANHO de ritmo por prova (do gap até 100). Mais preparo => maior.
+function ritmoGainPctForRace(athlete) {
+  return (
+    RITMO_GAIN_PCT_MIN +
+    (athlete.physicalPreparation / 100) * (RITMO_GAIN_PCT_MAX - RITMO_GAIN_PCT_MIN)
+  );
+}
+
+// Fração de QUEDA de ritmo por dia parado (do ritmo atual). Mais preparo => menor.
+function ritmoDropPctForRestDay(athlete) {
+  return (
+    RITMO_DROP_PCT_MAX -
+    (athlete.physicalPreparation / 100) * (RITMO_DROP_PCT_MAX - RITMO_DROP_PCT_MIN)
+  );
+}
+
+// Ganha ritmo ao competir: fecha uma fração do que falta para a forma plena (100).
+function applyRaceRitmo(athlete) {
+  const gainPct = ritmoGainPctForRace(athlete);
+  athlete.ritmo = clampNumber(
+    athlete.ritmo + (100 - athlete.ritmo) * gainPct,
+    0,
+    100
+  );
+  return athlete.ritmo;
+}
+
+// Perde ritmo num dia parado: uma fração do ritmo atual (forma esfriando).
+function applyRestDayRitmo(athlete) {
+  const dropPct = ritmoDropPctForRestDay(athlete);
+  athlete.ritmo = clampNumber(athlete.ritmo - athlete.ritmo * dropPct, 0, 100);
+  return athlete.ritmo;
+}
+
+// Reinicia o ritmo para o piso de início de temporada (novo ano): forma baixa,
+// conforme o preparo. Aplicado a cada virada de ano (ver participation.js).
+function resetSeasonRitmo(athlete) {
+  athlete.ritmo = initialRitmo(athlete.physicalPreparation);
+  return athlete.ritmo;
+}
+
+// Aplica o ganho de ritmo (por prova) a uma LISTA de participantes.
+function applyRaceRitmoToParticipants(participants) {
+  for (const athlete of participants) {
+    applyRaceRitmo(athlete);
   }
   return participants;
 }
@@ -209,6 +344,7 @@ function createAthlete(index, country) {
     cityInfra,
     age
   );
+  const physicalPreparation = generatePhysicalPreparation();
 
   return {
     id: index,
@@ -219,8 +355,9 @@ function createAthlete(index, country) {
     age,
     strength,
     potential,
-    physicalPreparation: generatePhysicalPreparation(),
+    physicalPreparation,
     fatigue: 100, // Cansaço inicia sempre em 100%
+    ritmo: initialRitmo(physicalPreparation), // forma baixa no início do ano
   };
 }
 

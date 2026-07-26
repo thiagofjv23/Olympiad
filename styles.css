@@ -373,14 +373,52 @@ button.day:not(.day--current):hover {
 }
 
 /* Campeonatos ------------------------------------------------------------ */
-.championships {
+.championships,
+.rankings {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 20px;
 }
 
-.championships__select-label {
+.ranking-title {
+  font-size: 1.05rem;
+  margin: 0 0 4px;
+}
+
+.ranking-hint,
+.ranking-empty {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+/* Pontos: Etapas (4) e Pontos (5) alinhados à direita. */
+.points-table td:nth-child(4),
+.points-table th:nth-child(4),
+.points-table td:nth-child(5),
+.points-table th:nth-child(5) {
+  text-align: right;
+}
+
+/* Marcas: só a Marca (5) à direita; a Data (4) fica à esquerda. */
+.marks-table td:nth-child(5),
+.marks-table th:nth-child(5) {
+  text-align: right;
+}
+
+.marks-table .mark-detail-row td {
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: var(--text);
+  text-align: left;
+  width: auto;
+  padding: 10px 12px;
+}
+
+.championships__select-label,
+.rankings__select-label {
   display: block;
   font-size: 0.72rem;
   font-weight: 600;
@@ -390,7 +428,8 @@ button.day:not(.day--current):hover {
   margin-bottom: 6px;
 }
 
-.championships__select {
+.championships__select,
+.rankings__select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -491,7 +530,8 @@ button.day:not(.day--current):hover {
 
 /* Atletas e Clubes (mesmo padrão visual) --------------------------------- */
 .athletes,
-.clubs {
+.clubs,
+.sports {
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -531,21 +571,28 @@ button.day:not(.day--current):hover {
 }
 
 .athlete-list,
-.club-list {
+.club-list,
+.sport-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .athlete,
-.club {
+.club,
+.sport,
+.modality,
+.event {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .athlete__summary,
-.club__summary {
+.club__summary,
+.sport__summary,
+.modality__summary,
+.event__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -558,12 +605,18 @@ button.day:not(.day--current):hover {
 
 /* Remove o marcador padrão do <summary>. */
 .athlete__summary::-webkit-details-marker,
-.club__summary::-webkit-details-marker {
+.club__summary::-webkit-details-marker,
+.sport__summary::-webkit-details-marker,
+.modality__summary::-webkit-details-marker,
+.event__summary::-webkit-details-marker {
   display: none;
 }
 
 .athlete__summary::after,
-.club__summary::after {
+.club__summary::after,
+.sport__summary::after,
+.modality__summary::after,
+.event__summary::after {
   content: "▸";
   color: var(--muted);
   font-size: 0.85rem;
@@ -571,17 +624,26 @@ button.day:not(.day--current):hover {
 }
 
 .athlete[open] .athlete__summary::after,
-.club[open] .club__summary::after {
+.club[open] .club__summary::after,
+.sport[open] .sport__summary::after,
+.modality[open] .modality__summary::after,
+.event[open] .event__summary::after {
   transform: rotate(90deg);
 }
 
 .athlete__summary:hover,
-.club__summary:hover {
+.club__summary:hover,
+.sport__summary:hover,
+.modality__summary:hover,
+.event__summary:hover {
   background: var(--accent-soft);
 }
 
 .athlete__name,
-.club__name {
+.club__name,
+.sport__name,
+.modality__name,
+.event__name {
   font-weight: 600;
 }
 
@@ -665,10 +727,148 @@ button.day:not(.day--current):hover {
   border-top: 1px solid var(--border);
 }
 
+.club-athlete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.club-athlete__contract {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+}
+
 .club__athletes-empty {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 400;
+}
+
+/* Agentes livres ---------------------------------------------------------- */
+.free-agents {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.free-agents__title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.free-agents__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.free-agents__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.free-agents__list li {
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Esportes (Esporte → Modalidade → Evento) -------------------------------- */
+.sports__empty,
+.sport__empty,
+.modality__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.sport__empty,
+.modality__empty {
+  padding: 6px 14px 12px;
+}
+
+/* Modalidades dentro de um esporte (nível 2). */
+.sport__modalities {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 14px 12px;
+}
+
+/* A modalidade é um card mais suave, aninhado no esporte. */
+.modality {
+  background: var(--bg);
+}
+
+.modality__summary {
+  padding: 9px 12px;
+}
+
+.modality__name {
+  font-size: 0.92rem;
+}
+
+/* Eventos dentro de uma modalidade (nível 3). */
+.modality__events {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 12px 10px;
+}
+
+.event {
+  background: var(--surface);
+}
+
+.event__summary {
+  padding: 8px 12px;
+}
+
+.event__name {
+  font-size: 0.88rem;
+}
+
+/* Lista de atributos (modalidades e eventos). */
+.sport-attrs {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 10px;
+}
+
+.modality > .sport-attrs {
+  padding: 0 12px 8px;
+}
+
+.event > .sport-attrs {
+  padding: 0 12px 8px;
+}
+
+.sport-attrs li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.sport-attrs li span {
+  color: var(--muted);
+}
+
+.sport-attrs li strong {
+  text-align: right;
+  font-weight: 600;
 }
 
 .athlete--highlight {
@@ -691,6 +891,60 @@ button.day:not(.day--current):hover {
 
 .stage-row--highlight td:first-child {
   box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Resultados de uma etapa ------------------------------------------------- */
+.stage-results:empty {
+  display: none;
+}
+
+.stage-results {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.stage-results__title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.stage-results__empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.results-table th,
+.results-table td {
+  text-align: left;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.results-table td:first-child {
+  width: 44px;
+  font-weight: 600;
+}
+
+.results-table td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-color-scheme: dark) {

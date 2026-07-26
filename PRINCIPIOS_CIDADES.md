@@ -16,6 +16,10 @@ database inicial feita à mão quanto para um eventual gerador futuro.
 Cada cidade se relaciona com as demais entidades:
 
 - **País** — toda cidade pertence a um país (`countryId`).
+- **Estado / Região** — toda cidade pertence a um estado (`stateId` → `states.js`),
+  e o estado pertence a uma região (`regionId` → `regions.js`), formando a
+  hierarquia **país → região → estado → cidade**. País e região são deriváveis do
+  estado (helpers `getCityState` / `getCityRegion`).
 - **Clubes** — todo clube tem uma cidade-sede (`club.cityId`).
 - **Atletas** — todo atleta tem uma cidade de nascimento (`athlete.birthCityId`),
   sorteada entre as cidades do país do atleta no momento da geração.

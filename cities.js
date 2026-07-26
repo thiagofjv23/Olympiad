@@ -2,6 +2,8 @@
 // Entidade: Cidades (Cities)
 // Relaciona-se com:
 //   - Países  : cada cidade pertence a um país (countryId).
+//   - Estados : cada cidade pertence a um estado (stateId → states.js). A
+//               hierarquia completa é país → região → estado → cidade.
 //   - Clubes  : cada clube tem uma cidade-sede (club.cityId → city).
 //   - Atletas : cada atleta tem uma cidade de nascimento (athlete.birthCityId).
 //
@@ -9,6 +11,9 @@
 //   - id                   : identificador único
 //   - name                 : nome da cidade
 //   - countryId            : país da cidade (ver countries.js)
+//   - stateId              : estado da cidade (ver states.js). A região e o país
+//                            são deriváveis via estado; countryId é mantido para
+//                            filtragem direta por país.
 //   - populationEstimate   : população estimada (base para o tamanho)
 //   - size                 : tamanho — derivado da população
 //                            (pequena | média | grande | metrópole)
@@ -55,6 +60,7 @@ const CITIES = {
     id: "CID-SAO-PAULO",
     name: "São Paulo",
     countryId: "BRA",
+    stateId: "EST-SP",
     populationEstimate: 12_300_000,
     sportsInfrastructure: 90,
   },
@@ -62,6 +68,7 @@ const CITIES = {
     id: "CID-RIO-DE-JANEIRO",
     name: "Rio de Janeiro",
     countryId: "BRA",
+    stateId: "EST-RJ",
     populationEstimate: 6_700_000,
     sportsInfrastructure: 92,
   },
@@ -69,6 +76,7 @@ const CITIES = {
     id: "CID-BRASILIA",
     name: "Brasília",
     countryId: "BRA",
+    stateId: "EST-DF",
     populationEstimate: 3_050_000,
     sportsInfrastructure: 80,
   },
@@ -76,6 +84,7 @@ const CITIES = {
     id: "CID-SALVADOR",
     name: "Salvador",
     countryId: "BRA",
+    stateId: "EST-BA",
     populationEstimate: 2_900_000,
     sportsInfrastructure: 74,
   },
@@ -83,6 +92,7 @@ const CITIES = {
     id: "CID-FORTALEZA",
     name: "Fortaleza",
     countryId: "BRA",
+    stateId: "EST-CE",
     populationEstimate: 2_700_000,
     sportsInfrastructure: 70,
   },
@@ -90,6 +100,7 @@ const CITIES = {
     id: "CID-BELO-HORIZONTE",
     name: "Belo Horizonte",
     countryId: "BRA",
+    stateId: "EST-MG",
     populationEstimate: 2_520_000,
     sportsInfrastructure: 82,
   },
@@ -97,6 +108,7 @@ const CITIES = {
     id: "CID-MANAUS",
     name: "Manaus",
     countryId: "BRA",
+    stateId: "EST-AM",
     populationEstimate: 2_230_000,
     sportsInfrastructure: 68,
   },
@@ -104,6 +116,7 @@ const CITIES = {
     id: "CID-CURITIBA",
     name: "Curitiba",
     countryId: "BRA",
+    stateId: "EST-PR",
     populationEstimate: 1_960_000,
     sportsInfrastructure: 78,
   },
@@ -111,6 +124,7 @@ const CITIES = {
     id: "CID-RECIFE",
     name: "Recife",
     countryId: "BRA",
+    stateId: "EST-PE",
     populationEstimate: 1_650_000,
     sportsInfrastructure: 72,
   },
@@ -118,6 +132,7 @@ const CITIES = {
     id: "CID-PORTO-ALEGRE",
     name: "Porto Alegre",
     countryId: "BRA",
+    stateId: "EST-RS",
     populationEstimate: 1_490_000,
     sportsInfrastructure: 80,
   },
@@ -136,4 +151,20 @@ function getCity(id) {
 // Retorna todas as cidades de um país.
 function getCitiesByCountry(countryId) {
   return Object.values(CITIES).filter((city) => city.countryId === countryId);
+}
+
+// Retorna todas as cidades de um estado.
+function getCitiesByState(stateId) {
+  return Object.values(CITIES).filter((city) => city.stateId === stateId);
+}
+
+// Estado de uma cidade (objeto de states.js) ou undefined.
+function getCityState(city) {
+  return city ? getState(city.stateId) : undefined;
+}
+
+// Região de uma cidade (objeto de regions.js), derivada via estado, ou undefined.
+function getCityRegion(city) {
+  const state = getCityState(city);
+  return state ? getStateRegion(state) : undefined;
 }

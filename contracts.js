@@ -170,17 +170,72 @@ function resetContracts() {
 }
 
 // --- povoamento de TESTE (temporário) ----------------------------------------
-// Assina cada atleta a um clube ALEATÓRIO do seu país, com duração anual
-// sorteada (1, 2 ou 3 anos), começando na data de referência. É um vínculo de
-// TESTE, só para dar dados às telas enquanto o fluxo real de contratação não
-// existe. Deve ser substituído depois pelas regras de contratação (prestígio,
-// finanças, decisão do clube etc. — ver TODO.md).
+// Fração dos atletas deixada como AGENTE LIVRE no seed de teste (para as telas
+// terem tanto atletas contratados quanto agentes livres para mostrar).
+const TEST_FREE_AGENT_RATE = 0.25;
+
+// Afinidade com a CIDADE-SEDE: quando o clube é da MESMA cidade de nascimento do
+// atleta, o peso do clube é multiplicado por este fator — dando ao atleta uma
+// chance BEM MAIOR de assinar com um clube da sua cidade. É apenas um PESO (não
+// uma regra fixa): aumenta muito a probabilidade do clube local, mas NÃO a
+// garante (clubes de outras cidades continuam possíveis) e NÃO interfere na
+// chance de o atleta ficar sem clube — a agência livre é decidida à parte, antes
+// da escolha do clube (TEST_FREE_AGENT_RATE). Valor de balanceamento (teste).
+const TEST_SAME_CITY_AFFINITY = 8;
+
+// Peso de um clube para um atleta no sorteio do seed. Base = NÍVEL DE
+// INFRAESTRUTURA (mais infraestrutura → mais atletas; menos → menos),
+// multiplicado pela AFINIDADE DE CIDADE quando o clube é da mesma cidade de
+// nascimento do atleta. Sem atleta (ou sem cidade), usa só a infraestrutura.
+function clubSeedWeight(club, athlete) {
+  const infra = Math.max(0, club.infrastructureLevel || 0);
+  const sameCity =
+    athlete != null && club.cityId != null && club.cityId === athlete.birthCityId;
+  return infra * (sameCity ? TEST_SAME_CITY_AFFINITY : 1);
+}
+
+// Sorteia um clube dentre uma lista PONDERANDO por (1) nível de infraestrutura e
+// (2) afinidade com a cidade de nascimento do atleta (clube da mesma cidade tem
+// chance bem maior). Segue o mesmo estilo do sorteio ponderado da cidade de
+// nascimento (randomBirthCityId em athletes.js). Retorna null se a lista estiver
+// vazia; se a soma dos pesos for 0 (todas as infra zeradas), cai para um sorteio
+// uniforme.
+function pickClubForAthlete(clubs, athlete) {
+  if (clubs.length === 0) return null;
+
+  const totalWeight = clubs.reduce(
+    (sum, club) => sum + clubSeedWeight(club, athlete),
+    0
+  );
+
+  if (totalWeight <= 0) {
+    return clubs[Math.floor(Math.random() * clubs.length)];
+  }
+
+  let pick = Math.random() * totalWeight;
+  for (const club of clubs) {
+    pick -= clubSeedWeight(club, athlete);
+    if (pick < 0) return club;
+  }
+  return clubs[clubs.length - 1];
+}
+
+// Assina a maioria dos atletas a um clube do seu país — sorteado PONDERANDO pelo
+// NÍVEL DE INFRAESTRUTURA do clube (mais infraestrutura → mais atletas; menos →
+// menos) E pela AFINIDADE COM A CIDADE de nascimento (chance bem maior de ir a um
+// clube da sua cidade), via pickClubForAthlete — com duração anual sorteada (1, 2
+// ou 3 anos), começando na data de referência; uma fração (TEST_FREE_AGENT_RATE)
+// fica como agente livre. É um povoamento de TESTE, só para dar dados às telas
+// enquanto o fluxo real de contratação não existe. Deve ser substituído depois
+// pelas regras de contratação (prestígio, finanças, decisão do clube etc. — ver
+// TODO.md).
 function seedTestContracts(athletes, referenceDate) {
   resetContracts();
   for (const athlete of athletes) {
+    if (Math.random() < TEST_FREE_AGENT_RATE) continue; // fica agente livre
     const clubs = getClubsByCountry(athlete.countryId);
     if (clubs.length === 0) continue;
-    const club = clubs[Math.floor(Math.random() * clubs.length)];
+    const club = pickClubForAthlete(clubs, athlete);
     const duration =
       CONTRACT_DURATIONS[Math.floor(Math.random() * CONTRACT_DURATIONS.length)];
     signContract(athlete.id, club.id, referenceDate, duration);

@@ -25,9 +25,17 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
+| `participation.js`  | **Participação atleta ↔ etapa** (quem disputa cada etapa) + fadiga.     |
+| `eligibility.js`    | **Travas de inscrição** — quem pode disputar por país/região/estado/cidade. |
+| `ranking.js`        | **Ranking de Pontos** (cálculo) — pontos por atleta conforme a tier.    |
+| `marksRanking.js`   | **Ranking de Marcas** (cálculo) — melhor marca por atleta/modalidade.   |
+| `regions.js`        | **Entidade Regiões** — nível país → **região** → estado → cidade.       |
+| `states.js`         | **Entidade Estados** — nível país → região → **estado** → cidade.       |
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
-| `modalities.js`     | **Entidade Modalidades** (ligada a esportes; database vazia).           |
+| `modalities.js`     | **Entidade Modalidades** — agrupam eventos dentro de um esporte (Esporte → Modalidade). |
+| `events.js`         | **Entidade Eventos** — as provas resolvíveis de uma modalidade (Modalidade → Evento); traz o modelo de resultado. |
+| `competitionCategories.js` | **Entidade Categorias de Competição** — níveis/tiers do calendário. |
 | `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
@@ -36,6 +44,7 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `PRINCIPIOS_CIDADES.md` | Princípios de criação/geração de cidades.                          |
 | `DIARIO_DE_TRABALHO.md` | Registro do que foi implantado, por data (atualizar só ao fim do dia). |
 | `SUGESTOES_INICIO_DE_TRABALHO.md` | Pendências resumidas do dia anterior, da mais nova à mais antiga. |
+| `CALENDARIO_DE_COMPETICOES.md` | Desenho do calendário de competições (categorias/tiers) e roteiro. |
 
 ### Princípio de arquitetura
 
@@ -46,10 +55,21 @@ documento de dados — a interface (seletor, marcadores no calendário) se atual
 sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
-`countries.js` → `cities.js` → `sports.js` → `resultsEngine.js` →
-`modalities.js` → `championships.js` → `athletes.js` → `clubs.js` →
-`contracts.js` → `script.js`. (`contracts.js` vem depois de `athletes.js`,
-`clubs.js` e `championships.js` porque referencia `getClub` e `toDayStart`.)
+`countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
+`resultsEngine.js` → `modalities.js` → `events.js` → `competitionCategories.js` →
+`championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
+`eligibility.js` → `ranking.js` → `marksRanking.js` → `participation.js` →
+`script.js`. (`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade
+referencia o estado e o estado referencia a região; `events.js` vem depois de
+`modalities.js` e `resultsEngine.js`, pois o evento referencia a modalidade
+(`getModality`) e usa a `ResultsEngine`; `championships.js` já vem depois de
+`regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
+geográficos a partir da geografia; `competitionCategories.js` vem antes de
+`championships.js`, pois o campeonato referencia a categoria; `contracts.js` vem
+depois de `athletes.js`, `clubs.js` e `championships.js` porque referencia
+`getClub` e `toDayStart`; `eligibility.js`, `ranking.js` e `marksRanking.js` vêm
+antes de `participation.js` (que aplica a trava e registra pontos/marcas);
+`participation.js` vem por último, pois usa atletas, clubes, contratos e etapas.)
 
 ---
 
@@ -66,7 +86,10 @@ Objeto `COUNTRIES` indexado por `id`. Cada país:
 | `population`      | População.                         |
 | `olympicStrength` | **Força Olímpica** — rating 0–100. |
 
-País cadastrado: **Brasil** (`BRA`, população 213.421.037, força olímpica 78).
+Países cadastrados: **Brasil** (`BRA`, população 213.421.037, força olímpica 78)
+e **Argentina** (`ARG`, população 45.808.747, força olímpica 70). A Argentina
+entrou apenas como **país + atributos básicos** (mesma estrutura do Brasil);
+**cidades, clubes e atletas ficam para depois** (ver `TODO.md`).
 Função utilitária: `getCountry(id)`.
 
 ### Campeonatos — `championships.js`
@@ -79,19 +102,51 @@ Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
 | `name`        | Nome do campeonato.                                    |
 | `participants`| Número de participantes (inicia em `0`).               |
 | `countryId`   | Referência ao país em `countries.js`.                  |
-| `events`      | Eventos (lista).                                       |
-| `modalities`  | Modalidades (lista).                                   |
+| `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
+| `categoryId`  | **Categoria/porte** no calendário (ver `competitionCategories.js`). |
+| `scope`       | **Trava geográfica** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
+| `ageRestriction` | **Trava de idade** `{ minAge, maxAge }` (opcional) ou ausente — uso **futuro** (juvenil/sub). |
+| `clubQuota`   | **Trava de cota**: máx. de atletas por clube **por etapa** (ou ausente = sem limite). CNA = 1. |
+| `events`      | **Eventos (provas) disputados** — lista de ids de `events.js` (ex.: `["EVT-ATL-100M"]`). Uma etapa roda o primeiro evento. |
 | `competitors` | Participantes (lista).                                 |
 | `stages`      | Etapas — `{ number, date }`.                           |
 
-Campeonato cadastrado: **Campeonato Nacional de Atletismo** (`CNA-2026`), Brasil,
-0 participantes, **10 etapas**.
+**Calendário do Brasil (16 campeonatos):**
+
+- **Nacional** — `CNA-2026` (Campeonato Nacional de Atletismo), categoria
+  **Nacional**, `scope` país=`BRA`, **cota de 1 atleta por clube por etapa**
+  (`clubQuota: 1`), 2º sábado do mês. Cadastrado à mão.
+- **10 Estaduais** — um por estado com cidade na database (`CAMP-EST-<UF>-2026`),
+  categoria **Estadual**, `scope` estado, 1º sábado do mês.
+- **5 Regionais** — um por região com cidade (`CAMP-REG-<REGIÃO>-2026`), categoria
+  **Regional**, `scope` região, 3º sábado do mês.
+
+Estaduais e Regionais são **gerados** a partir da geografia (ver o gerador
+abaixo); o Nacional está na database. Todo novo campeonato deve informar
+`sportId`, `categoryId`, `scope` e a(s) modalidade(s).
 
 Funções utilitárias:
 
-- `secondSaturday(year, month)` — retorna a data do 2º sábado do mês.
-- `buildMonthlyStages(startYear, startMonth, count)` — gera N etapas, uma por
-  mês, sempre no 2º sábado.
+- `getChampionshipSport(championship)` — o esporte do campeonato (objeto de
+  `sports.js`).
+- `getChampionshipCategory(championship)` — a categoria/porte do campeonato
+  (objeto de `competitionCategories.js`).
+- `getChampionshipScope(championship)` — a abrangência `{ level, placeId }` (trava
+  geográfica) ou `null`.
+- `getChampionshipAgeRestriction(championship)` — a trava de idade
+  `{ minAge, maxAge }` ou `null`.
+- `getChampionshipClubQuota(championship)` — a cota máx. de atletas por clube por
+  etapa ou `null`.
+- `buildCountryGeographicChampionships(config)` — **gera** os campeonatos
+  **Estaduais** (por estado) e **Regionais** (por região) de um país, **só para
+  lugares com cidade na database**, e os registra em `CHAMPIONSHIPS`. Genérico
+  (serve qualquer país); chamado para o **Brasil** no fim de `championships.js`.
+- `nthSaturday(year, month, n)` — data do N-ésimo sábado do mês.
+- `secondSaturday(year, month)` — data do 2º sábado (= `nthSaturday(...,2)`).
+- `buildMonthlyStagesOn(startYear, startMonth, count, nth)` — N etapas mensais no
+  N-ésimo sábado (níveis usam sábados diferentes para não colidir).
+- `buildMonthlyStages(startYear, startMonth, count)` — N etapas mensais no 2º
+  sábado (compatibilidade).
 - `getStagesOnDate(date)` — retorna as etapas (de qualquer campeonato) que caem
   em uma data. Usada para marcar o calendário e listar eventos do dia.
 - `isStageDone(stage, referenceDate)` — **lógica de realização** da etapa. Lê a
@@ -99,6 +154,50 @@ Funções utilitárias:
   data de referência: retorna `true` ao **chegar no dia** da etapa ou depois.
 - `championshipProgress(championship, referenceDate)` — `{ done, total }` com o
   número de etapas já realizadas em relação a uma data.
+
+### Categorias de Competição — `competitionCategories.js`
+
+Os **níveis (tiers)** do calendário de competições — a estrutura que organiza
+**todas** as competições, do menor ao maior porte. É uma database **global e
+independente de país** (as mesmas categorias valem para qualquer país); uma
+competição aponta para uma categoria via `categoryId` e dela herda o **porte**
+(prestígio), o **valor de ranking** e — no futuro — a **premiação**.
+
+Objeto `COMPETITION_CATEGORIES` (indexado por `id`), do nível 1 (menor) ao 9
+(maior):
+
+| Nível | Categoria   | Scope         | Prestígio | Ranking |
+| ----- | ----------- | ------------- | --------- | ------- |
+| 1     | Regional    | subnacional   | 20        | 20      |
+| 2     | Estadual    | subnacional   | 35        | 40      |
+| 3     | Série C     | nacional      | 45        | 60      |
+| 4     | Série B     | nacional      | 60        | 100     |
+| 5     | Série A     | nacional      | 75        | 160     |
+| 6     | Nacional    | nacional      | 95        | 300     |
+| 7     | Continental | internacional | 98        | 450     |
+| 8     | Mundial     | internacional | 99        | 700     |
+| 9     | Olímpico    | internacional | 100       | 1000    |
+
+Campos: `id`, `name`, `level` (1–9, ordena/compara portes), `scope` (alcance —
+ver abaixo), `prestige` (0–100, porte, para casar clubes/atletas ao nível certo —
+uso futuro) e `rankingPoints` (pontos de ranking que a categoria vale — base do
+campeão; distribuição por posição é futura).
+
+**Scope** (`COMPETITION_SCOPES`): `subnacional` (Regional/Estadual — recorte
+dentro de um país; região/estado ainda não existem como entidade), `nacional`
+(Série C/B/A e Nacional — de **um** país) e `internacional` (Continental/Mundial/
+Olímpico — de **vários** países). É o que permite o calendário **servir todos os
+países** sem duplicar as categorias.
+
+**Premiação (dinheiro):** de propósito **não há campo no código**. A tabela de
+valores (`$`… por categoria) é referência para o **sistema financeiro** futuro —
+registrada em `TODO.md` e em `CALENDARIO_DE_COMPETICOES.md`.
+
+Funções utilitárias: `getCompetitionCategory(id)`, `getAllCompetitionCategories()`
+(ordenadas por `level`), `getCategoriesByScope(scope)` e `getCategoryByLevel(level)`.
+
+O **desenho completo** do calendário (motivação, scope, ranking, premiação,
+etapas/final e roteiro) está em **`CALENDARIO_DE_COMPETICOES.md`**.
 
 ### Atletas — `athletes.js`
 
@@ -114,6 +213,7 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `potential`           | **Potencial** (0–100), teto de crescimento; nunca menor que Força.|
 | `physicalPreparation` | **Preparação Física** (0–100).                                   |
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
+| `ritmo`               | **Ritmo/forma** (0–100). Começa **intermediário** no início do ano, **sobe** ao competir e **cai** parado. **Modifica a resolução de resultados** (redutor de forma). Inicial/ganho/queda dependem da Preparação Física. |
 | `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
 | `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — a ligação do atleta com um esporte. Todo regen recebe um ao ser gerado; neste início, **todos têm Atletismo** (`SPT-ATLETISMO`). |
 
@@ -139,19 +239,42 @@ Regras de geração:
   melhor infraestrutura tendem a formar atletas mais fortes e com maior
   potencial**.
 - **Preparação Física**: normal em torno de 60 (0–100).
-- **Cansaço**: começa em 100. `fatigueReductionForStage(athlete)` define quanto
-  cai por etapa — **mais idade → cai mais**, **mais Preparação Física → cai menos**.
-  A **aplicação** é feita por `applyStageFatigue(athlete)` — desgaste de **uma
-  etapa** em **um** atleta (individual), limitado a `[0, 100]`; e
-  `applyStageFatigueToParticipants(participants)` aplica, individualmente, a uma
-  lista de participantes. É o **ponto de aplicação por participação**, **desacoplado
-  de clube**: quando a inscrição via clube existir, basta passar os atletas
-  inscritos. Não aplica fadiga em massa a um país — o cansaço é sempre individual.
+- **Cansaço** (`fatigue`): é a **energia/frescor** do atleta — **100 = descansado**,
+  0 = exausto. Dois efeitos opostos o movem:
+  - **Competir desgasta** (reduz): `fatigueReductionForStage(athlete)` define
+    quanto cai por **etapa** — **mais idade → cai mais**, **mais Preparação Física
+    → cai menos**. Aplicado por `applyStageFatigue(athlete)` (individual) e
+    `applyStageFatigueToParticipants(participants)` (uma lista).
+  - **Descansar recupera** (aumenta, até 100): `fatigueRecoveryForRestDay(athlete)`
+    define quanto sobe por **dia sem competir** — **mais Preparação Física →
+    recupera mais**, **mais idade → recupera menos** (espelho do desgaste, sinais
+    trocados). Aplicado por `applyRestDay(athlete)`.
+  - O desgaste é por **evento** (esforço pontual); a recuperação é por **dia**
+    (contínua). `fatigue` é guardado como número **real** (a UI arredonda) para o
+    acúmulo diário não perder precisão. O cansaço é sempre **individual**.
+  - A orquestração (quem compete × quem descansa a cada dia) fica em
+    `participation.js` (`processDay`).
+- **Ritmo/forma** (`ritmo`, 0–100): forma de **médio prazo** (temporada), separada
+  da Força (teto de habilidade) e do Cansaço (energia de curto prazo). Começa
+  **intermediário** no início do ano e sobe competindo. Os **três** parâmetros
+  dependem da **Preparação Física** (constantes em `athletes.js`):
+  - **Inicial** (`initialRitmo`): base intermediária (45) + até +25 pelo preparo (→ 45–70).
+  - **Ganho por prova** (`applyRaceRitmo`): fecha uma **fração do que falta para
+    100** (`ritmoGainPctForRace`, 15–35% conforme o preparo — mais preparo entra
+    em forma mais rápido).
+  - **Queda por dia parado** (`applyRestDayRitmo`): perde uma **fração do ritmo
+    atual** (`ritmoDropPctForRestDay`, 2%–0,5% conforme o preparo — mais preparo
+    mantém a forma por mais tempo).
+  - **Reset de temporada** (`resetSeasonRitmo`): na virada de ano (1º/jan) o ritmo
+    de todos volta ao piso inicial. Orquestrado em `participation.js`
+    (`processDay`): quem compete ganha ritmo; quem descansa perde.
+  - **Efeito na resolução**: ver a modalidade (redutor de forma somado ao da
+    fadiga) — abaixo, e sem remover Força/fadiga.
 
 Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
 substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
 
-> Números de teste (10 atletas, idade 18–35) e a lógica de evolução de
+> Números de teste (100 atletas, idade 18–35) e a lógica de evolução de
 > Força/Potencial estão registrados em `TODO.md`.
 
 ### Clubes — `clubs.js`
@@ -176,10 +299,15 @@ competição por meio de um clube (mecânica ainda **não** implementada; ver
 
 Funções utilitárias: `getClub(id)` e `getClubsByCountry(countryId)`.
 
-Conjunto inicial (10 clubes, todos do Brasil — único país existente): Pinheiros,
-Sogipa, Grêmio Náutico União, Minas Tênis Clube, Flamengo, Vasco da Gama,
-Botafogo, Fluminense, Corinthians e Clube Atlético Paulistano. É um conjunto de
-**teste**, a ser revisado e ampliado.
+Conjunto inicial de 10 clubes: Pinheiros, Sogipa, Grêmio Náutico União, Minas
+Tênis Clube, Flamengo, Vasco da Gama, Botafogo, Fluminense, Corinthians e Clube
+Atlético Paulistano. Depois, **cada cidade que ainda não tinha clube recebeu 2**
+(mesmos parâmetros): Brasília (Gama, Brasiliense), Salvador (Bahia, Vitória),
+Fortaleza (Fortaleza EC, Ceará), Manaus (Nacional-AM, Fast), Curitiba (Coritiba,
+Athletico-PR) e Recife (Sport, Náutico) — **22 clubes** no total, **todos do
+Brasil**. Assim, **toda cidade da database tem clube**, e a afinidade de cidade
+na contratação (ver `contracts.js`) passa a valer para todas. É um conjunto de
+**teste**, a ser revisado e ampliado (inclusive com clubes de outros países).
 
 ### Contratos — `contracts.js`
 
@@ -228,30 +356,221 @@ Funções:
 - `isValidContractDuration(years)`, `contractEndDate(startDate, years)`,
   `getContract(id)`, `getAllContracts()`, `resetContracts()`.
 - `seedTestContracts(athletes, referenceDate)` — **povoamento de TESTE**
-  (temporário): assina cada atleta a um clube aleatório do seu país, com duração
-  anual sorteada. Só para dar dados às telas; será substituído pelo fluxo real de
-  contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
+  (temporário): assina cada atleta a um clube do seu país **sorteado ponderando
+  por (1) nível de infraestrutura** (mais infraestrutura → mais atletas; menos →
+  menos) **e (2) afinidade com a cidade de nascimento** (chance bem maior de ir a
+  um clube da própria cidade), via `pickClubForAthlete`, com duração anual
+  sorteada. A **agência livre** (uma fração `TEST_FREE_AGENT_RATE`) é decidida
+  **antes** e independe do clube — a afinidade de cidade **não** impede o atleta
+  de ficar sem clube. Só para dar dados às telas; será substituído pelo fluxo real
+  de contratação (ver `TODO.md`). Chamado no início da simulação (`script.js`).
+- `pickClubForAthlete(clubs, athlete)` — sorteia um clube de uma lista
+  **ponderando por infraestrutura × afinidade de cidade** (via `clubSeedWeight`);
+  mesmo estilo do sorteio ponderado da cidade de nascimento em `athletes.js`; cai
+  para sorteio uniforme se a soma dos pesos for 0. Usado pelo `seedTestContracts`.
+- `clubSeedWeight(club, athlete)` — peso do clube no sorteio: base = seu
+  `infrastructureLevel`, multiplicado por `TEST_SAME_CITY_AFFINITY` quando o clube
+  é da **mesma cidade** de nascimento do atleta. Sem atleta/cidade, usa só a
+  infraestrutura.
 
-**UI (parcial):** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do
-`<details>` do clube) que revela os atletas contratados, cada nome clicável e
-levando ao **perfil do atleta**; a aba **Atletas** mostra o **Clube atual** de
-cada atleta (ou "Agente livre"). Ver a seção 4 e a Etapa 23. Uma tela mais
-completa de contratos (durações, término, agentes livres) segue no `TODO.md`.
+**UI:** a aba **Clubes** tem o link **"Atletas do clube"** (dentro do `<details>`
+do clube) que revela os atletas contratados — cada item com o **nome** (clicável,
+leva ao **perfil do atleta**) e os dados do contrato: **duração**, **término** e
+marca **"renovado"** quando for renovação. Abaixo dos clubes, a lista de
+**Agentes livres** do país (nomes clicáveis). A aba **Atletas** mostra o **Clube
+atual** de cada atleta (ou "Agente livre"). Tudo é **reativo à passagem de tempo**
+(um contrato que expira/entra em vigor atualiza elenco, agentes livres e clube do
+atleta). Ver a seção 4 e as Etapas 23–24.
+
+### Participação atleta ↔ etapa — `participation.js`
+
+A ponte entre **atletas (via clube/contrato)** e as **etapas** de um campeonato:
+define **quais atletas disputam cada etapa** e aplica a **fadiga** de participação.
+
+**Regra de TESTE (temporária):** cada clube inscreve **todos** os seus atletas em
+**todas** as etapas. Assim, os participantes de uma etapa são todos os atletas
+com **contrato ativo na data da etapa** em algum clube do país do campeonato;
+**agentes livres não disputam** (nenhum clube os inscreve). Falta a mecânica
+**real** de cadastro (ver `TODO.md`, prioridade média).
+
+**Travas de inscrição:** o participante precisa ser **elegível** às travas de
+atleta (abrangência `scope` + faixa etária `ageRestriction` — ver `eligibility.js`)
+**e** respeitar a **cota por clube** (`clubQuota`): cada clube inscreve no máximo
+N atletas **por etapa** (ex.: **CNA = 1**). Assim, participantes = **contratados
+via clube ∩ elegíveis (geografia+idade)**, depois **limitados pela cota**. Quando
+a cota corta, um **placeholder** manda os atletas **mais fortes** do clube
+(`limitAthletesPerClub`, por `strength`, desempate por id) — a seleção **real**
+(qual atleta o clube inscreve) é a mecânica pendente (ver `TODO.md`).
+
+Funções:
+
+- `getStageParticipants(championship, stage)` — atletas participantes da etapa
+  (contratados via clube, elegíveis pelas travas de atleta e dentro da cota por
+  clube); `getStageParticipantCount(...)` retorna a quantidade.
+- `limitAthletesPerClub(athletes, athleteClubId, quota)` — aplica a cota por clube
+  (placeholder: os mais fortes).
+- `getStageEvent(championship, stage)` — a prova (evento) disputada (por ora, o
+  primeiro evento do campeonato; senão, o primeiro evento do esporte).
+- `processStage(championship, stage)` — processa uma etapa **uma única vez**:
+  (1) **resolve o resultado** com a fadiga atual dos participantes (via
+  `resolveEvent`) e o **trava**; (2) **soma os pontos** ao ranking
+  (`recordStageForRanking`, conforme a tier) e **registra as marcas**
+  (`recordStageMarks`, melhor por atleta); (3) aplica a fadiga da etapa aos
+  participantes.
+- `processDay(date)` — processa **um dia**: (0) na virada de ano **encerra a
+  temporada** — arquiva os rankings de pontos e marcas (`archiveSeason` /
+  `archiveMarksSeason`) e os zera — e reinicia o **ritmo** de todos
+  (`resetSeasonRitmo`); (1) resolve as etapas do dia — seus
+  participantes se **cansam** e **ganham ritmo**; (2) os demais **descansam**
+  (recuperam Cansaço com `applyRestDay` e **perdem ritmo** com `applyRestDayRitmo`).
+  Quem competiu no dia não descansa nesse dia. Chamado **dia a dia** por
+  `advanceDays`.
+- `getStageResult(championship, stage)` — o resultado travado da etapa
+  (`[{ id, result, position }]`) ou `null` se ainda não realizada.
+  `resetParticipation()` zera os resultados processados.
+
+### Travas de inscrição — `eligibility.js`
+
+Define **quem pode disputar** um campeonato pelas **travas de atleta**:
+
+- **Abrangência geográfica** (`championship.scope`): só participa quem é "daquele"
+  recorte — **país, região, estado ou cidade**. A **origem** do atleta é derivada
+  da sua **cidade de nascimento** (`birthCityId`), que dá todos os níveis pela
+  hierarquia país → região → estado → cidade. Independe de contrato/clube (vale
+  até para agentes livres). O `scope` é `{ level, placeId }`, com `level` ∈
+  `country`/`region`/`state`/`city`. Sem `scope`, não há trava.
+- **Faixa etária** (`championship.ageRestriction` = `{ minAge, maxAge }`, ambos
+  opcionais): só participa quem está na idade exigida. **Uso futuro** (campeonatos
+  juvenis/sub) — o mecanismo existe, mas nenhum campeonato usa ainda. Sem
+  restrição → todos.
+
+(A trava de **cota por clube** é de grupo/etapa e fica em `participation.js`.)
+
+Funções:
+
+- `getAthleteOriginIds(athlete)` — `{ cityId, stateId, regionId, countryId }` da
+  origem do atleta (via cidade de nascimento).
+- `isAthleteEligibleForScope(athlete, scope)` — elegível ao escopo geográfico?
+- `isAthleteAgeEligible(athlete, ageRestriction)` — está na faixa etária?
+- `getEligibleAthletes(athletes, scope)` — filtra uma lista pelo escopo.
+- `isAthleteEligibleForChampionship(athlete, championship)` — passa em **todas** as
+  travas de atleta (geográfica + idade)?
+- `getChampionshipEligibleAthletes(championship)` — todos os elegíveis (geografia +
+  idade); usado na UI para "Atletas elegíveis".
+
+### Sistema de Ranking — `ranking.js`
+
+Acumula **pontos por atleta** ao longo da **temporada** (ano-calendário), a partir
+dos resultados das etapas. A pontuação de cada etapa depende da **categoria/tier**
+do campeonato: **maiores valem mais** (a categoria dá a base do campeão via
+`rankingPoints`), menores valem menos. É **só cálculo** — a UI (aba Rankings) só
+**lê** e exibe.
+
+- **Distribuição por posição** (`pointsForPosition(base, position)`): modelo
+  **placeholder** de decaimento **harmônico** — campeão leva a base cheia e as
+  posições seguintes levam frações (`base / posição`, arredondado). Ex.: Nacional
+  (base 300) → 1º 300, 2º 150, 3º 100…; Estadual (40) → 1º 40…; Regional (20) →
+  1º 20… Fácil de recalibrar (ver `TODO.md`/`DECISOES.md`).
+- **Acúmulo**: `recordStageForRanking(championship, results)` soma os pontos e conta
+  **+1 etapa** para cada atleta com resultado. Chamado **uma vez por etapa** por
+  `processStage` (participation.js).
+- **Ranking corrente**: `getSeasonRanking()` → `[{ position, athleteId, points,
+  stages }]`, ordenado por pontos (desempate: mais etapas, depois id); empates em
+  pontos **compartilham** posição.
+- **Temporada / histórico**: na virada de ano, `processDay` chama
+  `archiveSeason(anoQueTerminou)` (snapshot em `RANKING_HISTORY`) e
+  `resetRankingSeason()` (zera o acúmulo). O histórico é **salvo para uso
+  posterior** (ainda não consumido — ver `TODO.md`). Consulta:
+  `getRankingHistory(year)`, `getRankingHistoryYears()`. `resetRanking()` limpa
+  tudo.
+
+### Ranking de Marcas — `marksRanking.js`
+
+Para cada **evento** (prova), guarda a **melhor marca** de cada atleta na
+**temporada** e monta o ranking da melhor para a pior marca. "Melhor" depende do
+evento (a `resolution.order` da ResultsEngine): nos 100 m (tempo) a **menor** marca
+é a melhor. É um **template genérico**: funciona para **qualquer** evento
+(indexado por `eventId`, usando a ordem e o formatador do próprio evento).
+Também é **só cálculo** — a UI só lê e exibe.
+
+De cada melhor marca guarda-se **onde/quando** foi alcançada (`date`,
+`championshipId`, `stageNumber`), para a UI detalhar ao clicar na data.
+
+- `recordStageMarks(championship, stage, event, results)` — registra as marcas
+  de uma etapa, mantendo só a **melhor** por atleta (via `isBetterResult`). Chamado
+  por `processStage`.
+- `getSeasonMarksRanking(eventId)` → `[{ position, athleteId, value, date,
+  championshipId, stageNumber }]`, ordenado por marca (empate na marca compartilha
+  posição). `getEventsWithMarks()` lista os eventos com marcas.
+- **Temporada / histórico**: na virada de ano, `processDay` chama
+  `archiveMarksSeason(anoQueTerminou)` (snapshot por evento em `MARKS_HISTORY`)
+  e `resetMarksSeason()`. Histórico **salvo para uso posterior** (ver `TODO.md`).
+  Consulta: `getMarksHistory(year)`. `resetMarks()` limpa tudo.
+
+Por que travar o resultado: a fadiga muda ao longo do tempo; o resultado de uma
+etapa é **histórico** e é fixado no momento da realização (com a fadiga de então,
+antes do desgaste daquela etapa). Efeito: etapas seguintes tendem a ficar mais
+lentas conforme os atletas acumulam cansaço. A **UI** exibe a classificação na
+aba Campeonatos (ver seção 4 e Etapa 26).
+
+### Hierarquia geográfica — `regions.js` e `states.js`
+
+O território de um país é dividido em **regiões** e **estados**, formando a
+hierarquia **país → região → estado → cidade**. É a base dos portes
+**Regional** e **Estadual** do calendário (ver `competitionCategories.js` e
+`CALENDARIO_DE_COMPETICOES.md`).
+
+#### Regiões — `regions.js`
+
+Objeto `REGIONS` (indexado por `id`). Cada região agrupa estados de um mesmo país.
+
+| Campo       | Descrição                                     |
+| ----------- | --------------------------------------------- |
+| `id`        | Identificador único (ex.: `REG-SUDESTE`).     |
+| `name`      | Nome da região (ex.: `Sudeste`).              |
+| `countryId` | País da região (ver `countries.js`).          |
+
+Conjunto inicial: as **5 regiões do Brasil** (Norte, Nordeste, Centro-Oeste,
+Sudeste, Sul). Funções: `getRegion(id)`, `getRegionsByCountry(countryId)`,
+`getAllRegions()`.
+
+#### Estados — `states.js`
+
+Objeto `STATES` (indexado por `id`). Cada estado pertence a uma **região** e a um
+**país**.
+
+| Campo          | Descrição                                                       |
+| -------------- | --------------------------------------------------------------- |
+| `id`           | Identificador único (ex.: `EST-RJ`).                           |
+| `name`         | Nome do estado (ex.: `Rio de Janeiro`).                        |
+| `abbreviation` | Sigla (ex.: `RJ`).                                             |
+| `countryId`    | País do estado (derivável via região; guardado para filtragem direta). |
+| `regionId`     | Região do estado (ver `regions.js`).                          |
+
+Conjunto inicial: **10 estados** — os das cidades já cadastradas (`cities.js`),
+cobrindo as 5 regiões. **Não** é o conjunto completo das 27 unidades federativas;
+ampliar depois (mesmo espírito das "10 cidades de teste" — ver `TODO.md`).
+Funções: `getState(id)`, `getStatesByCountry(countryId)`,
+`getStatesByRegion(regionId)`, `getStateRegion(state)`, `getAllStates()`.
 
 ### Cidades — `cities.js`
 
 Database inicial (objeto `CITIES`) de cidades reais. **Relaciona-se com países,
-clubes e atletas**: é o país da cidade, a sede dos clubes e a cidade de
-nascimento dos atletas.
+estados, clubes e atletas**: é o país e o **estado** da cidade, a sede dos clubes
+e a cidade de nascimento dos atletas.
 
 | Campo                  | Descrição                                                       |
 | ---------------------- | --------------------------------------------------------------- |
 | `id`                   | Identificador único (ex.: `CID-SAO-PAULO`).                    |
 | `name`                 | Nome da cidade.                                                 |
 | `countryId`            | País da cidade (ver `countries.js`).                           |
+| `stateId`              | **Estado** da cidade (ver `states.js`); região e país deriváveis dele. |
 | `populationEstimate`   | População estimada (base para o tamanho).                      |
 | `size`                 | Tamanho **derivado** da população: pequena / média / grande / metrópole. |
 | `sportsInfrastructure` | Infraestrutura esportiva (0–100), influenciada pela força olímpica do país. |
+
+Helpers de hierarquia: `getCityState(city)` (estado da cidade) e
+`getCityRegion(city)` (região, derivada via estado).
 
 Funções utilitárias: `getCity(id)`, `getCitiesByCountry(countryId)` e
 `citySizeFromPopulation(pop)`.
@@ -275,12 +594,24 @@ valoriza atributos de forma diferente) — essa lógica ainda **não existe** (v
 | `generalPopularity` | Popularidade geral (0–100).                                      |
 | `practiceStartYear` | Ano de início da prática (número; negativo = a.C., ex.: −776).  |
 | `originCountry`     | País originário (texto — ver `DECISOES.md`).                    |
+| `resultSystems`     | Lista dos **ResultSystem** do esporte (ex.: `TimeResultSystem`, `MatchResultSystem`, …). **Só indicador/rótulo por enquanto** — sem mecânica (a mecânica é **prioridade alta** no `TODO.md`). |
 
 Funções utilitárias: `getSport(id)` e `getAllSports()`.
 
-Conjunto inicial (6 esportes): Atletismo (o do nosso campeonato), Natação,
-Futebol, Basquete, Vôlei e Ginástica Artística. Popularidade é aproximada; lista
-a ser ampliada.
+Conjunto atual: **36 esportes olímpicos** (Atletismo — o do nosso campeonato —,
+Badminton, Basquete, Beisebol/Softbol, Boxe, Canoagem, Ciclismo, Críquete,
+Escalada Esportiva, Esgrima, Flag Football, Futebol, Ginástica, Golfe, Handebol,
+Hipismo, Hóquei sobre Grama, Judô, Lacrosse, Levantamento de Peso, Lutas,
+Natação, Pentatlo Moderno, Remo, Rugby, Skate, Surfe, Squash, Taekwondo, Tênis,
+Tênis de Mesa, Tiro Esportivo, Tiro com Arco, Triatlo, Vela e Voleibol). Cada um
+declara seus **`resultSystems`** (só indicador). Popularidade, anos e origens são
+**aproximações**, a revisar.
+
+Os **ResultSystem** por esporte (conforme a tabela pedida): `TimeResultSystem`,
+`DistanceResultSystem`, `HeightResultSystem`, `PointsResultSystem`,
+`MatchResultSystem`, `JudgeResultSystem`, `ScoreResultSystem`,
+`WeightResultSystem` e `CombinedResultSystem`. **Nenhum tem mecânica ainda** — a
+criação da mecânica de ResultSystem é **prioridade alta** (ver `TODO.md`).
 
 ### Engine de resultados — `resultsEngine.js`
 
@@ -309,35 +640,77 @@ Competidores: `{ id, values: number[] }` ou `{ id, value }`.
 
 ### Modalidades — `modalities.js`
 
-Entidade **ligada a um esporte** (`sportId`), usada em esportes com mais de uma
-variação de prática (ex.: Atletismo → 100 m, salto em distância, etc.).
+**Nível intermediário** da hierarquia **Esporte → Modalidade → Evento**. Uma
+modalidade **agrupa os eventos** (provas) de um esporte. Ex.: no Atletismo, a
+modalidade **Velocidade** reúne provas como os **100 m** (que são um **evento**).
+
+| Campo     | Descrição                                    |
+| --------- | -------------------------------------------- |
+| `id`      | Identificador único (ex.: `MOD-ATL-VELOCIDADE`). |
+| `name`    | Nome da modalidade (ex.: `Velocidade`).      |
+| `sportId` | Esporte a que pertence (ver `sports.js`).    |
+
+Funções utilitárias: `getModality(id)`, `getModalitiesBySport(sportId)` e
+`getModalitySport(modality)` (o esporte da modalidade).
+
+**Database: 72 modalidades** — a lista olímpica por esporte (Atletismo →
+Velocidade, Meio-fundo, Fundo, Barreiras, Obstáculos, Revezamentos, Saltos,
+Arremessos/Lançamentos, Marcha Atlética, Provas Combinadas; Vela → Dinghy, Skiff,
+Multicasco, Prancha à Vela, Kite; etc.). É só a estrutura (id/nome/esporte) — o
+**modelo de resultado** fica nos **eventos** (abaixo). Ainda **sem UI** (ver
+`TODO.md`).
+
+### Eventos — `events.js`
+
+**Nível resolvível** da hierarquia (Modalidade → **Evento**). O evento é a prova
+que a simulação resolve: é ele que carrega o **modelo de resultado**
+(`resolution` + `performance`). Pertence a uma **modalidade** (`modalityId`).
 
 | Campo               | Descrição                                                        |
 | ------------------- | ---------------------------------------------------------------- |
-| `id`                | Identificador único.                                             |
-| `name`              | Nome da modalidade.                                              |
-| `sportId`           | Esporte primário (ver `sports.js`).                             |
-| `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). |
-| `performance`       | Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
-| `generalPopularity` | Popularidade geral da modalidade **dentro do esporte** (0–100).  |
-| `countryPopularity` | Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
+| `id`                | Identificador único (ex.: `EVT-ATL-100M`).                       |
+| `name`              | Nome do evento (ex.: `100 metros rasos`).                        |
+| `modalityId`        | Modalidade a que pertence (ver `modalities.js`).                 |
+| `resolution`        | *(opcional)* **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). Presente só onde há modelo. |
+| `performance`       | *(opcional)* Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
+| `generalPopularity` | *(opcional)* Popularidade geral do evento (0–100).               |
+| `countryPopularity` | *(opcional)* Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
 
-Funções utilitárias: `getModality(id)` e `getModalitiesBySport(sportId)`.
+Funções utilitárias: `getEvent(id)`, `getEventsByModality(modalityId)`,
+`getEventsBySport(sportId)` (via a modalidade) e `getEventModality(event)`.
 
-**Modalidade cadastrada: 100 m rasos** (`MOD-ATL-100M`, do Atletismo). Resolução:
-métrica tempo, **menor vence**, resultado único, 2 casas. Modelo de desempenho:
+**Database: ~190 eventos** seguindo o **calendário olímpico** — cada modalidade
+recebe as suas provas (ex.: Velocidade → 100 m, 200 m, 400 m; Natação → 50 m
+livre … revezamentos; Judô/Boxe/Lutas → categorias de peso; coletivos →
+"Torneio …"). Por ora os eventos guardam só a **estrutura** (`id/name/modalityId`);
+o **modelo de resultado** (`resolution`/`performance`/popularidade) está definido
+apenas onde já existe — hoje, os **100 m**. Os demais ganharão o seu modelo com a
+**mecânica de ResultSystem** (ver `TODO.md`, prioridade alta). Eventos sem modelo
+**não são resolvidos** (nenhum campeonato os disputa ainda) — apenas compõem a
+estrutura Esporte → Modalidade → Evento (e aparecem na aba Esportes).
 
-- **Força efetiva** = `Força − (100 − fatigue) × fatiguePenaltyPerPoint`.
-  O stat `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga
-  acumulada**. Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
+**Evento com modelo: 100 m rasos** (`EVT-ATL-100M`, da modalidade **Velocidade**
+do Atletismo). Resolução: métrica tempo, **menor vence**, resultado único, 2
+casas. Modelo de desempenho:
+
+- **Força efetiva** = `Força − redutor de fadiga − redutor de forma`.
+  - **Redutor de fadiga** = `(100 − fatigue) × fatiguePenaltyPerPoint`. O stat
+    `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga acumulada**.
+    Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
+  - **Redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint`. `ritmo` 100 =
+    forma plena (sem penalidade); `100 − ritmo` é o **déficit de forma**. Fora de
+    forma perde Força efetiva. (`formPenaltyPerPoint = 0.15`.) **Os dois redutores
+    somam** e são independentes (fadiga = curto prazo; ritmo = forma de temporada).
+    Sem `ritmo`, o déficit é 0 (retrocompatível). **Força e fadiga permanecem** —
+    o ritmo apenas se soma.
 - **Tempo** = `recordTime + (100 − Força efetiva) × secondsPerStrengthPoint`, com
   `recordTime = 9.58` (recorde mundial, o **piso** — ninguém corre abaixo) e
   `secondsPerStrengthPoint = 0.05`. Força efetiva 100 → 9,58 s; quanto menor,
   mais lento.
 
-Funções do modelo: `effectiveStrengthForModality`, `computeModalityResult` (o
-número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) e
-`resolveModality(athletes, modality)` (gera os tempos e resolve o ranking pela
+Funções do modelo: `effectiveStrengthForEvent`, `computeEventResult` (o número do
+resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
+`resolveEvent(athletes, event)` (gera os tempos e resolve o ranking pela
 `ResultsEngine`, retornando `{ id, result, position }` com `result` = tempo).
 
 ---
@@ -585,6 +958,501 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 47 — Atributos dos esportes na aba Esportes
+
+- Completando a Etapa 46, o **esporte** passou a mostrar seus **atributos** ao
+  abrir (antes só o nome), no mesmo padrão de modalidades/eventos: **ID**,
+  **Descrição**, **Popularidade** (0–100), **Início da prática** (negativo → "N
+  a.C."), **País de origem**, **ResultSystems** (lista) e **nº de Modalidades**
+  (derivado). As modalidades continuam listadas logo abaixo.
+- **Derivado das databases**: os atributos vêm do próprio esporte + a contagem de
+  modalidades (`getModalitiesBySport`), então segue reativo. Helper novo:
+  `formatPracticeStartYear`.
+- **Só UI**: apenas `script.js` (o `renderSports` monta o bloco `.sport-attrs` do
+  esporte, reusando o estilo já existente — sem CSS novo). Nenhuma
+  entidade/mecânica foi tocada.
+- **Verificado** (navegador headless): Atletismo mostra os 7 atributos corretos
+  (popularidade 85/100, "776 a.C.", os 4 ResultSystems, 10 modalidades) e as
+  modalidades seguem listadas abaixo; sem erros de JS. Screenshot enviado.
+
+### Etapa 46 — Atributos de modalidades e eventos na aba Esportes
+
+- A aba **Esportes** passou a mostrar os **atributos** das modalidades e dos
+  eventos (antes eram só nomes):
+  - **Modalidade** (ao abrir): **ID**, **Esporte** e **nº de Eventos**.
+  - **Evento** (agora também um `<details>`): **ID**, **Modalidade**, **Esporte**,
+    **Modelo de resultado** (ex.: "Tempo · menor vence"; "— (pendente)" onde ainda
+    não há modelo) e **Popularidade** (ou "—").
+- **Derivado das databases** (segue reativo): os atributos vêm dos próprios
+  objetos + relações (`getEventsByModality`, o esporte da modalidade), então novos
+  dados aparecem com os atributos certos sem lista fixa. Helpers novos em
+  `script.js`: `renderModalityDetails`, `renderEventDetails`, `attrList`,
+  `metricLabelPtBr`, `orderLabelPtBr`, `formatEventResolution`.
+- **Só UI**: `script.js` (render + helpers) e `styles.css` (o evento virou um
+  `<details>` reutilizando o padrão dos demais; nova lista `.sport-attrs`).
+  Nenhuma entidade/mecânica foi tocada. O esporte segue **só com o nome** (a
+  pedido — os atributos pedidos eram de modalidades e eventos).
+- **Verificado** (navegador headless): a modalidade Velocidade mostra ID/Esporte/
+  Eventos (3); o evento 100 m mostra "Tempo · menor vence" e "95/100"; o 200 m
+  (sem modelo) mostra "— (pendente)" e "—"; sem erros de JS. Screenshot enviado.
+
+### Etapa 45 — Database de eventos (calendário olímpico)
+
+- `events.js` deixou de ter só os 100 m e passou a cobrir o **calendário olímpico**:
+  **~190 eventos**, um conjunto por **cada uma das 72 modalidades** (usando a
+  database de modalidades já existente). Ex.: Velocidade → 100/200/400 m; Saltos →
+  distância/triplo/altura/vara; Natação → provas de piscina + revezamentos;
+  Judô/Boxe/Lutas/Levantamento/Taekwondo → categorias de peso; coletivos →
+  "Torneio …".
+- **Só estrutura por ora**: os novos eventos guardam `id/name/modalityId`. O
+  **modelo de resultado** (`resolution`/`performance`) continua **só nos 100 m**
+  (`EVT-ATL-100M`, intacto) — os demais recebem o modelo quando a **mecânica de
+  ResultSystem** existir (`TODO.md`, prioridade alta). Como nenhum campeonato
+  disputa esses eventos, eles **não são resolvidos** — só compõem a hierarquia.
+- **Escopo**: só `events.js` (dados) e a documentação. Nenhuma função/mecânica foi
+  tocada; o CNA segue disputando os 100 m normalmente.
+- **Verificado** (Node + navegador headless): 190 eventos; **todo** `modalityId`
+  existe; **toda** modalidade tem ≥1 evento; ids únicos e campos presentes; os
+  100 m mantêm o modelo e o campeonato resolve (ex.: 10,1 s), com rankings de
+  pontos/marcas populando; a aba Esportes mostra os eventos sob cada modalidade
+  (Velocidade → 100/200/400 m); sem erros de JS.
+
+### Etapa 44 — Aba Esportes (UI da hierarquia Esporte → Modalidade → Evento)
+
+- Nova aba **Esportes** (6ª aba), que mostra **organizadamente** a hierarquia
+  **Esporte → Modalidade → Evento**, só por nome:
+  - os **esportes** aparecem em **ordem alfabética**, cada um como um `<details>`;
+  - ao abrir um esporte, suas **modalidades** (também em `<details>`, alfabéticas);
+  - ao abrir uma modalidade, seus **eventos** (lista, alfabética).
+- **Reativa a novos dados**: `renderSports` lê **sempre** das databases vivas
+  (`getAllSports` / `getModalitiesBySport` / `getEventsByModality`) — não há lista
+  fixa na tela, então **qualquer esporte/modalidade/evento novo** adicionado às
+  databases **aparece sozinho** (verificado injetando um esporte de teste e
+  re-renderizando: entra na posição alfabética certa, com sua modalidade e evento).
+- **Só UI** (a pedido): `index.html` (botão da aba + painel), `script.js`
+  (`renderSports` + `byNamePtBr` + registro da aba na estrutura `TABS`) e
+  `styles.css` (estilos, **reutilizando** o padrão de `<details>` de Atletas/Clubes
+  para os cards + estilos do aninhamento modalidade/evento). **Nenhuma estrutura de
+  dados/mecânica foi tocada.**
+- **Verificado** (navegador headless): a aba abre; 36 esportes em ordem alfabética
+  (Atletismo … Vôlei); Atletismo com as 10 modalidades (alfabéticas) e Velocidade
+  com o evento "100 metros rasos"; reconhecimento automático de dados novos; sem
+  erros de JS.
+
+### Etapa 43 — Hierarquia Esporte → Modalidade → Evento
+
+- Estabelecida a hierarquia **Esporte → Modalidade → Evento**. Antes o que
+  `modalities.js` chamava de "modalidade" (os 100 m, com resolução/modelo) era, na
+  verdade, uma **prova resolvível** — agora corretamente classificada como
+  **evento**. Entre o esporte e o evento entra a **modalidade** (agrupamento).
+- **`modalities.js` reconstruído** como o **agrupamento**: **72 modalidades**
+  (a lista olímpica por esporte, a partir da tabela pedida), cada uma com
+  `{ id, name, sportId }`. Ex.: Atletismo → Velocidade, Meio-fundo, Fundo,
+  Barreiras, Obstáculos, Revezamentos, Saltos, Arremessos/Lançamentos, Marcha
+  Atlética, Provas Combinadas. Helpers `getModality`, `getModalitiesBySport`,
+  `getModalitySport`.
+- **Novo `events.js`** (nível resolvível): o **modelo de resultado** (resolution +
+  performance + funções) migrou para cá. O antigo `MOD-ATL-100M` virou
+  **`EVT-ATL-100M`** (evento "100 metros rasos", `modalityId`
+  `MOD-ATL-VELOCIDADE`). Helpers `getEvent`, `getEventsByModality`,
+  `getEventsBySport`, `getEventModality`, e o modelo `effectiveStrengthForEvent`/
+  `computeEventResult`/`formatEventResult`/`resolveEvent`.
+- **Plumbing atualizado, comportamento preservado**: o campeonato passou a usar o
+  campo **`events`** (o `CNA-2026` = `["EVT-ATL-100M"]`; removido o antigo
+  `modalities`); o gerador recebe `eventId`; `participation.getStageEvent` +
+  `resolveEvent`; o **ranking de marcas** passou a ser **por evento** (`eventId`);
+  a UI (`renderStageResults`, `renderMarksRanking`) e o card do campeonato
+  (linha **Provas**) apontam para eventos. **Nenhuma mecânica não relacionada foi
+  tocada** (fadiga, ritmo, pontos, contratos, elegibilidade, calendário intactos).
+- **Sem UI de modalidades/eventos** ainda (a pedido) — registrada no `TODO.md`.
+- **Verificado** (navegador headless, tempo avançado por várias etapas): 72
+  modalidades; Atletismo com as 10 corretas; 100 m resolve para o evento
+  `EVT-ATL-100M` → modalidade Velocidade → esporte Atletismo; a etapa resolve o
+  resultado (ex.: 9,94 s), os rankings de **marcas** (melhor 9,85) e de **pontos**
+  seguem populando; **sem erros de JS**. Screenshot do Atletismo gerado como
+  exemplo (Esporte → Modalidade → Evento).
+
+### Etapa 42 — Esportes olímpicos + campo `resultSystems` (indicador)
+
+- `sports.js` passou de **6 para 36 esportes** — a lista olímpica pedida —, cada um
+  com um novo campo **`resultSystems`**: a lista dos "ResultSystem" do esporte
+  (ex.: Atletismo → `TimeResultSystem`, `DistanceResultSystem`,
+  `HeightResultSystem`, `CombinedResultSystem`; a maioria dos coletivos →
+  `MatchResultSystem`), exatamente conforme a **tabela** fornecida.
+- **`resultSystems` é só um INDICADOR (rótulo)** — **não** há nenhuma mecânica
+  ligada a ele ainda. A **criação da mecânica de ResultSystem** foi registrada no
+  `TODO.md` como **prioridade alta**.
+- **Baseados na estrutura existente**: cada esporte usa os mesmos campos dos 6
+  anteriores (`id`, `name`, `description`, `generalPopularity`,
+  `practiceStartYear`, `originCountry`) + `resultSystems`. Os 6 que já existiam
+  (Atletismo, Natação, Futebol, Basquete, Vôlei, Ginástica) só **ganharam o
+  campo**; os 30 novos foram criados. Dados (popularidade, ano, origem) são
+  **aproximações**.
+- **Escopo**: só a **criação/dados de esportes** em `sports.js` (mais a nota no
+  cabeçalho) e a documentação. **Nenhuma função foi alterada** (`getSport`/
+  `getAllSports` intactos); nenhuma outra entidade foi tocada.
+- **Processo**: criados **em lotes de 5**, verificando cada lote (`node --check` +
+  conferência dos `resultSystems` contra a tabela) antes do próximo.
+- **Verificado**: 36 esportes, `resultSystems` de **todos** batendo com a tabela,
+  campos obrigatórios presentes, popularidade 0–100, ids únicos; carga real em
+  navegador headless com os 36 esportes e sem erros de JS (esporte favorito dos
+  atletas segue Atletismo).
+
+### Etapa 41 — País Argentina (só o país + atributos básicos)
+
+- Criado o **2º país**: **Argentina** (`ARG`) em `countries.js`, com os **mesmos
+  atributos** do Brasil (`id`, `name`, `iocCode`, `population`, `olympicStrength`)
+  — reutilizando a estrutura existente, **sem** alterá-la.
+- Valores: população 45.808.747; **força olímpica 70** (um pouco abaixo do Brasil,
+  aproximação de balanceamento — ver `DECISOES.md`); COI `ARG`.
+- **Só o país por ora**: **sem cidades, clubes ou atletas** ainda (ficam para
+  depois — ver `TODO.md`). A geração de atletas continua só no Brasil; nada mais
+  foi tocado.
+- **Verificado** (navegador headless): 2 países carregados; a Argentina aparece
+  nos seletores de país das abas Atletas e Clubes; selecioná-la renderiza listas
+  **vazias sem erro** (`getClubsByCountry("ARG")` = 0, `getCitiesByCountry("ARG")`
+  = 0); os 100 atletas seguem do Brasil; sem erros de JS.
+
+### Etapa 40 — Clubes para todas as cidades (2 por cidade sem clube)
+
+- Cada uma das **6 cidades que ainda não tinha clube** (Brasília, Salvador,
+  Fortaleza, Manaus, Curitiba, Recife) recebeu **2 clubes reais**, com os
+  **mesmos parâmetros** dos clubes anteriores (campos idênticos; `president`/
+  `finances` nulos, `rivals` vazio; infraestrutura próxima à da cidade-sede,
+  considerando a força olímpica do país; prestígio na mesma faixa). **12 clubes
+  novos** → `CLUBS` passou de 10 para **22**, todos do Brasil.
+- **Consequência**: **toda cidade da database passa a ter clube**, então a
+  **afinidade de cidade** na contratação de teste (Etapa 39) passa a valer para
+  **todas** as cidades — antes, atletas nascidos nessas 6 cidades caíam no sorteio
+  só por infraestrutura (0% mesma cidade).
+- **Escopo**: só `clubs.js` (novas entradas + nota no cabeçalho) e a documentação.
+  Nenhuma estrutura foi alterada — só novas entidades dentro da estrutura vigente.
+- **Verificado**: 22 clubes com **estrutura/parâmetros corretos** (campos, faixas
+  de infra 68–90 e prestígio 60–92, `cityId` válido); cada cidade antes vazia com
+  **exatamente 2**; contratação de teste passa a assinar **~43–46%** na mesma
+  cidade para essas cidades (era 0%), com **agentes livres ~25%** preservados;
+  carga real (100 atletas) em navegador headless sem erros de JS.
+
+### Etapa 39 — Afinidade de cidade na distribuição inicial de regens
+
+- A distribuição inicial dos atletas entre os clubes (seed de teste) passou a
+  considerar, além da infraestrutura, a **afinidade com a cidade-sede**: um atleta
+  tem chance **bem maior** de assinar com um clube da **sua cidade de nascimento**.
+- **Lógica** (em `contracts.js`): o peso de cada clube no sorteio virou
+  `clubSeedWeight(club, athlete)` = `infrastructureLevel` **×**
+  `TEST_SAME_CITY_AFFINITY` (8) quando `club.cityId === athlete.birthCityId`
+  (senão só a infraestrutura). O sorteio ponderado passou a receber o atleta
+  (`pickClubForAthlete(clubs, athlete)`, antes `pickClubByInfrastructure`).
+- **Não impede a agência livre**: a fração de agentes livres
+  (`TEST_FREE_AGENT_RATE`) é decidida **antes** e **independe** do clube — a
+  afinidade só muda **qual** clube, nunca **se** o atleta assina. É um **peso**
+  (não uma regra fixa): clubes de outras cidades continuam possíveis, e atletas de
+  cidades **sem clube** caem no sorteio por infraestrutura.
+- **Escopo**: só `contracts.js` (peso/ helper + a chamada) e a documentação.
+  Entidades Atleta/Clube intactas; continua sendo dado de **teste**.
+- **Verificado**: nascido em SP (3 clubes locais) assina ~77% das vezes com um
+  clube de SP; RJ (4 clubes) ~83%; BH (1 clube) ~50%; nascido em cidade **sem
+  clube** (Salvador) → 0% mesma cidade, distribuído por infraestrutura; a fração
+  de agentes livres fica ~25% em **todos** os casos (afinidade não a altera);
+  carga real (100 atletas) em navegador headless sem erros de JS (~32% mesma
+  cidade no geral, pois 6 das 10 cidades não têm clube).
+
+### Etapa 38 — Distribuição inicial de regens ponderada pela infraestrutura
+
+- **Distribuição inicial** dos atletas entre os clubes (no seed de teste de
+  contratos) passou a **ponderar pelo nível de infraestrutura** do clube: quanto
+  **maior** o `infrastructureLevel`, **mais** atletas o clube recebe; quanto
+  **menor**, **menos**. Antes o clube era sorteado de forma **uniforme**.
+- **Lógica** (em `contracts.js`): novo helper `pickClubByInfrastructure(clubs)`
+  faz um **sorteio ponderado** pelo `infrastructureLevel` (mesmo estilo de
+  `randomBirthCityId` em `athletes.js`: soma dos pesos + varredura). A chance de
+  um clube receber o atleta é **proporcional à sua infraestrutura** — infra 90
+  vs. 68 dá ~1,3× mais atletas. Cai para sorteio **uniforme** se a soma dos pesos
+  for 0 (todas as infra zeradas). `seedTestContracts` usa o helper no lugar do
+  sorteio uniforme; a fração de agentes livres (`TEST_FREE_AGENT_RATE`, 25%) e a
+  duração anual sorteada seguem iguais.
+- **Escopo**: só `contracts.js` (helper novo + a chamada) e a documentação. As
+  entidades Atleta/Clube **não** foram tocadas; continua sendo dado de **teste**.
+- **Verificado**: amostra grande (100 mil atletas) confere as fatias observadas
+  com as esperadas (`infra ÷ Σinfra`) e a distribuição é **monotônica** (infra
+  maior → mais atletas: Pinheiros 90 → ~11,4% > Paulistano 68 → ~8,6%); a fração
+  de agentes livres fica ~25%; carga real (100 atletas) em navegador headless sem
+  erros de JS, com o clube de maior infraestrutura à frente.
+
+### Etapa 37 — Ranking de Marcas (melhor marca da temporada)
+
+- **Motor** (`marksRanking.js`, novo, separado da UI): por **modalidade**, guarda
+  a **melhor marca** de cada atleta na temporada (via `isBetterResult`, respeitando
+  a ordem da modalidade) e monta o ranking. **Template genérico** — serve qualquer
+  modalidade; implementado/exibido para os **100 m**.
+- **Registro por etapa**: `processStage` chama `recordStageMarks` (guarda também
+  data, campeonato e etapa de cada melhor marca).
+- **UI** (mesma aba Rankings): ao abrir, o jogador vê **só o seletor** para
+  escolher **Pontos** ou **Marcas**. O ranking de marcas mostra **posição, atleta,
+  clube, data (clicável) e marca**; clicar na data revela **data + campeonato +
+  etapa** em que a marca foi alcançada. `renderRanking` virou um **dispatcher**
+  (`renderPointsRanking` / `renderMarksRanking(modalityId)`).
+- **Temporada/histórico**: na virada de ano, as marcas são arquivadas
+  (`MARKS_HISTORY`) e zeradas — salvas para uso posterior (ver `TODO.md`).
+- **Verificado** (navegador headless): melhor marca por atleta (1 entrada cada),
+  ordenado do melhor para o pior (menor tempo primeiro), empate na marca
+  compartilha posição; ao abrir a aba só aparece o seletor; a tabela de marcas tem
+  as colunas certas e o clique na data mostra "…em dd/mm/aaaa — Campeonato X,
+  Etapa N"; virada de ano arquiva as marcas e zera; sem erros de JS.
+
+### Etapa 36 — Sistema de Ranking + aba Rankings
+
+- **Motor de cálculo** (`ranking.js`, novo), **separado da UI**: acumula **pontos
+  por atleta** na temporada conforme a **tier** do campeonato (maiores valem mais).
+  Distribuição por posição é um **placeholder harmônico** (`base / posição`).
+- **Atualização por etapa**: `processStage` chama `recordStageForRanking` ao
+  resolver cada etapa — o ranking reflete cada etapa assim que ela ocorre.
+- **Temporada e histórico**: na virada de ano (`processDay`), o ranking é
+  **arquivado** (`RANKING_HISTORY`) e zerado. O histórico é **salvo para uso
+  posterior** (decisão registrada no `TODO.md`; ainda não consumido).
+- **Nova aba Rankings** (UI, `renderRanking` em `script.js`): tabela com
+  **posição, atleta, clube, etapas disputadas na temporada e pontos**. A UI só
+  **lê** `getSeasonRanking()` — nenhum cálculo na tela.
+- **Verificado** (navegador headless): pontos escalam por tier (Nacional 300 >
+  Estadual 40 > Regional 20 no 1º lugar), o ranking acumula e é monotônico
+  (posição pior → menos pontos), a aba mostra as 5 colunas; ao cruzar a virada de
+  ano, a temporada é arquivada (campeão de 2026 salvo no histórico) e a nova
+  temporada zera; sem erros de JS.
+
+### Etapa 35 — Mais travas de inscrição (idade e cota por clube) + UI de Regras
+
+- **Trava de idade** (`ageRestriction { minAge, maxAge }`): mecanismo criado em
+  `eligibility.js` (`isAthleteAgeEligible`) e ligado a
+  `isAthleteEligibleForChampionship`. **Nenhum campeonato usa ainda** — é para os
+  futuros **juvenis/sub** (registrado no `TODO.md`).
+- **Trava de cota por clube** (`clubQuota`): cada clube inscreve no máximo N
+  atletas **por etapa**. Aplicada ao **CNA = 1**; os demais campeonatos ficam sem
+  cota. Implementada em `participation.js` (`limitAthletesPerClub`), com
+  **placeholder** de seleção pelos mais fortes (seleção real é pendente).
+- **Genérico**: ambas são campos do campeonato + helpers
+  (`getChampionshipAgeRestriction`, `getChampionshipClubQuota`) — **qualquer
+  campeonato futuro** pode declará-las.
+- **UI**: novo card **"Regras de Inscrição"** na aba Campeonatos, com
+  **Abrangência**, **Faixa etária** e **Limite por clube** (helpers
+  `formatAgeRestriction`, `formatClubQuota`). A "Abrangência" saiu do card
+  Campeonato para este.
+- **Verificado** (navegador headless): CNA com **1 atleta por clube por etapa**
+  (10 participantes = 10 clubes × 1); estadual segue sem cota (até 3/clube);
+  trava de idade correta (Sub-20 barra 25 anos, aceita 15); o card "Regras de
+  Inscrição" aparece com os textos certos por campeonato; sem erros de JS.
+
+### Etapa 34 — Calendário do Brasil populado + travas de inscrição
+
+- **Calendário populado** a partir da geografia: além do Nacional (`CNA-2026`),
+  passaram a existir **10 Estaduais** (um por estado com cidade na database) e
+  **5 Regionais** (um por região com cidade) — **16 campeonatos** no total.
+- **Gerador genérico** `buildCountryGeographicChampionships(config)` em
+  `championships.js`: cria Estaduais/Regionais de um país **só para lugares com
+  cidade na database** (não cria para estado/região ausente). Serve qualquer
+  país; chamado para o **Brasil**. Etapas em sábados distintos por nível
+  (estadual 1º, nacional 2º, regional 3º) para não colidir no calendário.
+- **Campo `scope`** `{ level, placeId }` no campeonato + helper
+  `getChampionshipScope`. É a **abrangência**: país/região/estado/cidade.
+- **Travas de inscrição** (`eligibility.js`, novo): só disputa quem é **elegível**
+  ao `scope`, pela **cidade de nascimento** (país → região → estado → cidade).
+  Ligado à participação: participantes = **contratados via clube ∩ elegíveis**.
+- **UI** (aba Campeonatos): o detalhe do campeonato ganhou **Categoria**,
+  **Abrangência** (o lugar da trava) e **Atletas elegíveis**; o seletor lista os
+  16 campeonatos.
+- **Verificado** (navegador headless): 16 campeonatos (1 Nacional, 10 Estaduais,
+  5 Regionais); elegíveis do CNA = todos os 100, do Estadual de SP = só nascidos
+  em SP, do Regional Sudeste = só da região; participantes de uma etapa estadual
+  = elegíveis ∩ contratados; seletor com 16 opções e detalhe correto; sem erros
+  de JS.
+
+### Etapa 33 — 100 atletas por simulação
+
+- Aumentado o número de atletas gerados no início de **10 → 100**
+  (`ATHLETE_GENERATION_CONFIG.count` em `athletes.js`), para sustentar um
+  **calendário maior** de competições.
+- **Distribuição** entre clubes e agentes livres continua pelo seed de teste
+  (`seedTestContracts`): cada atleta assina um clube aleatório do seu país e
+  ~25% ficam **agentes livres** — sem mudanças na lógica, só mais atletas.
+- **Verificado** (navegador headless): 100 atletas gerados, ~71 contratados
+  espalhados por **todos os 10 clubes** e ~29 agentes livres; sem erros de JS.
+- Continua sendo **número de teste** (ver `TODO.md`).
+
+### Etapa 32 — UI de regiões e estados
+
+- A hierarquia geográfica passou a **aparecer para o jogador**, junto da cidade:
+  - **Atletas** (expandir): a linha **"Local de nascimento"** agora mostra
+    `Cidade — SIGLA · Região` (ex.: `São Paulo — SP · Sudeste`).
+  - **Clubes**: o **resumo** ganhou a sigla do estado (`São Paulo (SP), BRA`) e o
+    **detalhe** ganhou as linhas **"Estado"** (nome + sigla) e **"Região"**.
+- Novo helper `formatCityLocation(city)` em `script.js` (usa `getCityState` /
+  `getCityRegion`); tolerante a dados faltando (cai para o nome da cidade / `—`).
+- **Escopo**: só `script.js` (nenhuma mudança de dados; sem CSS novo, reusa o
+  padrão de `<li><span>…</span><strong>…</strong></li>`).
+- **Verificado** (navegador headless): aba Atletas mostra
+  `São Paulo — SP · Sudeste`; aba Clubes mostra o resumo com sigla e as linhas
+  Estado/Região corretas; sem erros de JS.
+
+### Etapa 31 — Estrutura de regiões e estados (hierarquia geográfica)
+
+- Criadas as entidades **Regiões** (`regions.js`) e **Estados** (`states.js`),
+  formando a hierarquia **país → região → estado → cidade**. Base dos portes
+  **Regional** e **Estadual** do calendário (ver `CALENDARIO_DE_COMPETICOES.md`).
+- **Regiões**: as 5 do Brasil (Norte, Nordeste, Centro-Oeste, Sudeste, Sul),
+  cada uma ligada ao país (`countryId`).
+- **Estados**: os 10 das cidades já cadastradas (SP, RJ, MG, BA, CE, PE, DF, AM,
+  PR, RS), cada um com `abbreviation`, `countryId` e `regionId`. Não é o conjunto
+  completo (27 UFs) — ampliar depois (`TODO.md`).
+- **Cidades ↔ estado**: novo campo **`stateId`** em cada cidade (`cities.js`);
+  país e região passam a ser **deriváveis** via estado. Helpers `getCityState` e
+  `getCityRegion`. `countryId` foi **mantido** na cidade (compatibilidade com
+  `getCitiesByCountry`, usado na geração de atletas).
+- **Escopo**: só entidades/dados e carga (`regions.js`, `states.js` novos;
+  `cities.js` com `stateId`; `index.html`) e documentação. **Sem UI ainda** — a
+  tela vem na etapa seguinte.
+- **Verificado** (navegador headless): 5 regiões, 10 estados, mapeamento
+  estado→região correto e a hierarquia cidade→estado→região→país resolvendo
+  (ex.: São Paulo → SP → Sudeste → BRA); sem erros de JS.
+
+### Etapa 30 — Calendário de competições (categorias/tiers)
+
+- Criada a entidade **Categorias de Competição** (`competitionCategories.js`):
+  **9 níveis** (Regional → Olímpico), cada um com `level`, `scope`, `prestige` e
+  `rankingPoints`. É a estrutura que organizará o **calendário** e permitirá ao
+  clube **escolher** em qual competição inscrever cada tipo de atleta (ritmo,
+  ranking, índices) — a **inscrição real** ainda é futura (ver `TODO.md`).
+- **Genérico para todos os países**: as categorias são uma database **global**;
+  o `scope` (subnacional/nacional/internacional) diz a quem cada competição
+  pertence. Adicionar países **não** recria o calendário.
+- **Campeonato ↔ categoria**: novo campo **`categoryId`** em `championships.js`;
+  o `CNA-2026` foi classificado como **Nacional** (`CAT-NACIONAL`). Helper
+  `getChampionshipCategory`.
+- **Premiação (dinheiro)** ficou **fora do código** de propósito — só referência
+  (`$`… por categoria) para o **sistema financeiro** futuro (`TODO.md`).
+- **Pesos de etapa e final** (etapas valendo pontos rumo a uma final na última
+  etapa) registrados no `TODO.md`.
+- Novo documento **`CALENDARIO_DE_COMPETICOES.md`** com o desenho detalhado
+  (motivação, categorias, scope, ranking, premiação, etapas/final e roteiro).
+- **Escopo**: só `competitionCategories.js` (novo), `championships.js`
+  (categoryId + helper), `index.html` (script) e a documentação. Nenhuma outra
+  entidade foi tocada.
+- **Verificado** (navegador headless): as 9 categorias carregam com
+  prestígio/ranking corretos, `getChampionshipCategory(CNA-2026)` = Nacional,
+  filtros por scope e por level corretos; sem erros de JS.
+
+### Etapa 29 — Ritmo na UI de Atletas
+
+- O atributo **`ritmo`** passou a aparecer ao expandir o atleta (aba Atletas),
+  como a linha **"Ritmo N/100"** (arredondado), junto de Força, Cansaço, etc.
+- Única mudança foi em `script.js` (`renderAthletes`); a mecânica do ritmo já
+  existia. **Verificado** em navegador headless (linha presente, sem erros).
+
+### Etapa 28 — Atributo Ritmo (forma) e seu efeito nos resultados
+
+- Novo atributo **`ritmo`** (0–100) no atleta: **forma/afiação de temporada**.
+  Começa **baixo** no início do ano, **sobe** ao competir e **cai** parado.
+- **Três parâmetros dependem da Preparação Física** (constantes em `athletes.js`):
+  inicial (`initialRitmo`, 5–20), ganho por prova (`ritmoGainPctForRace`, 15–35%
+  do gap até 100) e queda por dia parado (`ritmoDropPctForRestDay`, 2%–0,5% do
+  ritmo). Mais preparo → entra em forma mais fácil e a perde mais devagar.
+- **Efeito na resolução** (`modalities.js`): a Força efetiva passou a descontar
+  também um **redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint` (0,15),
+  **somado** ao redutor de fadiga. **Nenhuma variável anterior foi removida** —
+  Força e fadiga continuam; o ritmo apenas se soma.
+- **Ciclo** (`participation.js`, `processDay`): quem compete ganha ritmo; quem
+  descansa perde; na virada de ano o ritmo reinicia (nova temporada).
+- **UI**: o Ritmo é exibido na aba **Atletas**, ao expandir o atleta (linha
+  **"Ritmo N/100"**, arredondado), ao lado dos demais atributos (Etapa 29).
+- **Verificado** (navegador headless): ritmo inicial baixo e proporcional ao
+  preparo (5–20); fora de forma corre mais lento (11,74 s vs 11,13 s em forma
+  plena); sobe ao competir (18→44) e cai parado (44→41); reinicia na virada de ano
+  (80→18); Força e fadiga seguem na conta; a UI exibe o valor; sem erros de JS.
+
+### Etapa 27 — Cansaço com recuperação em dias de descanso
+
+- **Reformulação do Cansaço**: além de cair ao competir, o `fatigue` agora
+  **recupera** nos dias em que o atleta **não** compete, subindo rumo a 100.
+- **Fórmula** (`fatigueRecoveryForRestDay`, em `athletes.js`): recuperação **por
+  dia** = `base(2) + preparo(até +2) − idade(até −1,5)`, clamp `[0.5, 10]`.
+  Espelha o desgaste com sinais trocados (preparo acelera, idade desacelera);
+  o porquê está detalhado no comentário do arquivo e no `DECISOES.md`.
+- **Por dia × por evento**: o desgaste é por etapa (esforço pontual); a
+  recuperação é por dia (contínua). Por isso a passagem de tempo passou a ser
+  **dia a dia** (`advanceDays` → `processDay`): cada dia resolve as etapas do dia
+  (desgaste dos participantes) e faz os demais **descansarem**.
+- **Precisão**: `fatigue` virou número **real** (sem arredondar internamente),
+  para o acúmulo diário não derivar; a UI exibe arredondado.
+- **Consequência de balanceamento**: como as etapas são **mensais**, os atletas
+  tendem a **recuperar totalmente** entre elas (realista); o cansaço só se
+  **acumula** com agenda congestionada. Constantes fáceis de recalibrar.
+- **Verificado** (navegador headless): no dia da etapa o participante fica
+  desgastado (<100) e recupera nos dias seguintes; nunca passa de 100; agente
+  livre (nunca compete) permanece em 100; resultados continuam resolvendo; UI
+  mostra o Cansaço arredondado. Sem erros de JS.
+
+### Etapa 26 — Resultados das etapas (resolução + UI)
+
+- **Modalidade do campeonato**: o `CNA-2026` passou a listar a prova disputada em
+  `modalities` (`MOD-ATL-100M`). `getStageModality` escolhe a prova da etapa.
+- **Resolução do resultado** (`participation.js`): ao realizar uma etapa,
+  `processStage` resolve o ranking dos participantes (`resolveModality`) com a
+  **fadiga de então** e **trava** o resultado (`_stageResults`), antes de aplicar
+  a fadiga daquela etapa. Um resultado é **histórico** — não muda depois.
+- **Ordem correta**: `processRealizedStages` processa as etapas **em ordem**, então
+  cada etapa usa a fadiga acumulada das anteriores; as seguintes tendem a ficar
+  mais lentas.
+- **UI** (aba Campeonatos): a tabela de etapas ganhou a coluna **Resultados** com
+  o link **"Ver"** nas etapas realizadas; ao clicar, `renderStageResults` mostra a
+  **classificação** (posição, atleta, resultado — ex.: `9.73 s`), com empates
+  compartilhando posição.
+- **Verificado** (navegador headless): etapa realizada tem "Ver"; a classificação
+  sai ordenada por tempo, empates dividem a posição (10.03 s → 3º e 3º), nº de
+  resultados = nº de participantes; etapa futura não tem "Ver"; sem erros de JS.
+
+### Etapa 25 — Campeonato ↔ esporte e Participação atleta ↔ etapa
+
+- **Campeonato ↔ esporte**: novo campo **`sportId`** na entidade Campeonato
+  (`championships.js`); o `CNA-2026` foi vinculado ao **Atletismo**
+  (`SPT-ATLETISMO`). Helper `getChampionshipSport`. Todo novo campeonato informa
+  o seu esporte.
+- **Participação atleta ↔ etapa** (`participation.js`): define quais atletas
+  disputam cada etapa. **Regra de TESTE**: cada clube inscreve todos os seus
+  atletas em todas as etapas → participantes = atletas com contrato ativo (na
+  data da etapa) em clubes do país; **agentes livres não disputam**.
+- **Fadiga aplicada de fato**: `applyParticipationFatigue` desgasta os
+  participantes de cada etapa **realizada**, **uma vez** por etapa (controle
+  `_fatiguedStages`), ligado à passagem de tempo em `advanceDays`. Fecha o ciclo
+  Cansaço → tempo: participantes ficam mais lentos nos 100 m.
+- **Escopo**: mexi só no que é dos itens — `championships.js` (sportId),
+  `participation.js` (novo), `index.html` (script) e `script.js` (chamada em
+  advanceDays/init) e a documentação.
+- **Prioridade média** registrada no `TODO.md`: criar a mecânica **real** de
+  cadastro de atletas em campeonatos (hoje é só a regra de teste "todos").
+- **Verificado** (navegador headless): esporte do campeonato = Atletismo;
+  participantes da etapa 1 batem com os contratados (agentes livres de fora);
+  fadiga cai ao realizar a etapa e **não reaplica** nos dias seguintes; o
+  participante fica mais lento nos 100 m; sem erros de JS.
+
+### Etapa 24 — UI dos contratos (parte 2): duração, agentes livres e reatividade
+
+- **Duração do contrato no elenco**: em "Atletas do clube", cada atleta passou a
+  mostrar, ao lado do nome, os dados do contrato — **duração** ("1 ano"/"N anos"),
+  **término** ("até dd/mm/aaaa") e a marca **"renovado"** quando `renewalOf` está
+  preenchido (`renderClubAthletes` + `contractDurationText`).
+- **Agentes livres**: nova seção na aba Clubes (abaixo dos clubes) listando os
+  atletas do país **sem contrato ativo** (`renderFreeAgents` + `getFreeAgents`),
+  com nomes clicáveis que levam ao perfil.
+- **Reatividade à passagem de tempo**: `advanceDays` passou a reavaliar as abas
+  Clubes e Atletas (`refreshClubView`/`refreshAthleteView`), pois a situação dos
+  contratos é relativa à data atual — ao expirar/entrar em vigor, elenco, agentes
+  livres e "Clube atual" se atualizam sozinhos.
+- **Seed de teste ajustado**: `seedTestContracts` passou a deixar uma fração dos
+  atletas como agente livre (`TEST_FREE_AGENT_RATE = 0.25`) para as telas terem
+  tanto contratados quanto agentes livres. Continua sendo dado de TESTE.
+- **Verificado** (navegador headless): elenco mostra nome + duração/término;
+  agentes livres conferem com os dados e o clique abre o perfil ("Agente livre");
+  ao avançar além do término de um contrato, ele expira e as listas se atualizam
+  (3 → 5 agentes livres); sem erros de JS.
+
 ### Etapa 23 — UI dos contratos: atletas do clube e clube do atleta
 
 - **Aba Clubes**: dentro do `<details>` de cada clube, um link **"Atletas do
@@ -669,7 +1537,7 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | ----------------------------------- | -------------------------------------------------------------- |
 | `renderCalendar()`                  | Desenha a grade do mês, o destaque da data atual e marcadores. |
 | `renderCurrentDate()`               | Escreve a data simulada por extenso.                           |
-| `advanceDays(days)`                 | Avança a passagem de tempo (1 dia / 1 semana).                 |
+| `advanceDays(days)`                 | Avança a passagem de tempo **dia a dia** (cada dia: `processDay`). |
 | `changeMonth(delta)`                | Navega entre meses (setas), sem mexer no tempo.                |
 | `goToCurrent()`                     | Volta a visualização ao mês da data atual.                     |
 | `activateTab(tab)`                  | Alterna entre as abas Calendário/Campeonatos.                  |
@@ -677,16 +1545,33 @@ número do resultado — aqui o tempo), `formatModalityResult` (ex.: `10.18 s`) 
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (com status das etapas); destaca opcionalmente. |
+| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (categoria, atletas elegíveis, card **Regras de Inscrição** com abrangência/idade/cota, etapas com status e link "Ver"); destaca opcionalmente. |
+| `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
+| `formatCityLocation(city)`          | Texto da cidade com a hierarquia: `Cidade — SIGLA · Região`.    |
+| `formatChampionshipScopeText(champ)`| Texto da abrangência (trava) do campeonato: o lugar do escopo.  |
+| `formatAgeRestriction(ageRestriction)` | Texto da trava de idade (ou "Sem restrição").              |
+| `formatClubQuota(quota)`            | Texto da cota por clube (ou "Sem limite").                     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
 | `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |
 | `populateClubCountrySelect()`       | Preenche o seletor de países da aba Clubes.                     |
-| `renderClubs(countryId)`            | Lista os clubes do país (inclui o link "Atletas do clube").     |
+| `renderClubs(countryId)`            | Lista os clubes do país (link "Atletas do clube") e chama os agentes livres. |
 | `toggleClubAthletes(button)`        | Mostra/esconde a lista de atletas contratados do clube.         |
-| `renderClubAthletes(clubId, container)` | Preenche a lista com os atletas contratados (nomes clicáveis). |
+| `renderClubAthletes(clubId, container)` | Lista os atletas contratados (nome clicável + duração/término/renovado). |
+| `renderFreeAgents(countryId)`       | Lista os agentes livres do país (nomes clicáveis).              |
+| `refreshClubView()` / `refreshAthleteView()` | Reavaliam as abas Clubes/Atletas após a passagem de tempo. |
+| `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
+| `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
+| `renderMarksRanking(eventId)`       | Ranking de marcas de um evento (posição/atleta/clube/data clicável/marca). |
+| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um mostrando seus **atributos** e abrindo suas modalidades (`<details>`, com **atributos**) e cada modalidade seus eventos (`<details>`, com **atributos**). Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
+| `renderModalityDetails(modality, sport)` | Uma modalidade na aba Esportes: atributos (ID, esporte, nº de eventos) + os eventos. |
+| `renderEventDetails(event, modality, sport)` | Um evento na aba Esportes: atributos (ID, modalidade, esporte, modelo de resultado, popularidade). |
+| `byNamePtBr(a, b)`                  | Comparador de ordenação alfabética por `name` (pt-BR, acentos-ciente).       |
+| `metricLabelPtBr` / `orderLabelPtBr` / `formatEventResolution(event)` | Rótulos em pt-BR da métrica/direção e o texto do modelo de resolução de um evento (ou "— (pendente)"). |
+| `formatPracticeStartYear(year)`     | Texto do ano de início da prática de um esporte (negativo → "N a.C.").       |
+| `attrList(pairs)`                   | Monta uma lista de atributos `<li><span>rótulo</span><strong>valor</strong></li>`. |
 
 ---
 
