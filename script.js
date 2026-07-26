@@ -874,14 +874,42 @@ function renderMarksRanking(eventId) {
 // Esportes
 // Mostra a hierarquia Esporte → Modalidade → Evento. Os esportes vêm em ordem
 // alfabética; cada um é um <details> que revela suas modalidades (também em
-// <details>), e cada modalidade revela seus eventos. Lê SEMPRE das databases
-// vivas (getAllSports / getModalitiesBySport / getEventsByModality), então novos
-// esportes/modalidades/eventos aparecem sozinhos — sem lista fixa na tela.
+// <details>, com seus atributos), e cada modalidade revela seus eventos (também
+// <details>, com seus atributos). Lê SEMPRE das databases vivas (getAllSports /
+// getModalitiesBySport / getEventsByModality), então novos esportes/modalidades/
+// eventos aparecem sozinhos — sem lista fixa na tela.
 // -----------------------------------------------------------------------------
 
 // Ordenação alfabética por nome (acentos-cientes, pt-BR).
 function byNamePtBr(a, b) {
   return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+}
+
+// Rótulo da métrica de um evento (ver ResultsEngine.METRICS).
+function metricLabelPtBr(metric) {
+  const labels = { time: "Tempo", distance: "Distância", height: "Altura", points: "Pontuação" };
+  return labels[metric] || metric;
+}
+
+// Rótulo da direção de vitória de um evento (ver ResultsEngine.ORDERS).
+function orderLabelPtBr(order) {
+  if (order === ResultsEngine.ORDERS.ASCENDING) return "menor vence";
+  if (order === ResultsEngine.ORDERS.DESCENDING) return "maior vence";
+  return "—";
+}
+
+// Texto do modelo de resolução de um evento (ou "pendente" se ainda sem modelo).
+function formatEventResolution(event) {
+  if (!event.resolution) return "— (pendente)";
+  return `${metricLabelPtBr(event.resolution.metric)} · ${orderLabelPtBr(event.resolution.order)}`;
+}
+
+// Bloco de atributos (lista <li><span>rótulo</span><strong>valor</strong></li>).
+function attrList(pairs) {
+  const items = pairs
+    .map(([label, value]) => `<li><span>${label}</span><strong>${value}</strong></li>`)
+    .join("");
+  return `<ul class="sport-attrs">${items}</ul>`;
 }
 
 function renderSports() {
@@ -897,21 +925,7 @@ function renderSports() {
       const modalities = getModalitiesBySport(sport.id).slice().sort(byNamePtBr);
       const modalitiesHtml = modalities.length
         ? modalities
-            .map((modality) => {
-              const events = getEventsByModality(modality.id).slice().sort(byNamePtBr);
-              const eventsHtml = events.length
-                ? `<ul class="modality__events">${events
-                    .map((event) => `<li>${event.name}</li>`)
-                    .join("")}</ul>`
-                : `<p class="modality__empty">Nenhum evento cadastrado.</p>`;
-              return `
-                <details class="modality">
-                  <summary class="modality__summary">
-                    <span class="modality__name">${modality.name}</span>
-                  </summary>
-                  ${eventsHtml}
-                </details>`;
-            })
+            .map((modality) => renderModalityDetails(modality, sport))
             .join("")
         : `<p class="sport__empty">Nenhuma modalidade cadastrada.</p>`;
       return `
@@ -923,6 +937,49 @@ function renderSports() {
         </details>`;
     })
     .join("");
+}
+
+// Uma modalidade: atributos (ID, esporte, nº de eventos) + seus eventos.
+function renderModalityDetails(modality, sport) {
+  const events = getEventsByModality(modality.id).slice().sort(byNamePtBr);
+  const attrs = attrList([
+    ["ID", modality.id],
+    ["Esporte", sport.name],
+    ["Eventos", events.length],
+  ]);
+  const eventsHtml = events.length
+    ? `<div class="modality__events">${events
+        .map((event) => renderEventDetails(event, modality, sport))
+        .join("")}</div>`
+    : `<p class="modality__empty">Nenhum evento cadastrado.</p>`;
+  return `
+    <details class="modality">
+      <summary class="modality__summary">
+        <span class="modality__name">${modality.name}</span>
+      </summary>
+      ${attrs}
+      ${eventsHtml}
+    </details>`;
+}
+
+// Um evento: atributos (ID, modalidade, esporte, modelo de resultado, popularidade).
+function renderEventDetails(event, modality, sport) {
+  const popularity =
+    event.generalPopularity != null ? `${event.generalPopularity}/100` : "—";
+  const attrs = attrList([
+    ["ID", event.id],
+    ["Modalidade", modality.name],
+    ["Esporte", sport.name],
+    ["Modelo de resultado", formatEventResolution(event)],
+    ["Popularidade", popularity],
+  ]);
+  return `
+    <details class="event">
+      <summary class="event__summary">
+        <span class="event__name">${event.name}</span>
+      </summary>
+      ${attrs}
+    </details>`;
 }
 
 // -----------------------------------------------------------------------------

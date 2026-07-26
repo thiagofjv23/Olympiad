@@ -254,9 +254,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       alta** "Criar a mecânica de ResultSystem" no topo.
 - [x] **UI dos esportes.** Feita: aba **Esportes** lista os esportes em ordem
       alfabética (`<details>`), abrindo as modalidades e, nelas, os eventos
-      (`renderSports`). Reconhece novos dados automaticamente. Falta ainda, se
-      desejado, mostrar **atributos** do esporte (popularidade, origem,
-      `resultSystems`) — hoje a aba mostra só nomes (a pedido).
+      (`renderSports`). Reconhece novos dados automaticamente. As **modalidades e
+      eventos já mostram atributos**; o **esporte** segue só com o nome — se
+      desejado, mostrar depois os atributos do esporte (popularidade, origem,
+      `resultSystems`).
 
 ## Modalidades e Eventos
 
@@ -264,11 +265,12 @@ Hierarquia **Esporte → Modalidade → Evento** criada (`modalities.js` = 72
 modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só os
 100 m). Pendências:
 
-- [x] **UI de Modalidades/Eventos (lista por esporte).** Feita na aba **Esportes**:
-      cada esporte abre suas modalidades (`<details>`) e cada modalidade abre seus
-      eventos (`renderSports`), tudo por nome e em ordem alfabética. Falta ainda,
-      se desejado, um **detalhe** de modalidade/evento (atributos, `resolution`,
-      popularidade) — hoje é só a estrutura por nome.
+- [x] **UI de Modalidades/Eventos (com atributos).** Feita na aba **Esportes**:
+      cada esporte abre suas modalidades (`<details>`, atributos: ID/esporte/nº de
+      eventos) e cada modalidade abre seus eventos (`<details>`, atributos: ID/
+      modalidade/esporte/modelo de resultado/popularidade), em ordem alfabética. O
+      **modelo de resultado** dos eventos ainda sem modelo aparece como "pendente"
+      (depende da mecânica de ResultSystem).
 - [x] **Popular os eventos das modalidades (calendário olímpico).** Feito:
       `events.js` tem **~190 eventos**, um conjunto por modalidade (ex.: 200 m,
       400 m em Velocidade; categorias de peso no Judô; provas de piscina na

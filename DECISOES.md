@@ -275,6 +275,24 @@ Regras a seguir sempre, salvo instrução em contrário:
       são resolvidos; o CNA segue nos 100 m. Só toquei em `events.js` (dados) —
       nenhuma função/mecânica.
 
+19ck. **Atributos de modalidade/evento na aba Esportes (só UI).** A pedido, a aba
+    Esportes passou a exibir os atributos de **modalidades** e **eventos**.
+    Decisões:
+    - **Evento virou `<details>`** (4º nível) para caber o seu bloco de atributos,
+      reutilizando o mesmo padrão visual dos demais níveis (decisão 10).
+    - **Atributos derivados, não novos dados**: mostro o que os objetos já têm +
+      relações (`getEventsByModality` para o nº de eventos, o esporte da modalidade)
+      — nada inventado. Onde um evento ainda **não tem modelo**, o "Modelo de
+      resultado" aparece como **"— (pendente)"** e a popularidade como "—", em vez
+      de esconder o campo, deixando claro que é dado a preencher (com a mecânica de
+      ResultSystem).
+    - **Esporte segue só com o nome**: o pedido foi atributos "das modalidades e
+      dos eventos"; não mexi no nível esporte (registrei como opcional no `TODO.md`).
+    - **Rótulos em pt-BR** para métrica/direção (`Tempo · menor vence`) via helpers,
+      em vez de expor os valores crus da engine (`time`/`ascending`).
+    - **Escopo**: só `script.js` (render + helpers) e `styles.css`. Nenhuma
+      entidade/mecânica tocada.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

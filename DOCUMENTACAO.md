@@ -958,6 +958,27 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 46 — Atributos de modalidades e eventos na aba Esportes
+
+- A aba **Esportes** passou a mostrar os **atributos** das modalidades e dos
+  eventos (antes eram só nomes):
+  - **Modalidade** (ao abrir): **ID**, **Esporte** e **nº de Eventos**.
+  - **Evento** (agora também um `<details>`): **ID**, **Modalidade**, **Esporte**,
+    **Modelo de resultado** (ex.: "Tempo · menor vence"; "— (pendente)" onde ainda
+    não há modelo) e **Popularidade** (ou "—").
+- **Derivado das databases** (segue reativo): os atributos vêm dos próprios
+  objetos + relações (`getEventsByModality`, o esporte da modalidade), então novos
+  dados aparecem com os atributos certos sem lista fixa. Helpers novos em
+  `script.js`: `renderModalityDetails`, `renderEventDetails`, `attrList`,
+  `metricLabelPtBr`, `orderLabelPtBr`, `formatEventResolution`.
+- **Só UI**: `script.js` (render + helpers) e `styles.css` (o evento virou um
+  `<details>` reutilizando o padrão dos demais; nova lista `.sport-attrs`).
+  Nenhuma entidade/mecânica foi tocada. O esporte segue **só com o nome** (a
+  pedido — os atributos pedidos eram de modalidades e eventos).
+- **Verificado** (navegador headless): a modalidade Velocidade mostra ID/Esporte/
+  Eventos (3); o evento 100 m mostra "Tempo · menor vence" e "95/100"; o 200 m
+  (sem modelo) mostra "— (pendente)" e "—"; sem erros de JS. Screenshot enviado.
+
 ### Etapa 45 — Database de eventos (calendário olímpico)
 
 - `events.js` deixou de ter só os 100 m e passou a cobrir o **calendário olímpico**:
@@ -1527,8 +1548,12 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
 | `renderRanking()`                   | Dispatcher da aba Rankings: mostra o seletor e desenha o ranking escolhido (pontos/marcas). |
 | `renderPointsRanking()`             | Ranking de pontos (posição/atleta/clube/etapas/pontos).        |
 | `renderMarksRanking(eventId)`       | Ranking de marcas de um evento (posição/atleta/clube/data clicável/marca). |
-| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um abrindo suas modalidades (`<details>`) e cada modalidade seus eventos. Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
+| `renderSports()`                    | Aba **Esportes**: lista os esportes em ordem alfabética (`<details>`), cada um abrindo suas modalidades (`<details>`, com **atributos**) e cada modalidade seus eventos (`<details>`, com **atributos**). Lê das databases vivas — novos esportes/modalidades/eventos aparecem sozinhos. |
+| `renderModalityDetails(modality, sport)` | Uma modalidade na aba Esportes: atributos (ID, esporte, nº de eventos) + os eventos. |
+| `renderEventDetails(event, modality, sport)` | Um evento na aba Esportes: atributos (ID, modalidade, esporte, modelo de resultado, popularidade). |
 | `byNamePtBr(a, b)`                  | Comparador de ordenação alfabética por `name` (pt-BR, acentos-ciente).       |
+| `metricLabelPtBr` / `orderLabelPtBr` / `formatEventResolution(event)` | Rótulos em pt-BR da métrica/direção e o texto do modelo de resolução de um evento (ou "— (pendente)"). |
+| `attrList(pairs)`                   | Monta uma lista de atributos `<li><span>rótulo</span><strong>valor</strong></li>`. |
 
 ---
 

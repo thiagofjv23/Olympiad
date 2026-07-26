@@ -29,7 +29,7 @@ A interface tem as seguintes abas:
   - **Pontos**: posição, atleta, clube, **etapas disputadas** e **pontos** (por etapa, conforme a **categoria/tier** do campeonato — maiores valem mais).
   - **Marcas**: por evento (100 m), só a **melhor marca** do atleta na temporada — posição, atleta, clube, **data** (clicável: mostra data, campeonato e etapa) e a **marca**.
   - Ambos **atualizam a cada etapa**; na virada de ano são arquivados (histórico para uso posterior).
-- **Esportes** — lista os esportes em **ordem alfabética**; cada esporte é clicável e **expande** (via `<details>`) para as suas **modalidades** (também em `<details>`), e cada modalidade expande para os seus **eventos**. É a hierarquia **Esporte → Modalidade → Evento**, só por nome. A tela **reconhece automaticamente** novos esportes/modalidades/eventos adicionados às databases (sem lista fixa).
+- **Esportes** — lista os esportes em **ordem alfabética**; cada esporte é clicável e **expande** (via `<details>`) para as suas **modalidades** (também em `<details>`, com **atributos**: ID, esporte, nº de eventos), e cada modalidade expande para os seus **eventos** (também `<details>`, com **atributos**: ID, modalidade, esporte, **modelo de resultado** e popularidade). É a hierarquia **Esporte → Modalidade → Evento**. A tela **reconhece automaticamente** novos esportes/modalidades/eventos adicionados às databases (sem lista fixa).
 
 ## Entidades (dados)
 

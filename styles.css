@@ -581,7 +581,8 @@ button.day:not(.day--current):hover {
 .athlete,
 .club,
 .sport,
-.modality {
+.modality,
+.event {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
@@ -590,7 +591,8 @@ button.day:not(.day--current):hover {
 .athlete__summary,
 .club__summary,
 .sport__summary,
-.modality__summary {
+.modality__summary,
+.event__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -605,14 +607,16 @@ button.day:not(.day--current):hover {
 .athlete__summary::-webkit-details-marker,
 .club__summary::-webkit-details-marker,
 .sport__summary::-webkit-details-marker,
-.modality__summary::-webkit-details-marker {
+.modality__summary::-webkit-details-marker,
+.event__summary::-webkit-details-marker {
   display: none;
 }
 
 .athlete__summary::after,
 .club__summary::after,
 .sport__summary::after,
-.modality__summary::after {
+.modality__summary::after,
+.event__summary::after {
   content: "▸";
   color: var(--muted);
   font-size: 0.85rem;
@@ -622,21 +626,24 @@ button.day:not(.day--current):hover {
 .athlete[open] .athlete__summary::after,
 .club[open] .club__summary::after,
 .sport[open] .sport__summary::after,
-.modality[open] .modality__summary::after {
+.modality[open] .modality__summary::after,
+.event[open] .event__summary::after {
   transform: rotate(90deg);
 }
 
 .athlete__summary:hover,
 .club__summary:hover,
 .sport__summary:hover,
-.modality__summary:hover {
+.modality__summary:hover,
+.event__summary:hover {
   background: var(--accent-soft);
 }
 
 .athlete__name,
 .club__name,
 .sport__name,
-.modality__name {
+.modality__name,
+.event__name {
   font-weight: 600;
 }
 
@@ -813,15 +820,55 @@ button.day:not(.day--current):hover {
 
 /* Eventos dentro de uma modalidade (nível 3). */
 .modality__events {
-  list-style: none;
-  margin: 0;
-  padding: 2px 12px 10px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 4px 12px 10px;
 }
 
-.modality__events li {
+.event {
+  background: var(--surface);
+}
+
+.event__summary {
+  padding: 8px 12px;
+}
+
+.event__name {
+  font-size: 0.88rem;
+}
+
+/* Lista de atributos (modalidades e eventos). */
+.sport-attrs {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 10px;
+}
+
+.modality > .sport-attrs {
+  padding: 0 12px 8px;
+}
+
+.event > .sport-attrs {
+  padding: 0 12px 8px;
+}
+
+.sport-attrs li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   padding: 5px 0;
   border-top: 1px solid var(--border);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
+}
+
+.sport-attrs li span {
+  color: var(--muted);
+}
+
+.sport-attrs li strong {
+  text-align: right;
+  font-weight: 600;
 }
 
 .athlete--highlight {
