@@ -269,10 +269,12 @@ modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só 
       eventos (`renderSports`), tudo por nome e em ordem alfabética. Falta ainda,
       se desejado, um **detalhe** de modalidade/evento (atributos, `resolution`,
       popularidade) — hoje é só a estrutura por nome.
-- [ ] **Popular os eventos das modalidades.** Hoje só existe o evento **100 m**
-      (`EVT-ATL-100M`, modalidade Velocidade). Criar os demais eventos de cada
-      modalidade (ex.: 200 m, 400 m em Velocidade; salto em distância em Saltos;
-      etc.), cada um com sua `resolution` e `performance`.
+- [x] **Popular os eventos das modalidades (calendário olímpico).** Feito:
+      `events.js` tem **~190 eventos**, um conjunto por modalidade (ex.: 200 m,
+      400 m em Velocidade; categorias de peso no Judô; provas de piscina na
+      Natação; "Torneio …" nos coletivos). **Falta o modelo**: por ora só os
+      **100 m** têm `resolution`/`performance`; os demais recebem o seu com a
+      **mecânica de ResultSystem** (prioridade alta, no topo).
 - [ ] **Popularidade por país do evento.** O campo `countryPopularity` faz parte
       da entidade **Evento**, mas a **relação evento ↔ país** ainda **não foi
       feita** — construir depois.

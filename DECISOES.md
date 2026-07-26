@@ -258,6 +258,23 @@ Regras a seguir sempre, salvo instrução em contrário:
       `styles.css`); nenhuma entidade/mecânica foi tocada. A aba entrou na estrutura
       genérica `TABS` (decisão 8), então não precisou de tratamento especial.
 
+19cj. **Database de eventos = calendário olímpico, só estrutura por ora.** A pedido,
+    populei `events.js` com as provas de **cada modalidade** (usando a database de
+    modalidades já pronta), ~190 eventos no total. Decisões:
+    - **Só `id/name/modalityId`** nos eventos novos: **não** inventei
+      `resolution`/`performance`/popularidade, pois esse modelo depende da
+      **mecânica de ResultSystem** (ainda inexistente, prioridade alta no `TODO.md`).
+      Segue a diretriz de não criar dados não solicitados. Os **100 m**
+      (`EVT-ATL-100M`) ficaram **intactos**, com o seu modelo — é o único evento
+      resolvível hoje. Documentei os campos de modelo como **opcionais**.
+    - **Granularidade por tipo de prova, sem separar por gênero** (o 100 m já era
+      genderless e o simulador não modela gênero): "100 m", "200 m", etc. Nos
+      esportes de combate/peso, o evento é a **categoria de peso** ("Até 60 kg");
+      nos coletivos, é o **torneio** ("Torneio de futebol").
+    - **Nada quebra**: como nenhum campeonato disputa os novos eventos, eles não
+      são resolvidos; o CNA segue nos 100 m. Só toquei em `events.js` (dados) —
+      nenhuma função/mecânica.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

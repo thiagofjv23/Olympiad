@@ -671,15 +671,25 @@ que a simulação resolve: é ele que carrega o **modelo de resultado**
 | `id`                | Identificador único (ex.: `EVT-ATL-100M`).                       |
 | `name`              | Nome do evento (ex.: `100 metros rasos`).                        |
 | `modalityId`        | Modalidade a que pertence (ver `modalities.js`).                 |
-| `resolution`        | **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). |
-| `performance`       | Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
-| `generalPopularity` | Popularidade geral do evento **dentro do esporte** (0–100).      |
-| `countryPopularity` | Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
+| `resolution`        | *(opcional)* **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). Presente só onde há modelo. |
+| `performance`       | *(opcional)* Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
+| `generalPopularity` | *(opcional)* Popularidade geral do evento (0–100).               |
+| `countryPopularity` | *(opcional)* Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
 
 Funções utilitárias: `getEvent(id)`, `getEventsByModality(modalityId)`,
 `getEventsBySport(sportId)` (via a modalidade) e `getEventModality(event)`.
 
-**Evento cadastrado: 100 m rasos** (`EVT-ATL-100M`, da modalidade **Velocidade**
+**Database: ~190 eventos** seguindo o **calendário olímpico** — cada modalidade
+recebe as suas provas (ex.: Velocidade → 100 m, 200 m, 400 m; Natação → 50 m
+livre … revezamentos; Judô/Boxe/Lutas → categorias de peso; coletivos →
+"Torneio …"). Por ora os eventos guardam só a **estrutura** (`id/name/modalityId`);
+o **modelo de resultado** (`resolution`/`performance`/popularidade) está definido
+apenas onde já existe — hoje, os **100 m**. Os demais ganharão o seu modelo com a
+**mecânica de ResultSystem** (ver `TODO.md`, prioridade alta). Eventos sem modelo
+**não são resolvidos** (nenhum campeonato os disputa ainda) — apenas compõem a
+estrutura Esporte → Modalidade → Evento (e aparecem na aba Esportes).
+
+**Evento com modelo: 100 m rasos** (`EVT-ATL-100M`, da modalidade **Velocidade**
 do Atletismo). Resolução: métrica tempo, **menor vence**, resultado único, 2
 casas. Modelo de desempenho:
 
@@ -947,6 +957,27 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 45 — Database de eventos (calendário olímpico)
+
+- `events.js` deixou de ter só os 100 m e passou a cobrir o **calendário olímpico**:
+  **~190 eventos**, um conjunto por **cada uma das 72 modalidades** (usando a
+  database de modalidades já existente). Ex.: Velocidade → 100/200/400 m; Saltos →
+  distância/triplo/altura/vara; Natação → provas de piscina + revezamentos;
+  Judô/Boxe/Lutas/Levantamento/Taekwondo → categorias de peso; coletivos →
+  "Torneio …".
+- **Só estrutura por ora**: os novos eventos guardam `id/name/modalityId`. O
+  **modelo de resultado** (`resolution`/`performance`) continua **só nos 100 m**
+  (`EVT-ATL-100M`, intacto) — os demais recebem o modelo quando a **mecânica de
+  ResultSystem** existir (`TODO.md`, prioridade alta). Como nenhum campeonato
+  disputa esses eventos, eles **não são resolvidos** — só compõem a hierarquia.
+- **Escopo**: só `events.js` (dados) e a documentação. Nenhuma função/mecânica foi
+  tocada; o CNA segue disputando os 100 m normalmente.
+- **Verificado** (Node + navegador headless): 190 eventos; **todo** `modalityId`
+  existe; **toda** modalidade tem ≥1 evento; ids únicos e campos presentes; os
+  100 m mantêm o modelo e o campeonato resolve (ex.: 10,1 s), com rankings de
+  pontos/marcas populando; a aba Esportes mostra os eventos sob cada modalidade
+  (Velocidade → 100/200/400 m); sem erros de JS.
 
 ### Etapa 44 — Aba Esportes (UI da hierarquia Esporte → Modalidade → Evento)
 
