@@ -302,6 +302,34 @@ Regras a seguir sempre, salvo instrução em contrário:
     ano negativo (a.C.) ganhou um helper `formatPracticeStartYear` para exibir "776
     a.C." em vez de "-776". Escopo: só `script.js`; nenhuma mecânica tocada.
 
+19cm. **TimeResultSystem: extrair o modelo dos 100 m para um sistema genérico +
+    despacho por registro.** A pedido ("moldar o TimeResultSystem, genérico,
+    contemplando todas as provas de tempo; diferenças evento a evento; fácil
+    manutenção e inserção de novos esportes"), tirei o modelo de tempo de dentro do
+    `events.js` e o coloquei num módulo próprio (`timeResultSystem.js`, objeto
+    único `TimeResultSystem`, no estilo da `ResultsEngine`). Decisões:
+    - **Dados no evento, lógica no sistema**: o que varia por prova vira
+      **parâmetro do evento** (`event.time`, ex.: `recordTime`); o que é comum é
+      **default** no sistema. Assim, "as diferenças entram evento a evento" sem
+      tocar em código, e um novo esporte de tempo é só cadastrar eventos.
+    - **`recordTime` como único obrigatório**: os 100 m ficaram com
+      `time: { recordTime: 9.58 }` e herdam os defaults (0.05/0.3/0.15) — que são
+      exatamente os valores antigos, então o resultado é **idêntico** (paridade
+      verificada). Reduz o atrito de cadastrar novas provas.
+    - **Despacho por registro em `events.js`** (`EVENT_RESULT_SYSTEMS`): o evento
+      declara `resultSystem` e o `events.js` só encaminha (`resolveEvent`/
+      `computeEventResult`/`formatEventResult` viraram despachantes). Escolhi um
+      registro simples (id → módulo) em vez de auto-registro global para manter
+      claro e no estilo do projeto (globais em ordem). Plugar Distance/Height/etc.
+      depois é criar o módulo + uma linha no registro.
+    - **Interface preservada**: mantive os nomes `resolveEvent`/`computeEventResult`
+      /`formatEventResult` para **não tocar** em `participation.js`/`script.js`/
+      `marksRanking.js` (a pedido, não mexer em outra mecânica). `event.resolution`
+      seguiu no evento porque o `marksRanking` lê `resolution.order`.
+    - **`isEventPlayable`**: um evento só é disputável se tiver sistema que o
+      resolva (params presentes) — deixa explícito por que a maioria dos ~190
+      eventos ainda não joga (faltam os parâmetros, que entram evento a evento).
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

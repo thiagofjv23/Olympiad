@@ -5,16 +5,20 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 
 ## 🔴 Prioridade alta
 
-- [ ] **Criar a mecânica de ResultSystem.** Cada esporte já declara em
-      `sports.js` a lista `resultSystems` (ex.: `TimeResultSystem`,
-      `DistanceResultSystem`, `HeightResultSystem`, `PointsResultSystem`,
+- [ ] **Criar os demais ResultSystem.** O **`TimeResultSystem`** já existe
+      (`timeResultSystem.js`, genérico para provas de **tempo**) e o `events.js`
+      **despacha** para o sistema do evento (registro `EVENT_RESULT_SYSTEMS`).
+      Faltam os outros sistemas declarados em `sports.js`
+      (`DistanceResultSystem`, `HeightResultSystem`, `PointsResultSystem`,
       `MatchResultSystem`, `JudgeResultSystem`, `ScoreResultSystem`,
-      `WeightResultSystem`, `CombinedResultSystem`), **mas por enquanto é só um
-      indicador (rótulo) — não há nenhuma mecânica ligada a ele**. Falta criar os
-      ResultSystem de verdade: como cada um resolve o resultado de uma prova
-      (provavelmente sobre a `ResultsEngine` genérica em `resultsEngine.js`) e como
-      o esporte/modalidade escolhe qual usar. É o próximo grande passo da simulação
-      de resultados por esporte.
+      `WeightResultSystem`, `CombinedResultSystem`) — cada um: como resolve a prova
+      (sobre a `ResultsEngine`) e o seu bloco de parâmetros no evento. Basta criar
+      o módulo e registrá-lo (mesmo molde do `TimeResultSystem`).
+- [ ] **Parametrizar as provas de tempo (evento a evento).** O `TimeResultSystem`
+      resolve qualquer prova de tempo, mas só os **100 m** têm parâmetros
+      (`time: { recordTime }`) hoje. Cadastrar os `time` das demais provas de tempo
+      (200 m, 400 m, 800 m…, natação, remo, contrarrelógio, triatlo…) para elas
+      ficarem disputáveis — cada uma com o seu recorde/escala.
 - [ ] **Usar o Prestígio dos clubes.** O atributo `prestige` (0-100) já existe em
       todos os clubes (`clubs.js`) com valores iniciais aproximados, **mas ainda
       não é utilizado**. Ele será a base das próximas features:

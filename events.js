@@ -21,13 +21,21 @@
 //   - id                : identificador único (ex.: "EVT-ATL-100M")
 //   - name              : nome do evento (ex.: "100 metros rasos")
 //   - modalityId        : modalidade a que pertence (ver modalities.js)
+//   - resultSystem      : (opcional) id do SISTEMA DE RESULTADO que resolve a
+//                         prova (ex.: "TimeResultSystem"). Presente só onde o
+//                         evento já é disputável.
 //   - resolution        : (opcional) forma de resolução — objeto de parâmetros
 //                         compatível com a ResultsEngine (metric/order/aggregation/
-//                         precision). Presente só onde há modelo.
-//   - performance       : (opcional) parâmetros do modelo que transforma os
-//                         atributos do atleta no número do resultado.
+//                         precision). Presente onde há resultSystem.
+//   - time              : (opcional) parâmetros DESTA prova para o
+//                         TimeResultSystem (ex.: { recordTime }). Cada sistema tem
+//                         o seu bloco de parâmetros próprio.
 //   - generalPopularity : (opcional) popularidade geral do evento (0-100).
 //   - countryPopularity : (opcional) popularidade por país — relação futura.
+//
+// As diferenças de CADA prova entram nos seus parâmetros (ex.: `time`); a LÓGICA
+// de resolução fica no ResultSystem (ex.: timeResultSystem.js). events.js só
+// guarda os eventos e DESPACHA a resolução para o sistema certo.
 // -----------------------------------------------------------------------------
 
 const EVENTS = {
@@ -37,21 +45,20 @@ const EVENTS = {
     id: "EVT-ATL-100M",
     name: "100 metros rasos",
     modalityId: "MOD-ATL-VELOCIDADE",
+    // Sistema que resolve esta prova (ver timeResultSystem.js).
+    resultSystem: "TimeResultSystem",
     resolution: {
       metric: ResultsEngine.METRICS.TIME,
       order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
       aggregation: ResultsEngine.AGGREGATIONS.SINGLE,
       precision: 2,
     },
-    performance: {
-      // Recorde mundial: melhor tempo possível (piso). Ninguém corre abaixo disso.
-      recordTime: 9.58,
-      // Cada ponto de Força efetiva ABAIXO de 100 acrescenta este tempo (s).
-      secondsPerStrengthPoint: 0.05,
-      // Cada ponto de fadiga ACUMULADA reduz a Força efetiva (ver cálculo abaixo).
-      fatiguePenaltyPerPoint: 0.3,
-      // Cada ponto de DÉFICIT DE FORMA (100 − ritmo) reduz a Força efetiva.
-      formPenaltyPerPoint: 0.15,
+    // Parâmetros DESTA prova para o TimeResultSystem. Só o recorde (piso) é
+    // próprio dos 100 m; o resto usa os defaults do sistema (secondsPerStrength
+    // Point, penalidades de fadiga/forma — ver timeResultSystem.js). Para variar
+    // uma prova, basta sobrescrever aqui o que for diferente.
+    time: {
+      recordTime: 9.58, // recorde mundial dos 100 m — o melhor tempo possível
     },
     generalPopularity: 95,
     countryPopularity: null, // relação futura (ver TODO.md)
@@ -345,11 +352,6 @@ const EVENTS = {
   "EVT-VOL-PRAIA": { id: "EVT-VOL-PRAIA", name: "Torneio de praia", modalityId: "MOD-VOL-PRAIA" },
 };
 
-// Limita um número ao intervalo [min, max].
-function clampEventValue(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
 // Busca um evento pelo id. Retorna undefined se não existir.
 function getEvent(id) {
   return EVENTS[id];
@@ -374,63 +376,56 @@ function getEventModality(event) {
 }
 
 // -----------------------------------------------------------------------------
-// Modelo de desempenho (do evento) — aplicado apenas a eventos COM `performance`
+// Resolução do evento via ResultSystem
 //
-// Força efetiva = Força − redutor de fadiga − redutor de forma.
-//   - Fadiga acumulada = 100 − fatigue  (o stat `fatigue` começa em 100 = descansado;
-//     quanto mais baixo, mais cansado). Redutor = fadiga acumulada × fatiguePenaltyPerPoint.
-//   - Déficit de forma = 100 − ritmo  (ritmo 100 = forma plena; quanto mais baixo,
-//     menos afiado). Redutor = déficit de forma × formPenaltyPerPoint.
-//   - Ou seja: descansado (fatigue 100) e em plena forma (ritmo 100) não perde nada;
-//     cansado E/OU fora de forma perde Força efetiva. Os dois redutores SOMAM — a
-//     fadiga (curto prazo) e o ritmo (forma de temporada) são independentes.
-//   - Sem `ritmo` definido, o déficit de forma é 0 (não penaliza) — retrocompatível.
-//
-// Tempo (100 m) = recordTime + (100 − Força efetiva) × secondsPerStrengthPoint.
-//   - Força efetiva 100 → recorde (9,58 s). Quanto menor a Força efetiva, mais
-//     lento (tempo maior). O tempo nunca fica abaixo do recorde.
+// COMO um evento é resolvido depende do seu SISTEMA DE RESULTADO (o campo
+// `event.resultSystem`): TimeResultSystem (tempo), e — no futuro — Distance/
+// Height/Points/Match/Judge/Score/Weight/Combined (ver TODO.md). Cada sistema é
+// um módulo próprio (ex.: timeResultSystem.js) que sabe transformar os atributos
+// do atleta no resultado e ranquear a prova; o evento só declara qual usa e traz
+// os seus PARÂMETROS. Este arquivo (events.js) apenas DESPACHA para o sistema
+// certo — assim, plugar um novo sistema é criar o módulo e registrá-lo aqui, sem
+// mexer no resto do jogo.
 // -----------------------------------------------------------------------------
 
-// Força efetiva do atleta neste evento (aplica os redutores de fadiga e forma).
-function effectiveStrengthForEvent(athlete, event) {
-  const perf = event.performance;
-  const accumulatedFatigue = 100 - athlete.fatigue; // 0 = descansado
-  const fatigueReducer = accumulatedFatigue * perf.fatiguePenaltyPerPoint;
+// Registro de ResultSystems disponíveis (id → sistema). Para plugar um novo
+// sistema (Distância, Altura, Pontos, ...), crie o seu módulo (carregado antes
+// de events.js no index.html) e acrescente-o aqui.
+const EVENT_RESULT_SYSTEMS = {
+  [TimeResultSystem.id]: TimeResultSystem,
+};
 
-  // Ritmo/forma: 100 = forma plena. Ausente => sem penalidade (retrocompatível).
-  const ritmo = athlete.ritmo != null ? athlete.ritmo : 100;
-  const formDeficit = 100 - ritmo; // 0 = em plena forma
-  const formPenaltyPerPoint = perf.formPenaltyPerPoint != null ? perf.formPenaltyPerPoint : 0;
-  const formReducer = formDeficit * formPenaltyPerPoint;
-
-  return clampEventValue(
-    athlete.strength - fatigueReducer - formReducer,
-    1,
-    100
-  );
+// O sistema de resultado de um evento (objeto do sistema) ou null.
+function getEventResultSystem(event) {
+  return event && event.resultSystem
+    ? EVENT_RESULT_SYSTEMS[event.resultSystem] || null
+    : null;
 }
 
-// Resultado numérico do atleta no evento (aqui: o tempo dos 100 m).
+// O evento é DISPUTÁVEL? (tem um sistema de resultado que consegue resolvê-lo.)
+// Eventos sem sistema/parâmetros ainda não são jogáveis — só estruturais.
+function isEventPlayable(event) {
+  const system = getEventResultSystem(event);
+  return !!(system && system.resolves(event));
+}
+
+// Resultado numérico de um atleta no evento (delega ao ResultSystem do evento).
 function computeEventResult(athlete, event) {
-  const perf = event.performance;
-  const effective = effectiveStrengthForEvent(athlete, event);
-  return perf.recordTime + (100 - effective) * perf.secondsPerStrengthPoint;
+  const system = getEventResultSystem(event);
+  return system ? system.computeResult(athlete, event) : null;
 }
 
-// Formata um resultado para exibição, conforme a métrica/precisão do evento.
+// Formata um resultado para exibição (delega ao ResultSystem do evento).
 function formatEventResult(value, event) {
-  if (value == null) return "—";
-  const { metric, precision = 2 } = event.resolution;
-  const unit = ResultsEngine.UNITS[metric] || "";
-  return `${value.toFixed(precision)} ${unit}`.trim();
+  const system = getEventResultSystem(event);
+  if (system) return system.format(value, event);
+  return value == null ? "—" : String(value);
 }
 
-// Gera o resultado de cada atleta e resolve o ranking pela ResultsEngine.
-// Retorna [{ id, result, position }] — `result` é o valor alcançado (ex.: o tempo).
+// Resolve o ranking de um evento entre os atletas (delega ao ResultSystem).
+// Retorna [{ id, result, position }] — `result` é o valor alcançado (ex.: o
+// tempo). Evento sem sistema/parâmetros retorna [] (ainda não disputável).
 function resolveEvent(athletes, event) {
-  const competitors = athletes.map((athlete) => ({
-    id: athlete.id,
-    value: computeEventResult(athlete, event),
-  }));
-  return ResultsEngine.resolveResults(competitors, event.resolution);
+  const system = getEventResultSystem(event);
+  return system && system.resolves(event) ? system.resolve(athletes, event) : [];
 }

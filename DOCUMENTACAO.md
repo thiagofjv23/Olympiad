@@ -34,9 +34,10 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `cities.js`         | **Entidade Cidades** (database inicial de cidades reais).               |
 | `sports.js`         | **Entidade Esportes** (database inicial de esportes).                   |
 | `modalities.js`     | **Entidade Modalidades** — agrupam eventos dentro de um esporte (Esporte → Modalidade). |
-| `events.js`         | **Entidade Eventos** — as provas resolvíveis de uma modalidade (Modalidade → Evento); traz o modelo de resultado. |
+| `events.js`         | **Entidade Eventos** — as provas de uma modalidade (Modalidade → Evento); **despacha** a resolução para o ResultSystem do evento. |
 | `competitionCategories.js` | **Entidade Categorias de Competição** — níveis/tiers do calendário. |
 | `resultsEngine.js`  | **Engine de resolução de resultados** (genérica, sem conhecer esportes).|
+| `timeResultSystem.js` | **TimeResultSystem** — resolve os eventos medidos por **tempo** (genérico; diferenças por evento via `event.time`). |
 | `README.md`         | Resumo de uso.                                                          |
 | `DOCUMENTACAO.md`   | Este documento de controle.                                            |
 | `TODO.md`           | Pendências e decisões temporárias.                                     |
@@ -56,11 +57,14 @@ sozinha.
 
 Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
-`resultsEngine.js` → `modalities.js` → `events.js` → `competitionCategories.js` →
+`resultsEngine.js` → `timeResultSystem.js` → `modalities.js` → `events.js` →
+`competitionCategories.js` →
 `championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
 `eligibility.js` → `ranking.js` → `marksRanking.js` → `participation.js` →
 `script.js`. (`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade
-referencia o estado e o estado referencia a região; `events.js` vem depois de
+referencia o estado e o estado referencia a região; `timeResultSystem.js` vem
+depois de `resultsEngine.js` (usa a `ResultsEngine`) e antes de `events.js`, que
+o registra e despacha para ele; `events.js` vem depois de
 `modalities.js` e `resultsEngine.js`, pois o evento referencia a modalidade
 (`getModality`) e usa a `ResultsEngine`; `championships.js` já vem depois de
 `regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
@@ -663,55 +667,75 @@ Multicasco, Prancha à Vela, Kite; etc.). É só a estrutura (id/nome/esporte) �
 ### Eventos — `events.js`
 
 **Nível resolvível** da hierarquia (Modalidade → **Evento**). O evento é a prova
-que a simulação resolve: é ele que carrega o **modelo de resultado**
-(`resolution` + `performance`). Pertence a uma **modalidade** (`modalityId`).
+que a simulação resolve. **Como** ele é resolvido depende do seu **sistema de
+resultado** (`resultSystem`); o evento traz os **parâmetros** da sua prova.
+Pertence a uma **modalidade** (`modalityId`).
 
 | Campo               | Descrição                                                        |
 | ------------------- | ---------------------------------------------------------------- |
 | `id`                | Identificador único (ex.: `EVT-ATL-100M`).                       |
 | `name`              | Nome do evento (ex.: `100 metros rasos`).                        |
 | `modalityId`        | Modalidade a que pertence (ver `modalities.js`).                 |
-| `resolution`        | *(opcional)* **Forma de resolução** — objeto de parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). Presente só onde há modelo. |
-| `performance`       | *(opcional)* Parâmetros do modelo que transforma os atributos do atleta no número do resultado. |
+| `resultSystem`      | *(opcional)* Id do **sistema de resultado** que resolve a prova (ex.: `"TimeResultSystem"`). Presente onde o evento já é **disputável**. |
+| `resolution`        | *(opcional)* **Forma de resolução** — parâmetros da `ResultsEngine` (`{ metric, order, aggregation, precision }`). Presente onde há `resultSystem`. |
+| `time`              | *(opcional)* Parâmetros **desta prova** para o `TimeResultSystem` (ex.: `{ recordTime }`). Cada sistema tem o seu bloco. |
 | `generalPopularity` | *(opcional)* Popularidade geral do evento (0–100).               |
 | `countryPopularity` | *(opcional)* Popularidade por país — **relação a fazer depois** (ver `TODO.md`). |
 
 Funções utilitárias: `getEvent(id)`, `getEventsByModality(modalityId)`,
 `getEventsBySport(sportId)` (via a modalidade) e `getEventModality(event)`.
 
+**Despacho de resolução** (events.js só encaminha, não calcula): um registro
+`EVENT_RESULT_SYSTEMS` mapeia `resultSystem` → módulo do sistema.
+`getEventResultSystem(event)` acha o sistema; `isEventPlayable(event)` diz se a
+prova já é **disputável**; `resolveEvent(athletes, event)`, `computeEventResult`
+e `formatEventResult` **delegam** ao sistema do evento (retornam `[]`/`null`/`—`
+se o evento ainda não tiver sistema). Plugar um sistema novo = criar o módulo e
+registrá-lo em `EVENT_RESULT_SYSTEMS`.
+
 **Database: ~190 eventos** seguindo o **calendário olímpico** — cada modalidade
 recebe as suas provas (ex.: Velocidade → 100 m, 200 m, 400 m; Natação → 50 m
 livre … revezamentos; Judô/Boxe/Lutas → categorias de peso; coletivos →
 "Torneio …"). Por ora os eventos guardam só a **estrutura** (`id/name/modalityId`);
-o **modelo de resultado** (`resolution`/`performance`/popularidade) está definido
-apenas onde já existe — hoje, os **100 m**. Os demais ganharão o seu modelo com a
-**mecânica de ResultSystem** (ver `TODO.md`, prioridade alta). Eventos sem modelo
-**não são resolvidos** (nenhum campeonato os disputa ainda) — apenas compõem a
-estrutura Esporte → Modalidade → Evento (e aparecem na aba Esportes).
+o **sistema/parâmetros** (`resultSystem` + `resolution` + `time`) está definido
+apenas onde já existe — hoje, os **100 m** (via `TimeResultSystem`). Os demais
+ganham o seu à medida que forem parametrizados (as diferenças entram **evento a
+evento** — ver `TODO.md`). Eventos sem sistema **não são resolvidos** (nenhum
+campeonato os disputa ainda) — só compõem a estrutura Esporte → Modalidade →
+Evento (e aparecem na aba Esportes).
 
-**Evento com modelo: 100 m rasos** (`EVT-ATL-100M`, da modalidade **Velocidade**
-do Atletismo). Resolução: métrica tempo, **menor vence**, resultado único, 2
-casas. Modelo de desempenho:
+### TimeResultSystem — `timeResultSystem.js`
+
+**Sistema de resultado por TEMPO**: um único sistema **genérico** que resolve
+**qualquer** prova medida em tempo (corridas do atletismo, natação, remo,
+contrarrelógio, …). O que **muda** de uma prova para outra vem dos **parâmetros do
+próprio evento** (`event.time`); o que é **comum** tem defaults no sistema. Assim,
+tornar uma prova de tempo disputável é só **cadastrar os seus parâmetros** — sem
+tocar em código —, e novos esportes de tempo entram do mesmo jeito.
+
+Modelo (o mesmo dos 100 m, agora generalizado):
 
 - **Força efetiva** = `Força − redutor de fadiga − redutor de forma`.
-  - **Redutor de fadiga** = `(100 − fatigue) × fatiguePenaltyPerPoint`. O stat
-    `fatigue` começa em 100 (descansado); `100 − fatigue` é a **fadiga acumulada**.
-    Descansado não perde nada; cansado perde Força. (`fatiguePenaltyPerPoint = 0.3`.)
-  - **Redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint`. `ritmo` 100 =
-    forma plena (sem penalidade); `100 − ritmo` é o **déficit de forma**. Fora de
-    forma perde Força efetiva. (`formPenaltyPerPoint = 0.15`.) **Os dois redutores
-    somam** e são independentes (fadiga = curto prazo; ritmo = forma de temporada).
-    Sem `ritmo`, o déficit é 0 (retrocompatível). **Força e fadiga permanecem** —
-    o ritmo apenas se soma.
-- **Tempo** = `recordTime + (100 − Força efetiva) × secondsPerStrengthPoint`, com
-  `recordTime = 9.58` (recorde mundial, o **piso** — ninguém corre abaixo) e
-  `secondsPerStrengthPoint = 0.05`. Força efetiva 100 → 9,58 s; quanto menor,
-  mais lento.
+  - **Redutor de fadiga** = `(100 − fatigue) × fatiguePenaltyPerPoint`
+    (default `0.3`).
+  - **Redutor de forma** = `(100 − ritmo) × formPenaltyPerPoint` (default `0.15`).
+    Os dois **somam**; sem `ritmo`, o déficit é 0.
+- **Tempo** = `recordTime + (100 − Força efetiva) × secondsPerStrengthPoint`
+  (default `secondsPerStrengthPoint = 0.05`). Força efetiva 100 → `recordTime` (o
+  **piso**/recorde da prova); quanto menor, mais lento.
 
-Funções do modelo: `effectiveStrengthForEvent`, `computeEventResult` (o número do
-resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
-`resolveEvent(athletes, event)` (gera os tempos e resolve o ranking pela
-`ResultsEngine`, retornando `{ id, result, position }` com `result` = tempo).
+Parâmetros por evento (`event.time`): **`recordTime`** (obrigatório — o piso da
+prova) e, se a prova precisar, sobrescritas de `secondsPerStrengthPoint`,
+`fatiguePenaltyPerPoint`, `formPenaltyPerPoint` (ex.: uma corrida longa usa um
+`secondsPerStrengthPoint` maior). O **`EVT-ATL-100M`** define só
+`time: { recordTime: 9.58 }` e herda os demais defaults — resultado **idêntico**
+ao modelo anterior.
+
+Interface (`TimeResultSystem`, objeto único como a `ResultsEngine`): `id`,
+`DEFAULTS`, `params(event)`, `resolves(event)`, `effectiveStrength(athlete,
+event)`, `computeResult(athlete, event)` (o tempo), `format(value, event)` (ex.:
+`10.18 s`) e `resolve(athletes, event)` (ranqueia pela `ResultsEngine`, menor
+tempo vence).
 
 ---
 
@@ -957,6 +981,35 @@ resultado — aqui o tempo), `formatEventResult` (ex.: `10.18 s`) e
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 48 — TimeResultSystem (resolução genérica por tempo)
+
+- Criado o **`TimeResultSystem`** (`timeResultSystem.js`): um sistema **genérico**
+  que resolve **qualquer** prova medida por **tempo**. O modelo de resultado que
+  antes estava embutido nos 100 m (em `events.js`) foi **extraído e generalizado**
+  para cá.
+- **Diferenças por evento, lógica no sistema**: o que varia de prova para prova
+  vem dos **parâmetros do evento** (`event.time`, ex.: `recordTime`); o que é comum
+  tem **defaults** no sistema (`secondsPerStrengthPoint 0.05`, penalidades de
+  fadiga `0.3` e forma `0.15`). Tornar uma prova de tempo disputável é só declarar
+  `resultSystem: "TimeResultSystem"` + `time: { recordTime }` no evento — **sem
+  tocar em código** —, o que também facilita inserir **novos esportes** de tempo.
+- **Despacho por registro** (`events.js`): `EVENT_RESULT_SYSTEMS` mapeia o
+  `resultSystem` do evento para o módulo; `resolveEvent`/`computeEventResult`/
+  `formatEventResult` viraram **despachantes** (delegam ao sistema do evento).
+  Plugar um sistema novo (Distância, Altura, Pontos, Match, Judge, Score, Weight,
+  Combined) = criar o módulo e registrá-lo. `isEventPlayable(event)` diz se a prova
+  já é disputável.
+- **Comportamento preservado**: o `EVT-ATL-100M` passou a usar o sistema com
+  `time: { recordTime: 9.58 }` (o resto por default) → os tempos são **idênticos**
+  aos de antes. **Nenhuma outra mecânica foi tocada** (participação, fadiga, ritmo,
+  rankings, UI seguem iguais; `participation`/`script` chamam as mesmas funções).
+- **Verificado** (Node + navegador headless): 100 m dá os mesmos tempos (Força 80
+  descansado 10,58 s; Força 100 9,58 s; Força 80/fatigue 60 11,18 s); um evento de
+  tempo **sintético** com parâmetros próprios (recorde 100 s, escala 0,4) resolve e
+  ranqueia certo (Força 90 → 104,00 s), provando a genericidade; `isEventPlayable`
+  = true para os 100 m e false para uma prova sem parâmetros; o CNA segue
+  resolvendo (ex.: 9,85 s) com rankings; sem erros de JS.
 
 ### Etapa 47 — Atributos dos esportes na aba Esportes
 
