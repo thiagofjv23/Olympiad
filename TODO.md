@@ -44,18 +44,29 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
       **trava geográfica** (`eligibility.js`) que restringe por país/região/
       estado/cidade — falta a **escolha do clube** (quais/quantos/por etapa).
 
-## Geografia (regiões e estados)
+## Geografia (continente, regiões e estados)
 
-Hierarquia **país → região → estado → cidade** criada (`regions.js`, `states.js`;
-cidade ganhou `stateId`). Pendências:
+Hierarquia **Mundo → Continente → País → Região → Estado → Cidade** criada
+(`continents.js` com a raiz `WORLD` e 6 continentes; `regions.js`, `states.js`;
+cidade tem `stateId`). Pendências:
+
+- [ ] **Continentes sem UI (por ora, a pedido).** A entidade existe só como
+      lógica; se um dia quiser, dá para exibir a hierarquia (ex.: agrupar países
+      por continente numa tela). Também não há regiões de continente (sub-regiões).
+- [ ] **Populações dos novos países são aproximadas.** Os 54 países além do Brasil
+      receberam população **estimada** (real aproximada); revisar/precisar depois
+      se necessário.
 
 - [ ] **Ampliar os estados para as 27 UFs.** Hoje só existem os **10 estados** das
       cidades cadastradas (`states.js`), cobrindo as 5 regiões. Completar quando
       houver mais cidades/uso (mesmo espírito das "10 cidades de teste").
-- [ ] **Regiões/estados de outros países.** Já existe a **Argentina** (`ARG`,
-      só país + atributos básicos); falta criar sua **geografia** (regiões,
-      estados/províncias) e depois cidades, no mesmo molde do Brasil.
-- [ ] **Cidades, clubes e atletas da Argentina.** A Argentina entrou só como país;
+- [ ] **Regiões/estados dos demais países.** Já existem **55 países** como
+      entidade (`countries.js`, com `continentId`), distribuídos pelos 6
+      continentes (`continents.js`), mas a **geografia** (regiões, estados/
+      províncias) existe só no **Brasil**. Criar a dos demais no mesmo molde,
+      quando forem povoados.
+- [ ] **Cidades, clubes e atletas dos demais países.** Os 54 países além do Brasil
+      entraram **só como país** (id/COI, nome, população, força, continente);
       povoar depois (cidades → clubes → atletas), reutilizando as estruturas e os
       mesmos parâmetros já usados no Brasil.
 - [x] **UI de regiões/estados.** Feito: sigla do estado e região aparecem junto
@@ -159,10 +170,10 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       (`fatigueRecoveryForRestDay`/`applyRestDay`, por dia, rumo a 100). A
       orquestração é dia a dia em `participation.js` (`processDay`, via
       `advanceDays`). `fatigue` virou número real (a UI arredonda).
-- [ ] **Atletas de outros países.** Já existe a **Argentina** (`ARG`), mas só o
-      país + atributos básicos — **sem cidades/clubes/atletas** ainda; por isso
-      todos os atletas seguem brasileiros. Ao dar cidades/clubes à Argentina,
-      gerar e distribuir a origem dos seus atletas.
+- [ ] **Atletas de outros países.** Já existem **55 países** como entidade
+      (`countries.js`), mas só o **Brasil** tem cidades/clubes/atletas — por isso
+      todos os atletas seguem brasileiros. Ao dar cidades/clubes a um país, gerar e
+      distribuir a origem dos seus atletas.
 - [x] **Trio favorito dos regens (esporte + modalidade + evento).** Feito: o
       gerador distribui os atletas por **todos os eventos** (`generateAthletes`
       cria N por evento), e cada atleta guarda `favoriteSportId`,

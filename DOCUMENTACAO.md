@@ -82,22 +82,41 @@ antes de `participation.js` (que aplica a trava e registra pontos/marcas);
 
 ## 2. Entidades de dados
 
+### Continentes — `continents.js`
+
+Nível geográfico entre o **mundo** e o **país**, completando a hierarquia
+**Mundo → Continente → País → Região → Estado → Cidade**. Há um único **mundo**
+(a raiz `WORLD`, `{ id: "WORLD", name: "Mundo" }`), do qual descendem todos os
+continentes; cada país aponta para o seu continente (`country.continentId`).
+Database à mão (como regiões/estados), **sem UI própria** — só a lógica.
+
+Objeto `CONTINENTS` indexado por `id`. Cada continente: `id` (ex.:
+`CONT-AMERICA-SUL`), `name` (ex.: `América do Sul`) e `worldId` (`WORLD`). São
+**6**, seguindo o agrupamento da database de países: **América do Sul**;
+**América do Norte, Central e Caribe**; **África**; **Ásia**; **Oceania**;
+**Europa**. Funções: `getWorld()`, `getContinent(id)`, `getAllContinents()`,
+`getContinentsByWorld(worldId)`, `getContinentWorld(continent)`.
+
 ### Países — `countries.js`
 
 Objeto `COUNTRIES` indexado por `id`. Cada país:
 
-| Campo             | Descrição                          |
-| ----------------- | ---------------------------------- |
-| `id`              | Identificador único (ex.: `BRA`).  |
-| `name`            | Nome do país.                      |
-| `population`      | População.                         |
-| `olympicStrength` | **Força Olímpica** — rating 0–100. |
+| Campo             | Descrição                                             |
+| ----------------- | ----------------------------------------------------- |
+| `id`              | Identificador único — o próprio código do COI (`BRA`).|
+| `name`            | Nome do país.                                         |
+| `iocCode`         | Código do COI (usado no nome dos atletas, ex.: `(BRA)`).|
+| `population`      | População estimada (real aproximada).                 |
+| `olympicStrength` | **Força Olímpica** — rating 0–100.                    |
+| `continentId`     | Continente ao qual pertence (ver `continents.js`).    |
 
-Países cadastrados: **Brasil** (`BRA`, população 213.421.037, força olímpica 78)
-e **Argentina** (`ARG`, população 45.808.747, força olímpica 70). A Argentina
-entrou apenas como **país + atributos básicos** (mesma estrutura do Brasil);
-**cidades, clubes e atletas ficam para depois** (ver `TODO.md`).
-Função utilitária: `getCountry(id)`.
+Database inicial: **55 países/entidades olímpicas**, distribuídos pelos 6
+continentes (10 + 10 + 10 + 10 + 5 + 10). Só a entidade **País** é modelada para
+todos (id/COI, nome, população, força, continente); **regiões, estados, cidades,
+clubes e atletas continuam existindo apenas onde já foram desenhados** — hoje o
+**Brasil** —, ver `TODO.md`. As populações são estimativas aproximadas (mesmo
+espírito de Brasil/Argentina). Funções: `getCountry(id)`, `getAllCountries()`,
+`getCountriesByContinent(continentId)`, `getCountryContinent(country)`.
 
 ### Campeonatos — `championships.js`
 
@@ -1043,6 +1062,35 @@ separados pelo milésimo), sem que o jogador veja a 3ª casa. Sem sufixo de unid
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 57 — Entidade Continente e database de 55 países
+
+- Nova entidade **Continentes** (`continents.js`), com a raiz **Mundo**
+  (`WORLD`), completando a hierarquia **Mundo → Continente → País → Região →
+  Estado → Cidade**. São 6 continentes, sem UI própria (só a lógica, a pedido):
+  América do Sul; América do Norte, Central e Caribe; África; Ásia; Oceania;
+  Europa. Cada país ganhou **`continentId`**.
+- **Database de países ampliada de 2 para 55** (`countries.js`), a partir da
+  lista fornecida (COI + força olímpica por continente). Implantação **por lotes
+  de continente**, começando pela **América do Sul** e verificando cada lote
+  antes do seguinte. `id` = código do COI; `iocCode` idem. As **populações** são
+  estimativas reais aproximadas (mesmo padrão de Brasil/Argentina).
+- **Só a entidade País** foi criada para os novos países: **nenhuma região,
+  estado, cidade, clube ou atleta** novo — esses seguem só onde já existiam (o
+  Brasil). As telas existentes (seletores de país em Atletas/Clubes) passam a
+  listar os 55 países; países sem dados mostram o estado vazio normal.
+- Novos helpers: `getWorld`, `getContinent`, `getAllContinents`,
+  `getContinentsByWorld`, `getContinentWorld` (`continents.js`);
+  `getAllCountries`, `getCountriesByContinent`, `getCountryContinent`
+  (`countries.js`).
+- **Escopo**: `continents.js` (novo), `countries.js` (55 países + `continentId` +
+  helpers), `index.html` (carrega `continents.js` antes de `countries.js`) e a
+  documentação. Nenhuma mecânica alterada.
+- **Verificado** (Node + navegador headless): 55 países nos 6 continentes com
+  COI/força/continente corretos vs. a lista (10/10/10/10/5/10), sem ids
+  duplicados; a hierarquia resolve (`JPN → Ásia → Mundo`); os seletores de país
+  carregam 55 opções; selecionar um país sem dados (EUA) mostra "Nenhum atleta
+  para este país"; o Brasil segue com seus 19.000 atletas; sem erros de JS.
 
 ### Etapa 56 — Tempo exibido em centésimos (milésimos só para desempate)
 

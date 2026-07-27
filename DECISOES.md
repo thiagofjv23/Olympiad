@@ -539,6 +539,40 @@ Regras a seguir sempre, salvo instrução em contrário:
     espírito "a olho" do valor do Brasil — fácil de recalibrar quando a Argentina
     ganhar cidades/atletas. População 45.808.747 (estimativa) e COI `ARG`.
 
+### Continentes e database de 55 países
+
+19cx. **Entidade Continente com raiz Mundo única (`WORLD`).** A pedido de modelar
+    a lógica **Mundo → Continente → País**, criei `continents.js` no mesmo estilo
+    de `regions.js`/`states.js` (database à mão, sem UI). Como a hierarquia pedia
+    o "Mundo", modelei-o como uma **raiz única** (`WORLD = { id, name }`) da qual
+    todos os continentes descendem (`continent.worldId`), em vez de deixar o mundo
+    implícito — assim a cadeia fica completa e navegável (`getContinentWorld`).
+    Não desenhei UI para continentes (a pedido).
+
+19cy. **6 continentes conforme o agrupamento da lista.** Segui exatamente os
+    grupos do arquivo fornecido, inclusive **"América do Norte, Central e Caribe"
+    como um único continente** (`CONT-AMERICA-NORTE`) — não separei América
+    Central/Caribe, para casar com a fonte. Ids descritivos (`CONT-AMERICA-SUL`
+    etc.), no padrão dos outros níveis geográficos.
+
+19cz. **`id` do país = código do COI.** Mantive a convenção que o Brasil/Argentina
+    já usavam (`id === iocCode`), então os novos países seguem igual (`COL`, `USA`,
+    `CHN`…). Simples e evita um segundo identificador.
+
+19da. **Populações reais aproximadas para os novos países.** O arquivo trouxe só
+    COI + força olímpica, mas os países já modelados têm **população**. Para
+    modelá-los "de acordo com os já modelados", preenchi a população de cada país
+    com uma **estimativa real aproximada** (dado factual, como o nome/COI — não um
+    registro fictício). São aproximações, fáceis de recalibrar; se preferir deixar
+    vazias, é um ajuste trivial.
+
+19db. **Só a entidade País para os novos países (nada de região/cidade/atleta).**
+    A pedido, os 55 países entram apenas como País; **não** criei regiões, estados,
+    cidades, clubes nem atletas para os novos — isso segue só onde já existia (o
+    Brasil). As telas existentes já lidam com país sem dados (mostram vazio), então
+    listar os 55 nos seletores de país não quebra nada. A geração de atletas
+    continua só no Brasil.
+
 ### Campeonato ↔ esporte e Participação
 
 19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato
