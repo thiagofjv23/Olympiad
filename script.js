@@ -547,6 +547,11 @@ function renderAthletes(countryId, highlightAthleteId) {
       const birthPlace = formatCityLocation(birthCity);
       const favoriteSport = getAthleteFavoriteSport(athlete);
       const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
+      // Modalidade e evento em que o atleta compete (trio favorito — ver athletes.js).
+      const favoriteModality = getAthleteFavoriteModality(athlete);
+      const favoriteModalityName = favoriteModality ? favoriteModality.name : "—";
+      const favoriteEvent = getAthleteFavoriteEvent(athlete);
+      const favoriteEventName = favoriteEvent ? favoriteEvent.name : "—";
       // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
       // ativo, o atleta é um agente livre.
       const club = getAthleteClub(athlete.id, currentDate);
@@ -566,6 +571,8 @@ function renderAthletes(countryId, highlightAthleteId) {
             <li><span>Ritmo</span><strong>${Math.round(athlete.ritmo)}/100</strong></li>
             <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
             <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
+            <li><span>Modalidade favorita</span><strong>${favoriteModalityName}</strong></li>
+            <li><span>Evento favorito</span><strong>${favoriteEventName}</strong></li>
             <li><span>Clube atual</span><strong>${clubName}</strong></li>
           </ul>
         </details>`;

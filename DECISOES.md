@@ -377,6 +377,13 @@ Regras a seguir sempre, salvo instrução em contrário:
     - **`athletesPerEvent = 2` é número de teste** (total ~380). Fácil de ajustar;
       registrado no `TODO.md`.
 
+19cp. **Modalidade/evento do atleta na UI (só UI).** Acrescentei as linhas
+    "Modalidade favorita" e "Evento favorito" ao expandir o atleta (aba Atletas),
+    completando o trio ao lado de "Esporte favorito". Reusei o mesmo padrão de
+    linha (`<li><span>…</span><strong>…</strong>`) e os helpers do atleta — sem CSS
+    novo, sem tocar em mecânica. Rotulei "favorita/favorito" para casar com
+    "Esporte favorito" (o trio = onde o atleta compete).
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

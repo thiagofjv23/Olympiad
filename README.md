@@ -23,7 +23,7 @@ A interface tem as seguintes abas:
 
 - **Calendário** — o calendário com passagem de tempo; as datas de etapas dos campeonatos aparecem marcadas (ponto laranja) nos dias correspondentes.
 - **Campeonatos** — mostra o campeonato selecionado, com um seletor para futuros campeonatos. Cada etapa **realizada** tem o link **"Ver"** que abre a classificação (posição, atleta e resultado, ex.: tempo dos 100 m).
-- **Atletas** — seletor por país; lista os atletas daquele país (nome, idade e Força), com clique para expandir e ver todos os atributos (incluindo o **Clube atual**, ou "Agente livre").
+- **Atletas** — seletor por país; lista os atletas daquele país (nome, idade e Força), com clique para expandir e ver todos os atributos (incluindo o **trio favorito** — esporte, **modalidade** e **evento** em que compete — e o **Clube atual**, ou "Agente livre").
 - **Clubes** — seletor por país; lista os clubes daquele país (nome, país e prestígio), com clique para expandir e ver as demais informações. No detalhe do clube há o link **"Atletas do clube"**, que mostra os atletas contratados (nome + **duração e término do contrato**; nomes clicáveis que levam ao perfil do atleta). Abaixo dos clubes, a lista de **Agentes livres** do país. As telas são reativas à passagem de tempo (contratos expiram/entram em vigor).
 - **Rankings** — ao abrir, o jogador escolhe qual ranking ver: **Pontos** ou **Marcas** (da temporada corrente).
   - **Pontos**: posição, atleta, clube, **etapas disputadas** e **pontos** (por etapa, conforme a **categoria/tier** do campeonato — maiores valem mais).

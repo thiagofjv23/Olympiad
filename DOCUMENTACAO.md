@@ -1007,6 +1007,20 @@ tempo vence).
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 51 — Modalidade e evento do atleta na UI
+
+- A aba **Atletas** passou a mostrar, ao expandir o atleta, as linhas
+  **"Modalidade favorita"** e **"Evento favorito"** (a modalidade e o tipo de prova
+  em que o atleta compete), logo abaixo de "Esporte favorito" — completando o
+  **trio favorito** na tela. A lista já exibe os novos atletas (cobrindo todos os
+  eventos), pois é derivada de `ATHLETES` filtrada por país.
+- **Só UI**: apenas `script.js` (`renderAthletes` resolve o trio via
+  `getAthleteFavoriteModality`/`getAthleteFavoriteEvent` e adiciona as duas linhas
+  no mesmo padrão das demais). Nenhuma mecânica tocada; sem CSS novo.
+- **Verificado** (navegador headless): 380 atletas listados; ao expandir, cada um
+  mostra Esporte/Modalidade/Evento coerentes (ex.: Atleta 1 → Atletismo /
+  Velocidade / 100 m; Atleta 3 → 200 m); sem erros de JS. Screenshot enviado.
+
 ### Etapa 50 — Gerador de atletas para todas as modalidades/eventos
 
 - O gerador deixou de criar só atletas de Atletismo/100 m e passou a **distribuir
@@ -1679,7 +1693,7 @@ tempo vence).
 | `formatAgeRestriction(ageRestriction)` | Texto da trava de idade (ou "Sem restrição").              |
 | `formatClubQuota(quota)`            | Texto da cota por clube (ou "Sem limite").                     |
 | `populateAthleteCountrySelect()`    | Preenche o seletor de países da aba Atletas.                    |
-| `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Clube atual**); com destaque, abre/rola até um atleta. |
+| `renderAthletes(countryId, highlightAthleteId?)` | Lista os atletas do país (inclui **Esporte/Modalidade/Evento favoritos** e **Clube atual**); com destaque, abre/rola até um atleta. |
 | `goToAthlete(athleteId)`            | Vai ao perfil do atleta (aba Atletas), abrindo/destacando o cartão. |
 | `populateClubCountrySelect()`       | Preenche o seletor de países da aba Clubes.                     |
 | `renderClubs(countryId)`            | Lista os clubes do país (link "Atletas do clube") e chama os agentes livres. |
