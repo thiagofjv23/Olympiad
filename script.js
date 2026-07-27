@@ -350,8 +350,60 @@ function formatAgeRestriction(ageRestriction) {
 function formatClubQuota(quota) {
   if (quota == null) return "Sem limite";
   return quota === 1
-    ? "1 atleta por clube por etapa"
-    : `${quota} atletas por clube por etapa`;
+    ? "1 atleta por clube por evento"
+    : `${quota} atletas por clube por evento`;
+}
+
+// Texto da COBERTURA (conteúdo) de um torneio: o que ele disputa.
+function formatCoverageText(championship) {
+  const coverage = championship.coverage;
+  if (!coverage) return "—";
+  switch (coverage.type) {
+    case "all":
+      return "Todos os esportes";
+    case "sport": {
+      const names = (coverage.ids || []).map((id) => {
+        const s = getSport(id);
+        return s ? s.name : id;
+      });
+      return `${names.join(", ")} (todas as modalidades)`;
+    }
+    case "modality": {
+      const names = (coverage.ids || []).map((id) => {
+        const m = getModality(id);
+        return m ? m.name : id;
+      });
+      return `Modalidades: ${names.join(", ")}`;
+    }
+    case "event": {
+      const names = (coverage.ids || []).map((id) => {
+        const e = getEvent(id);
+        return e ? e.name : id;
+      });
+      return `Provas: ${names.join(", ")}`;
+    }
+    default:
+      return "—";
+  }
+}
+
+// Texto do FORMATO de um torneio.
+function formatFormatText(championship) {
+  const format = championship.format;
+  if (!format) return "—";
+  const stageCount = championship.stages.length;
+  switch (format.type) {
+    case "single":
+      return "Etapa única";
+    case "league":
+      return `Liga (${format.rounds != null ? format.rounds : stageCount} etapas)`;
+    case "multiday":
+      return `Vários dias (${format.days != null ? format.days : stageCount})`;
+    case "knockout":
+      return `Mata-mata (${format.rounds != null ? format.rounds : stageCount} rodadas)`;
+    default:
+      return format.type;
+  }
 }
 
 function populateChampionshipSelect() {
@@ -375,6 +427,8 @@ function renderChampionship(id, highlightStage) {
   const scopeText = formatChampionshipScopeText(championship);
   const ageText = formatAgeRestriction(getChampionshipAgeRestriction(championship));
   const quotaText = formatClubQuota(getChampionshipClubQuota(championship));
+  const coverageText = formatCoverageText(championship);
+  const formatText = formatFormatText(championship);
   const eligibleCount = getChampionshipEligibleAthletes(championship).length;
 
   const stagesRows = championship.stages
@@ -425,6 +479,8 @@ function renderChampionship(id, highlightStage) {
       <p class="detail-card__id">ID: ${championship.id}</p>
       <ul class="detail-list">
         <li><span>Categoria</span><strong>${categoryName}</strong></li>
+        <li><span>Cobertura</span><strong>${coverageText}</strong></li>
+        <li><span>Formato</span><strong>${formatText}</strong></li>
         <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
         <li><span>Provas</span><strong>${championship.events.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
@@ -469,37 +525,47 @@ function renderChampionship(id, highlightStage) {
   }
 }
 
-// Mostra a classificação de uma etapa realizada (posição, atleta e resultado).
+// Mostra a classificação de uma etapa realizada, POR EVENTO. Uma etapa pode ter
+// vários eventos (ver tournaments.js); cada evento com resultado vira um bloco
+// (<details>) com a sua classificação (posição, atleta e resultado).
 function renderStageResults(championship, stage) {
   const panel = document.getElementById("stage-results");
   if (!panel) return;
 
-  const event = getStageEvent(championship, stage);
-  const eventName = event ? event.name : "—";
-  const results = getStageResult(championship, stage);
-  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number} · ${eventName}</h4>`;
+  const heading = `<h4 class="stage-results__title">Resultados — Etapa ${stage.number}</h4>`;
 
-  if (!results || results.length === 0) {
-    panel.innerHTML =
-      heading + `<p class="stage-results__empty">Sem participantes nesta etapa.</p>`;
-    return;
+  const blocks = [];
+  for (const event of getStageEvents(championship, stage)) {
+    const results = getStageEventResult(championship, stage, event);
+    if (!results || results.length === 0) continue; // evento sem resultado: omite
+
+    const rows = results
+      .map((entry) => {
+        const athlete = ATHLETES.find((a) => a.id === entry.id);
+        const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
+        const value = formatEventResult(entry.result, event);
+        return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
+      })
+      .join("");
+
+    const winner = ATHLETES.find((a) => a.id === results[0].id);
+    const winnerName = winner ? getAthleteName(winner) : `Atleta ${results[0].id}`;
+    blocks.push(`
+      <details class="stage-event">
+        <summary class="stage-event__summary">
+          <span class="stage-event__name">${event.name}</span>
+          <span class="stage-event__winner">${winnerName} · ${formatEventResult(results[0].result, event)}</span>
+        </summary>
+        <table class="results-table">
+          <thead><tr><th>Pos.</th><th>Atleta</th><th>Resultado</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </details>`);
   }
 
-  const rows = results
-    .map((entry) => {
-      const athlete = ATHLETES.find((a) => a.id === entry.id);
-      const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
-      const value = formatEventResult(entry.result, event);
-      return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
-    })
-    .join("");
-
-  panel.innerHTML =
-    heading +
-    `<table class="results-table">
-      <thead><tr><th>Pos.</th><th>Atleta</th><th>Resultado</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  panel.innerHTML = blocks.length
+    ? heading + blocks.join("")
+    : heading + `<p class="stage-results__empty">Sem resultados nesta etapa.</p>`;
 }
 
 // -----------------------------------------------------------------------------

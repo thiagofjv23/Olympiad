@@ -415,6 +415,13 @@ Regras a seguir sempre, salvo instrução em contrário:
     - **continent/world**: níveis de scope já previstos, mas a `eligibility.js` só
       aplica region/state/country/city hoje (falta geografia internacional).
 
+19cr. **UI dos torneios modulares (só UI).** A aba Campeonatos passou a mostrar
+    **Cobertura** e **Formato** do torneio, e os resultados de uma etapa passaram a
+    ser **por evento** (cada prova um `<details>` com vencedor no resumo). Escolhi
+    `<details>` por evento porque uma etapa pode ter muitas provas (ex.: 16) —
+    colapsar mantém a tela navegável e o resumo já dá o vencedor. Só `script.js` +
+    `styles.css` (`.stage-event`); nenhuma mecânica tocada.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

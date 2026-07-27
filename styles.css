@@ -947,6 +947,60 @@ button.day:not(.day--current):hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* Resultados por evento numa etapa (uma etapa pode ter vários eventos). */
+.stage-event {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.stage-event__summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  font-size: 0.9rem;
+}
+
+.stage-event__summary::-webkit-details-marker {
+  display: none;
+}
+
+.stage-event__summary::after {
+  content: "▸";
+  color: var(--muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.stage-event[open] .stage-event__summary::after {
+  transform: rotate(90deg);
+}
+
+.stage-event__summary:hover {
+  background: var(--accent-soft);
+}
+
+.stage-event__name {
+  font-weight: 600;
+}
+
+.stage-event__winner {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.stage-event .results-table {
+  margin: 2px 12px 10px;
+  width: auto;
+  min-width: calc(100% - 24px);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14161c;

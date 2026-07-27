@@ -1033,6 +1033,24 @@ tempo vence).
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 53 — UI dos torneios modulares (cobertura, formato, resultados por evento)
+
+- A aba **Campeonatos** passou a refletir o modelo modular:
+  - o card do torneio mostra **Cobertura** (o que disputa — ex.: "Atletismo (todas
+    as modalidades)"; "Todos os esportes"; modalidades/provas) e **Formato** (ex.:
+    "Liga (10 etapas)", "Etapa única", "Vários dias (N)", "Mata-mata (N rodadas)"),
+    via `formatCoverageText`/`formatFormatText`.
+  - os **resultados de uma etapa** agora são **por evento**: ao clicar em "Ver",
+    cada prova disputada vira um bloco `<details>` (nome do evento + vencedor no
+    resumo; a classificação completa ao expandir). `renderStageResults` percorre
+    `getStageEvents` e usa `getStageEventResult`.
+- **Só UI**: `script.js` (helpers + render) e `styles.css` (`.stage-event`).
+  Nenhuma mecânica tocada.
+- **Verificado** (navegador headless): o CNA mostra Cobertura "Atletismo (todas as
+  modalidades)" e Formato "Liga (10 etapas)"; ao ver a etapa 1, aparecem 16 blocos
+  de eventos com resultado (100 m, 200 m, …), cada um com vencedor e tempo; sem
+  erros de JS. Screenshot enviado.
+
 ### Etapa 52 — Torneios modulares: gerador universal (coverage + format + scope)
 
 - Novo **gerador universal** (`tournaments.js`): um torneio é montado por três
@@ -1744,8 +1762,9 @@ tempo vence).
 | `renderDayDetail(date)`             | Monta a lista de eventos (ou a mensagem de vazio) do dia.      |
 | `goToEvent(champId, stageNumber)`   | Vai para o evento na aba Campeonatos e destaca a etapa.        |
 | `populateChampionshipSelect()`      | Preenche o seletor de campeonatos.                             |
-| `renderChampionship(id, highlight?)`| Mostra os dados do campeonato (categoria, atletas elegíveis, card **Regras de Inscrição** com abrangência/idade/cota, etapas com status e link "Ver"); destaca opcionalmente. |
-| `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa (posição, atleta, resultado). |
+| `renderChampionship(id, highlight?)`| Mostra os dados do torneio (categoria, **Cobertura**, **Formato**, atletas elegíveis, provas, card **Regras de Inscrição** com abrangência/idade/cota, etapas com status e link "Ver"); destaca opcionalmente. |
+| `formatCoverageText` / `formatFormatText` | Textos da cobertura (conteúdo) e do formato do torneio para a UI. |
+| `renderStageResults(championship, stage)` | Mostra a classificação de uma etapa **por evento** (cada prova é um `<details>` com vencedor + classificação). |
 | `refreshChampionshipView()`         | Reavalia o campeonato exibido após a passagem de tempo.        |
 | `refreshDayDetail()`                | Reavalia o detalhe do dia aberto após a passagem de tempo.     |
 | `formatCityLocation(city)`          | Texto da cidade com a hierarquia: `Cidade — SIGLA · Região`.    |
