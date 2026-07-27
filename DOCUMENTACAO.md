@@ -788,13 +788,16 @@ event)`, `computeResult(athlete, event)` (o tempo), `formatTime(seconds)` /
 `format(value, event)` e `resolve(athletes, event)` (ranqueia pela
 `ResultsEngine`, menor tempo vence).
 
-**Exibição do tempo (h:m:s.mmm).** O resultado é mostrado em **notação de
-relógio**, com apenas as unidades necessárias e sempre em **milésimos** de
-segundo: abaixo de 1 min → `9.809`; abaixo de 1 h → `1:43.475`; a partir de
-1 h → `2:03:09.799`. `formatTime` trabalha em milissegundos **inteiros**, então
-o arredondamento não "vaza" entre unidades (ex.: `59,9997 s` → `1:00.000`). Para
-isso o `precision` da resolução das provas de tempo é **3** (o valor é guardado
-em milésimos). Sem sufixo de unidade — a própria notação já se descreve.
+**Exibição do tempo (h:m:s.cc).** O resultado é mostrado em **notação de
+relógio**, com apenas as unidades necessárias e em **centésimos** de segundo
+(2 casas): abaixo de 1 min → `9.81`; abaixo de 1 h → `1:43.48`; a partir de
+1 h → `2:03:09.80`. `formatTime` arredonda a partir dos **milésimos guardados**
+(inteiros), então o arredondamento não "vaza" entre unidades (ex.: `59,997 s` →
+`1:00.00`). O `precision` da resolução das provas de tempo continua **3**: o tempo
+é guardado/ordenado em **milésimos** — a 3ª casa é a granularidade **interna**,
+usada como **critério de desempate** (dois tempos iguais nos centésimos podem ser
+separados pelo milésimo), sem que o jogador veja a 3ª casa. Sem sufixo de unidade
+— a própria notação já se descreve.
 
 ---
 
@@ -1040,6 +1043,26 @@ em milésimos). Sem sufixo de unidade — a própria notação já se descreve.
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 56 — Tempo exibido em centésimos (milésimos só para desempate)
+
+- A pedido, a **exibição** dos tempos passou de milésimos (3 casas) para
+  **centésimos** (2 casas): `9.81`, `1:43.48`, `2:03:09.80`. Mais limpo para o
+  jogador.
+- Os **milésimos não somem**: o tempo continua guardado/ordenado com
+  `precision: 3` — a 3ª casa vira granularidade **interna**, usada como
+  **critério de desempate**. Dois tempos iguais nos centésimos podem terminar em
+  posições diferentes pelo milésimo (ex.: `9.808` à frente de `9.812`, ambos
+  exibidos `9.81`); e tempos iguais no milésimo seguem empatando de fato.
+- Só `TimeResultSystem.formatTime` mudou (arredonda dos milésimos guardados para
+  centésimos, em inteiros, para o arredondamento não vazar entre unidades). A
+  ordenação/mecânica e todos os demais atributos ficaram **intactos**.
+- **Escopo**: `timeResultSystem.js` (exibição) e comentários em `events.js`.
+  Nenhuma regra, atributo ou precisão de armazenamento alterada.
+- **Verificado** (Node + navegador headless): 12 casos de `formatTime` corretos
+  (incl. limites de arredondamento e horas); desempate confirmado ponta-a-ponta
+  (`9.808`×2 empatam em 1º, `9.812` em 3º, todos exibem `9.81`); no jogo, a etapa
+  1 do CNA mostra 100 m `9.87`, 800 m `1:43.78`, 5000 m `12:47.96`; sem erros de JS.
 
 ### Etapa 55 — Tempos exibidos como h:m:s.mmm (mais apresentáveis)
 

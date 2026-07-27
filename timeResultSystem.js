@@ -36,8 +36,9 @@ const TimeResultSystem = {
   label: "Tempo",
 
   // Parâmetros de ordenação padrão: prova de TEMPO, MENOR tempo vence.
-  // `precision: 3` = o tempo é guardado/arredondado em MILÉSIMOS de segundo (a
-  // granularidade que a exibição h:m:s.mmm mostra ao jogador — ver `format`).
+  // `precision: 3` = o tempo é guardado/ordenado em MILÉSIMOS de segundo. Essa 3ª
+  // casa é a granularidade INTERNA (ordenação/desempate); a exibição arredonda
+  // para CENTÉSIMOS (2 casas) — ver `formatTime`.
   DEFAULT_RESOLUTION: {
     metric: ResultsEngine.METRICS.TIME,
     order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
@@ -105,29 +106,32 @@ const TimeResultSystem = {
 
   // Formata um tempo (em SEGUNDOS) como relógio, mostrando só as unidades
   // necessárias — a forma padrão dos esportes, mais apresentável ao jogador:
-  //   - abaixo de 1 min → "S.mmm"         (ex.: 9.580)
-  //   - abaixo de 1 h   → "M:SS.mmm"      (ex.: 1:40.910, 3:26.000)
-  //   - a partir de 1 h → "H:MM:SS.mmm"   (ex.: 2:00:35.000)
-  // Sempre com MILÉSIMOS (3 casas). Trabalha em milissegundos INTEIROS para o
-  // arredondamento não "vazar" entre as unidades (ex.: 59,9997 s → 1:00.000, e
-  // não 60.000). Genérico: serve qualquer prova de tempo (corrida, natação,
-  // maratona, marcha…).
+  //   - abaixo de 1 min → "S.cc"          (ex.: 9.81)
+  //   - abaixo de 1 h   → "M:SS.cc"       (ex.: 1:40.91, 3:26.00)
+  //   - a partir de 1 h → "H:MM:SS.cc"    (ex.: 2:00:35.00)
+  // A EXIBIÇÃO usa CENTÉSIMOS (2 casas). Os MILÉSIMOS não somem: ficam na lógica
+  // interna (o valor é guardado com `precision: 3`) e servem de critério de
+  // DESEMPATE na ordenação — dois tempos iguais nos centésimos podem ser
+  // separados pelo milésimo, sem que o jogador veja a 3ª casa. Arredonda a partir
+  // dos milésimos guardados (inteiros) e trabalha em centésimos inteiros para o
+  // arredondamento não "vazar" entre as unidades (ex.: 59,997 s → 1:00.00, e não
+  // 60.00). Genérico: serve qualquer prova de tempo (corrida, natação, marcha…).
   formatTime(seconds) {
     if (seconds == null || Number.isNaN(seconds)) return "—";
-    const totalMs = Math.max(0, Math.round(seconds * 1000));
-    const h = Math.floor(totalMs / 3600000);
-    const m = Math.floor((totalMs % 3600000) / 60000);
-    const s = Math.floor((totalMs % 60000) / 1000);
-    const ms = totalMs % 1000;
+    const totalMs = Math.max(0, Math.round(seconds * 1000)); // milésimos guardados
+    const totalCs = Math.round(totalMs / 10); // → centésimos, só para exibir
+    const h = Math.floor(totalCs / 360000);
+    const m = Math.floor((totalCs % 360000) / 6000);
+    const s = Math.floor((totalCs % 6000) / 100);
+    const cs = totalCs % 100;
     const pad2 = (n) => String(n).padStart(2, "0");
-    const msStr = String(ms).padStart(3, "0");
-    if (h > 0) return `${h}:${pad2(m)}:${pad2(s)}.${msStr}`;
-    if (m > 0) return `${m}:${pad2(s)}.${msStr}`;
-    return `${s}.${msStr}`;
+    if (h > 0) return `${h}:${pad2(m)}:${pad2(s)}.${pad2(cs)}`;
+    if (m > 0) return `${m}:${pad2(s)}.${pad2(cs)}`;
+    return `${s}.${pad2(cs)}`;
   },
 
-  // Formata um resultado de tempo para exibição (ex.: "9.580", "1:40.910",
-  // "2:00:35.000"). Delega a `formatTime` — a notação de relógio já se descreve
+  // Formata um resultado de tempo para exibição (ex.: "9.81", "1:40.91",
+  // "2:00:35.00"). Delega a `formatTime` — a notação de relógio já se descreve
   // (sem sufixo de unidade). `event` fica na assinatura por compatibilidade.
   format(value, event) {
     return this.formatTime(value);

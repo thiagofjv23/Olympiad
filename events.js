@@ -58,7 +58,7 @@ function makeTimeEvent(id, name, modalityId, recordTime, secondsPerStrengthPoint
       metric: ResultsEngine.METRICS.TIME,
       order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
       aggregation: ResultsEngine.AGGREGATIONS.SINGLE,
-      precision: 3, // milésimos de segundo (exibidos como h:m:s.mmm)
+      precision: 3, // milésimos: granularidade interna (desempate); exibe centésimos
     },
     time: { recordTime, secondsPerStrengthPoint },
   };
@@ -77,7 +77,7 @@ const EVENTS = {
       metric: ResultsEngine.METRICS.TIME,
       order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
       aggregation: ResultsEngine.AGGREGATIONS.SINGLE,
-      precision: 3, // milésimos de segundo (exibidos como h:m:s.mmm)
+      precision: 3, // milésimos: granularidade interna (desempate); exibe centésimos
     },
     // Parâmetros DESTA prova para o TimeResultSystem. Só o recorde (piso) é
     // próprio dos 100 m; o resto usa os defaults do sistema (secondsPerStrength
