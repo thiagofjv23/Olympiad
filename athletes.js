@@ -16,9 +16,16 @@
 //                            resolução de resultados. Inicial, ganho e queda
 //                            dependem da Preparação Física.
 //   - birthCityId          : cidade de nascimento (ver cities.js)
-//   - favoriteSportId      : esporte favorito (ver sports.js) — a ligação do
-//                            atleta com um esporte. Todo regen recebe um ao ser
-//                            gerado; neste início, todos têm Atletismo.
+//   - favoriteSportId      : esporte favorito (ver sports.js)
+//   - favoriteModalityId   : modalidade favorita (ver modalities.js) — a
+//                            modalidade em que o atleta compete
+//   - favoriteEventId      : evento favorito (ver events.js) — o TIPO de prova
+//                            específico em que o atleta compete
+//
+// O trio esporte/modalidade/evento favoritos define ONDE o atleta compete: ele
+// compete apenas naquela modalidade e naquele tipo de evento. São guardados como
+// ids (mesmo padrão de `favoriteSportId`) e resolvidos por helpers. O gerador
+// distribui os atletas por TODOS os eventos existentes (ver generateAthletes).
 //
 // O nome exibido combina o label com o código do COI do país,
 // por exemplo: "Atleta 1 (BRA)".
@@ -27,16 +34,14 @@
 // Capacidade máxima do gerador (faixa de idade que ele consegue produzir).
 const ATHLETE_AGE_LIMITS = { min: 12, max: 40 };
 
-// Esporte favorito atribuído a todo regen no início. Por enquanto todos os
-// atletas nascem com o Atletismo como favorito (ver sports.js).
-// TODO: variar o esporte favorito entre os regens depois (ver TODO.md).
-const INITIAL_FAVORITE_SPORT_ID = "SPT-ATLETISMO";
-
 // Configuração de geração usada nos testes atuais.
-// TODO: `count` e a faixa de idade abaixo são apenas para testes — tornar
-// configuráveis/dinâmicos depois (ver TODO.md).
+// TODO: `athletesPerEvent` e a faixa de idade abaixo são apenas para testes —
+// tornar configuráveis/dinâmicos depois (ver TODO.md).
 const ATHLETE_GENERATION_CONFIG = {
-  count: 100, // quantidade gerada por simulação (apenas para testes)
+  // Quantos atletas o gerador cria PARA CADA EVENTO existente, de modo que TODAS
+  // as modalidades/eventos tenham atletas. Total = athletesPerEvent × nº de
+  // eventos. (Apenas para testes.)
+  athletesPerEvent: 2,
   minAge: 18, // faixa deste exemplo inicial (gerador suporta 12-40)
   maxAge: 35,
 };
@@ -138,6 +143,16 @@ function getAthleteName(athlete) {
 // esporte referenciado não existir.
 function getAthleteFavoriteSport(athlete) {
   return getSport(athlete.favoriteSportId);
+}
+
+// Modalidade favorita do atleta (objeto de modalities.js) — onde ele compete.
+function getAthleteFavoriteModality(athlete) {
+  return getModality(athlete.favoriteModalityId);
+}
+
+// Evento favorito do atleta (objeto de events.js) — o tipo de prova em que compete.
+function getAthleteFavoriteEvent(athlete) {
+  return getEvent(athlete.favoriteEventId);
 }
 
 // -----------------------------------------------------------------------------
@@ -326,7 +341,9 @@ function randomBirthCityId(countryId) {
   return cities[cities.length - 1].id;
 }
 
-function createAthlete(index, country) {
+// Cria um atleta cujo esporte/modalidade/evento favorito é o `event` informado
+// (e a sua `modality`). O trio define onde o atleta compete.
+function createAthlete(index, country, event, modality) {
   const age = randomInt(
     ATHLETE_GENERATION_CONFIG.minAge,
     ATHLETE_GENERATION_CONFIG.maxAge
@@ -351,7 +368,10 @@ function createAthlete(index, country) {
     label: `Atleta ${index}`,
     countryId: country.id,
     birthCityId,
-    favoriteSportId: INITIAL_FAVORITE_SPORT_ID, // por ora, todos: Atletismo
+    // Trio favorito (esporte ← modalidade ← evento): onde o atleta compete.
+    favoriteSportId: modality ? modality.sportId : null,
+    favoriteModalityId: event.modalityId,
+    favoriteEventId: event.id,
     age,
     strength,
     potential,
@@ -361,16 +381,22 @@ function createAthlete(index, country) {
   };
 }
 
-// Gera `count` atletas do país informado e substitui a lista atual.
+// Gera atletas para TODAS as modalidades e eventos: para CADA evento existente
+// (ver events.js) cria `athletesPerEvent` atletas cujo esporte/modalidade/evento
+// favorito é aquele — garantindo que todo evento tenha atletas. Substitui a lista.
 // Chamado ao iniciar a simulação.
 function generateAthletes(
-  count = ATHLETE_GENERATION_CONFIG.count,
-  countryId = "BRA"
+  countryId = "BRA",
+  athletesPerEvent = ATHLETE_GENERATION_CONFIG.athletesPerEvent
 ) {
   const country = getCountry(countryId);
   const list = [];
-  for (let i = 1; i <= count; i++) {
-    list.push(createAthlete(i, country));
+  let index = 1;
+  for (const event of Object.values(EVENTS)) {
+    const modality = getModality(event.modalityId);
+    for (let k = 0; k < athletesPerEvent; k++) {
+      list.push(createAthlete(index++, country, event, modality));
+    }
   }
   ATHLETES = list;
   return list;

@@ -354,6 +354,29 @@ Regras a seguir sempre, salvo instrução em contrário:
       disputáveis) — elas usarão Distance/Height/Points quando esses sistemas
       existirem.
 
+19co. **Gerador por evento: N atletas para cada evento (cobertura total) + trio
+    favorito.** A pedido ("gerar atletas para todas as modalidades e eventos"),
+    troquei a geração por CONTAGEM (100 atletas, todos Atletismo) por geração
+    **por evento**: para cada evento de `events.js`, N atletas (`athletesPerEvent`,
+    hoje 2). Decisões:
+    - **N por evento em vez de random sobre o total**: garante que **todo** evento
+      tenha atletas (era o pedido explícito). Como efeito, o nº de atletas por
+      esporte segue o nº de eventos daquele esporte (Atletismo, com mais provas,
+      tem mais atletas) — distribuição natural, sem precisar ponderar por
+      popularidade agora.
+    - **Trio favorito coerente derivado do evento**: `favoriteEventId` define
+      `favoriteModalityId` (a modalidade do evento) e `favoriteSportId` (o esporte
+      da modalidade). Guardado como ids + helpers, no mesmo padrão de
+      `favoriteSportId` (a pedido). Removi `INITIAL_FAVORITE_SPORT_ID`.
+    - **Não wireei a restrição na participação**: os campos "servem para o atleta
+      competir só naquele evento", mas fazer a participação respeitar isso mexe em
+      outra mecânica (e depende de o campeonato aceitar vários eventos) — deixei
+      para a etapa de **expandir os campeonatos** (a pedido, registrada no
+      `TODO.md`). Por isso o CNA segue disputando os 100 m com todos os contratados
+      (comportamento inalterado).
+    - **`athletesPerEvent = 2` é número de teste** (total ~380). Fácil de ajustar;
+      registrado no `TODO.md`.
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

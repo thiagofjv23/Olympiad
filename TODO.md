@@ -134,11 +134,12 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 
 ## Atletas (regens)
 
-- [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos **100**
-      atletas ao iniciar a simulação (`ATHLETE_GENERATION_CONFIG.count` em
-      `athletes.js`), distribuídos entre clubes e agentes livres pelo seed de
-      teste. Esse número é apenas para nossos testes — depois precisará mudar
-      (provavelmente derivado dos campeonatos/países/vagas).
+- [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos
+      **`athletesPerEvent` (2) atletas por evento** (`ATHLETE_GENERATION_CONFIG` em
+      `athletes.js`) → ~380 atletas, cobrindo todos os eventos; distribuídos entre
+      clubes e agentes livres pelo seed de teste. Esse número é apenas para nossos
+      testes — depois precisará mudar (provavelmente derivado dos campeonatos/
+      países/vagas).
 - [ ] **Faixa de idade do exemplo inicial.** O gerador suporta **12–40 anos**
       (`ATHLETE_AGE_LIMITS`), mas neste exemplo geramos só **18–35**
       (`ATHLETE_GENERATION_CONFIG.minAge/maxAge`). Rever depois.
@@ -159,11 +160,14 @@ existe para ancorar os portes Regional e Estadual. Pendências:
       país + atributos básicos — **sem cidades/clubes/atletas** ainda; por isso
       todos os atletas seguem brasileiros. Ao dar cidades/clubes à Argentina,
       gerar e distribuir a origem dos seus atletas.
-- [ ] **Variar o esporte favorito dos regens.** O campo `favoriteSportId` já
-      existe e é atribuído na geração (`INITIAL_FAVORITE_SPORT_ID` em
-      `athletes.js`), mas por ora **todos nascem com Atletismo**. Depois, sortear
-      entre os esportes (provavelmente ponderando por popularidade). Estender a
-      ligação também para **modalidades** (modalidade favorita/praticada).
+- [x] **Trio favorito dos regens (esporte + modalidade + evento).** Feito: o
+      gerador distribui os atletas por **todos os eventos** (`generateAthletes`
+      cria N por evento), e cada atleta guarda `favoriteSportId`,
+      `favoriteModalityId` e `favoriteEventId` (coerentes) — define onde compete.
+      **Falta** a participação **respeitar** o evento favorito (o atleta competir
+      só nele) — ligado à expansão dos campeonatos (item abaixo). Uma distribuição
+      **ponderada** (por popularidade do esporte/modalidade), em vez de N por
+      evento, pode ser considerada depois.
 - [x] **Esporte favorito na UI de Atletas.** Feito: exibido como linha "Esporte
       favorito" ao expandir o atleta (`<details>`).
 
@@ -290,10 +294,14 @@ modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só 
 - [x] **UI de resultados de uma etapa.** Feito: na aba Campeonatos, a etapa
       realizada tem o link "Ver" que abre a classificação (posição, atleta,
       resultado).
-- [ ] **Evento por etapa.** Hoje todas as etapas do campeonato disputam o **mesmo**
-      evento (o primeiro de `championship.events`, `getStageEvent`). Depois,
-      permitir que cada etapa seja uma prova diferente (vários eventos ao longo do
-      campeonato).
+- [ ] **Expandir os campeonatos para múltiplas modalidades/eventos.** Hoje um
+      campeonato roda **um** evento por etapa (o primeiro de `championship.events`,
+      `getStageEvent`). Precisamos que um campeonato aceite **várias modalidades/
+      eventos** (ex.: um campeonato de Atletismo com 100 m, salto, etc.), e que a
+      participação passe a **respeitar o evento favorito** de cada atleta (o atleta
+      compete só na sua modalidade/evento — os campos `favoriteModalityId`/
+      `favoriteEventId` já existem no atleta). **Ainda não mexer** — próximo passo
+      combinado. Engloba também o item "Evento por etapa".
 - [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
       `participation.js`: `getStageParticipants` define quem disputa cada etapa
       (regra de teste "todos os contratados via clube"), o **resultado é resolvido

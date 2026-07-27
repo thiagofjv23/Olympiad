@@ -219,11 +219,22 @@ Gerador de "regens" (atletas gerados). Lista viva em `ATHLETES`. Cada atleta:
 | `fatigue`             | **Cansaço** (%), inicia em 100.                                  |
 | `ritmo`               | **Ritmo/forma** (0–100). Começa **intermediário** no início do ano, **sobe** ao competir e **cai** parado. **Modifica a resolução de resultados** (redutor de forma). Inicial/ganho/queda dependem da Preparação Física. |
 | `birthCityId`         | **Cidade de nascimento** (ver `cities.js`), sorteada entre as cidades do país **ponderando pelo tamanho** (cidade maior → mais atletas). |
-| `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — a ligação do atleta com um esporte. Todo regen recebe um ao ser gerado; neste início, **todos têm Atletismo** (`SPT-ATLETISMO`). |
+| `favoriteSportId`     | **Esporte favorito** (ver `sports.js`) — o esporte em que o atleta compete. |
+| `favoriteModalityId`  | **Modalidade favorita** (ver `modalities.js`) — a modalidade em que compete. |
+| `favoriteEventId`     | **Evento favorito** (ver `events.js`) — o **tipo de prova** específico em que compete. |
+
+O **trio favorito** (esporte ← modalidade ← evento) é coerente (o evento pertence
+à modalidade, que pertence ao esporte) e define **onde o atleta compete** (só
+naquela modalidade e naquele evento). Guardado como ids (mesmo padrão de
+`favoriteSportId`), resolvido por helpers. **Uso pela participação (competir só no
+evento favorito) é futuro** — ver `TODO.md` (expandir campeonatos para múltiplas
+modalidades/eventos).
 
 Nome exibido = `label` + código do COI do país, ex.: **`Atleta 1 (BRA)`**
-(via `getAthleteName(athlete)`). O esporte favorito é resolvido por
-`getAthleteFavoriteSport(athlete)` (objeto de `sports.js`).
+(via `getAthleteName(athlete)`). O trio favorito é resolvido por
+`getAthleteFavoriteSport(athlete)`, `getAthleteFavoriteModality(athlete)` e
+`getAthleteFavoriteEvent(athlete)` (objetos de `sports.js`/`modalities.js`/
+`events.js`).
 
 Regras de geração:
 
@@ -275,10 +286,15 @@ Regras de geração:
   - **Efeito na resolução**: ver a modalidade (redutor de forma somado ao da
     fadiga) — abaixo, e sem remover Força/fadiga.
 
-Função principal: `generateAthletes(count?, countryId?)` — gera os atletas e
-substitui `ATHLETES`. Chamada ao **iniciar a simulação**.
+Função principal: `generateAthletes(countryId?, athletesPerEvent?)` — gera atletas
+para **todos os eventos** existentes (para cada evento de `events.js`, cria
+`athletesPerEvent` atletas cujo trio favorito é aquele evento/modalidade/esporte),
+garantindo que **toda modalidade/evento tenha atletas**. Substitui `ATHLETES`.
+Chamada ao **iniciar a simulação**. Total = `athletesPerEvent × nº de eventos`
+(hoje 2 × 190 = **380**). O número de esportes por atleta segue a distribuição de
+eventos (Atletismo, com mais eventos, tem mais atletas).
 
-> Números de teste (100 atletas, idade 18–35) e a lógica de evolução de
+> Números de teste (`athletesPerEvent = 2`, idade 18–35) e a lógica de evolução de
 > Força/Potencial estão registrados em `TODO.md`.
 
 ### Clubes — `clubs.js`
@@ -990,6 +1006,29 @@ tempo vence).
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 50 — Gerador de atletas para todas as modalidades/eventos
+
+- O gerador deixou de criar só atletas de Atletismo/100 m e passou a **distribuir
+  por TODOS os eventos**: para cada evento de `events.js` cria `athletesPerEvent`
+  atletas (hoje **2**), garantindo que **toda modalidade/evento tenha atletas**.
+  Total 2 × 190 = **380** atletas (número de teste).
+- **Trio favorito** em todo atleta: `favoriteSportId` (existente) + os novos
+  `favoriteModalityId` e `favoriteEventId` — no **mesmo padrão** (ids +
+  helpers `getAthleteFavoriteModality`/`getAthleteFavoriteEvent`). O evento define
+  a modalidade e o esporte (trio coerente). Servem para o atleta competir **apenas
+  naquela modalidade e naquele evento** (uso pela participação é **futuro** — ver
+  `TODO.md`).
+- **`generateAthletes(countryId?, athletesPerEvent?)`**: passou de contagem total
+  para geração **por evento** (`createAthlete` recebe o evento/modalidade). Removida
+  a constante `INITIAL_FAVORITE_SPORT_ID` (não mais usada).
+- **Escopo**: só `athletes.js`. **Participação/elegibilidade não foram tocadas** —
+  a restrição "compete só no evento favorito" virá com a expansão dos campeonatos
+  (registrada no `TODO.md`). O CNA segue disputando os 100 m com os contratados.
+- **Verificado** (navegador headless): 380 atletas, **trio completo e coerente**
+  em todos (evento→modalidade→esporte), **os 190 eventos cobertos**, 36 esportes
+  representados (Atletismo com 54); o CNA resolve e os rankings populam (290
+  atletas competindo); sem erros de JS.
 
 ### Etapa 49 — Parametrização das provas de tempo do Atletismo
 
