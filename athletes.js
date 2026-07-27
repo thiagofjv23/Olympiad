@@ -41,7 +41,7 @@ const ATHLETE_GENERATION_CONFIG = {
   // Quantos atletas o gerador cria PARA CADA EVENTO existente, de modo que TODAS
   // as modalidades/eventos tenham atletas. Total = athletesPerEvent × nº de
   // eventos. (Apenas para testes.)
-  athletesPerEvent: 2,
+  athletesPerEvent: 100,
   minAge: 18, // faixa deste exemplo inicial (gerador suporta 12-40)
   maxAge: 35,
 };
