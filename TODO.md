@@ -294,14 +294,23 @@ modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só 
 - [x] **UI de resultados de uma etapa.** Feito: na aba Campeonatos, a etapa
       realizada tem o link "Ver" que abre a classificação (posição, atleta,
       resultado).
-- [ ] **Expandir os campeonatos para múltiplas modalidades/eventos.** Hoje um
-      campeonato roda **um** evento por etapa (o primeiro de `championship.events`,
-      `getStageEvent`). Precisamos que um campeonato aceite **várias modalidades/
-      eventos** (ex.: um campeonato de Atletismo com 100 m, salto, etc.), e que a
-      participação passe a **respeitar o evento favorito** de cada atleta (o atleta
-      compete só na sua modalidade/evento — os campos `favoriteModalityId`/
-      `favoriteEventId` já existem no atleta). **Ainda não mexer** — próximo passo
-      combinado. Engloba também o item "Evento por etapa".
+- [x] **Torneios modulares (coverage + format + scope).** Feito: gerador universal
+      `tournaments.js` — um torneio abrange evento/modalidade/esporte/vários/todos
+      (**coverage**), roda em single/league/multiday/knockout (**format**) e tem
+      trava geográfica escolhível (**scope**). Etapas carregam seus eventos; a
+      participação resolve **cada evento** e respeita o **evento favorito** do
+      atleta. Existentes adaptados (Atletismo, todas as provas). **Pendências**:
+      (a) **mata-mata** — a lógica de CHAVE (quem avança) ainda é estrutural
+      (resolve por ranking); (b) **scope continental/world** na `eligibility.js`
+      (depende de geografia internacional); (c) **UI** mostrar coverage/format e
+      resultados por evento (próxima etapa deste trabalho); (d) **campos por evento
+      na etapa** já suportam provas diferentes por dia (multiday) — usar em torneios
+      reais quando quiser.
+- [ ] **Tamanho dos grids depende de `athletesPerEvent`.** Com o filtro de evento
+      favorito, cada evento é disputado só por quem o tem como favorito; com
+      `athletesPerEvent = 2` (teste) e cota, os grids ficam pequenos. Ajustar o
+      número de atletas por evento (ou a distribuição) quando quiser competições
+      mais cheias.
 - [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
       `participation.js`: `getStageParticipants` define quem disputa cada etapa
       (regra de teste "todos os contratados via clube"), o **resultado é resolvido

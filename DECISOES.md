@@ -384,6 +384,37 @@ Regras a seguir sempre, salvo instrução em contrário:
     novo, sem tocar em mecânica. Rotulei "favorita/favorito" para casar com
     "Esporte favorito" (o trio = onde o atleta compete).
 
+19cq. **Torneios modulares: três eixos independentes (coverage/format/scope) +
+    gerador universal.** A pedido ("torneios modulares, flexíveis"), separei o que
+    um torneio É em três eixos ortogonais: **coverage** (o que disputa),
+    **format** (como roda) e **scope** (trava geográfica). Decisões:
+    - **Gerador único `buildTournament(config)`** (em `tournaments.js`, novo) em vez
+      de databases à mão: criar qualquer torneio (de 1 evento até "todos" =
+      Olimpíadas; single/league/multiday/knockout; regional→mundial) é uma chamada
+      de config. Facilita manter e estender.
+    - **Etapa passou a carregar seus eventos** (`stage.events`): é o formato que
+      decide quais provas rodam em cada etapa/dia (ex.: multiday distribui as provas
+      pelos dias). A `participation` resolve **cada evento** da etapa.
+    - **Filtro de evento favorito**: num torneio multi-evento, cada evento é
+      disputado só por quem o tem como favorito — é o uso pretendido dos campos do
+      atleta (criados antes) e o que torna o multi-evento coerente (senão todo mundo
+      correria tudo). Cota virou **por evento**.
+    - **`sportId` saiu do campeonato**: o esporte é derivado da coverage
+      (`getChampionshipSports`), pois um torneio pode ser multiesporte. Mantive
+      `getChampionshipSport` retornando o único (ou `undefined`).
+    - **Existentes = Atletismo, tudo, formato liga** (a pedido, simplificação):
+      mantive ids e a cadência de 10 etapas mensais; cada etapa virou um "encontro"
+      com todas as provas do Atletismo (estilo Diamond League).
+    - **Mata-mata só estrutural por ora**: gero as rodadas, mas a resolução usa o
+      ranking padrão; a lógica de chave (quem enfrenta quem, quem avança) fica para
+      quando existir o MatchResultSystem (registrado no `TODO.md`).
+    - **Fontes dos formatos reais** (documentadas): Diamond League (liga de etapas
+      com várias provas e pontos que somam); programa do Atletismo nos Jogos
+      Olímpicos e no Campeonato Mundial de Atletismo (multiday — provas por dia);
+      chaves do tênis (Grand Slam) e das lutas/boxe/judô olímpicos (mata-mata).
+    - **continent/world**: níveis de scope já previstos, mas a `eligibility.js` só
+      aplica region/state/country/city hoje (falta geografia internacional).
+
 ### Contratos (elo Atleta ↔ Clube)
 
 19s. **Contratos num módulo próprio (`contracts.js`), guardando o elo em si.** Em

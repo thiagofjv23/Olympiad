@@ -21,7 +21,8 @@ campeonatos esportivos, cujas etapas aparecem marcadas nas datas certas.
 | `styles.css`        | Toda a aparência (tema claro/escuro automático).                        |
 | `script.js`         | Lógica da UI: calendário, passagem de tempo, abas, cliques e detalhes.  |
 | `countries.js`      | **Entidade Países** (dados). Ex.: Brasil.                               |
-| `championships.js`  | **Entidade Campeonatos** (dados) + cálculo das etapas.                  |
+| `championships.js`  | **Entidade Campeonatos** (dados/helpers) + cálculo das etapas.           |
+| `tournaments.js`    | **Gerador universal de torneios** — coverage (conteúdo) + format + scope. |
 | `athletes.js`       | **Entidade Atletas** (dados) + gerador de "regens".                     |
 | `clubs.js`          | **Entidade Clubes** (database inicial de clubes reais).                 |
 | `contracts.js`      | **Entidade Contratos** — o elo Atleta ↔ Clube (assinatura/renovação).  |
@@ -59,16 +60,18 @@ Ordem de carregamento dos scripts (importa, pois são globais):
 `countries.js` → `regions.js` → `states.js` → `cities.js` → `sports.js` →
 `resultsEngine.js` → `timeResultSystem.js` → `modalities.js` → `events.js` →
 `competitionCategories.js` →
-`championships.js` → `athletes.js` → `clubs.js` → `contracts.js` →
+`championships.js` → `tournaments.js` → `athletes.js` → `clubs.js` →
+`contracts.js` →
 `eligibility.js` → `ranking.js` → `marksRanking.js` → `participation.js` →
 `script.js`. (`regions.js`/`states.js` vêm antes de `cities.js`, pois a cidade
 referencia o estado e o estado referencia a região; `timeResultSystem.js` vem
 depois de `resultsEngine.js` (usa a `ResultsEngine`) e antes de `events.js`, que
 o registra e despacha para ele; `events.js` vem depois de
 `modalities.js` e `resultsEngine.js`, pois o evento referencia a modalidade
-(`getModality`) e usa a `ResultsEngine`; `championships.js` já vem depois de
-`regions.js`/`states.js`/`cities.js` porque **gera** os campeonatos
-geográficos a partir da geografia; `competitionCategories.js` vem antes de
+(`getModality`) e usa a `ResultsEngine`; `tournaments.js` vem depois de
+`championships.js` (usa `CHAMPIONSHIPS`/`nthSaturday`) e de `events.js`/`states`/
+`regions`/`cities` — é ele que **gera** o calendário (Nacional + Estaduais +
+Regionais); `competitionCategories.js` vem antes de
 `championships.js`, pois o campeonato referencia a categoria; `contracts.js` vem
 depois de `athletes.js`, `clubs.js` e `championships.js` porque referencia
 `getClub` e `toDayStart`; `eligibility.js`, `ranking.js` e `marksRanking.js` vêm
@@ -98,53 +101,48 @@ Função utilitária: `getCountry(id)`.
 
 ### Campeonatos — `championships.js`
 
-Objeto `CHAMPIONSHIPS` indexado por `id`. Cada campeonato:
+Objeto `CHAMPIONSHIPS` indexado por `id` (começa **vazio**; povoado por
+`tournaments.js`). Cada campeonato/torneio:
 
 | Campo         | Descrição                                              |
 | ------------- | ------------------------------------------------------ |
 | `id`          | Identificador único (ex.: `CNA-2026`).                 |
 | `name`        | Nome do campeonato.                                    |
 | `participants`| Número de participantes (inicia em `0`).               |
-| `countryId`   | Referência ao país em `countries.js`.                  |
-| `sportId`     | **Esporte disputado** (ver `sports.js`) — todo campeonato tem um. |
+| `countryId`   | País organizador (nacional/subnacional).               |
 | `categoryId`  | **Categoria/porte** no calendário (ver `competitionCategories.js`). |
-| `scope`       | **Trava geográfica** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). |
-| `ageRestriction` | **Trava de idade** `{ minAge, maxAge }` (opcional) ou ausente — uso **futuro** (juvenil/sub). |
-| `clubQuota`   | **Trava de cota**: máx. de atletas por clube **por etapa** (ou ausente = sem limite). CNA = 1. |
-| `events`      | **Eventos (provas) disputados** — lista de ids de `events.js` (ex.: `["EVT-ATL-100M"]`). Uma etapa roda o primeiro evento. |
+| `scope`       | **Trava geográfica** `{ level, placeId }` — quem pode disputar (ver `eligibility.js`). level ∈ region/state/country/city (e — futuro — continent/world). |
+| `coverage`    | **Abrangência de conteúdo** `{ type, ids }` — o que disputa (`all`/`sport`/`modality`/`event`). Ver `tournaments.js`. |
+| `format`      | **Formato** `{ type, ... }` — como roda (`single`/`league`/`multiday`/`knockout`). |
+| `ageRestriction` | **Trava de idade** `{ minAge, maxAge }` (opcional) — uso **futuro**. |
+| `clubQuota`   | **Trava de cota**: máx. de atletas por clube **por evento** (ou ausente = sem limite). CNA = 1. |
+| `events`      | Lista (resolvida da `coverage`) de ids de eventos que o torneio abrange. |
 | `competitors` | Participantes (lista).                                 |
-| `stages`      | Etapas — `{ number, date }`.                           |
+| `stages`      | Etapas — cada uma `{ number, date, events: [ids] }` (os eventos disputados naquela etapa, conforme o formato). |
 
-**Calendário do Brasil (16 campeonatos):**
+**Calendário do Brasil (16 torneios):** gerados por `tournaments.js`. Para
+simplificar, **todos são de Atletismo abrangendo TODAS as modalidades/eventos**
+(`coverage` por esporte), formato **liga** (10 etapas mensais):
 
-- **Nacional** — `CNA-2026` (Campeonato Nacional de Atletismo), categoria
-  **Nacional**, `scope` país=`BRA`, **cota de 1 atleta por clube por etapa**
-  (`clubQuota: 1`), 2º sábado do mês. Cadastrado à mão.
-- **10 Estaduais** — um por estado com cidade na database (`CAMP-EST-<UF>-2026`),
-  categoria **Estadual**, `scope` estado, 1º sábado do mês.
-- **5 Regionais** — um por região com cidade (`CAMP-REG-<REGIÃO>-2026`), categoria
-  **Regional**, `scope` região, 3º sábado do mês.
-
-Estaduais e Regionais são **gerados** a partir da geografia (ver o gerador
-abaixo); o Nacional está na database. Todo novo campeonato deve informar
-`sportId`, `categoryId`, `scope` e a(s) modalidade(s).
+- **Nacional** — `CNA-2026`, categoria **Nacional**, `scope` país=`BRA`, **cota 1
+  por clube por evento**, 2º sábado do mês.
+- **10 Estaduais** — `CAMP-EST-<UF>-2026`, categoria **Estadual**, `scope` estado,
+  1º sábado do mês.
+- **5 Regionais** — `CAMP-REG-<REGIÃO>-2026`, categoria **Regional**, `scope`
+  região, 3º sábado do mês.
 
 Funções utilitárias:
 
-- `getChampionshipSport(championship)` — o esporte do campeonato (objeto de
-  `sports.js`).
-- `getChampionshipCategory(championship)` — a categoria/porte do campeonato
-  (objeto de `competitionCategories.js`).
+- `getChampionshipEvents(championship)` — os ids de eventos abrangidos (da coverage).
+- `getChampionshipSports(championship)` — os esportes distintos abrangidos (1, vários
+  ou todos). `getChampionshipSport(championship)` — o esporte se for **único**
+  (senão `undefined`, ex.: multiesportivo/Olimpíadas).
+- `getChampionshipCategory(championship)` — a categoria/porte (objeto de
+  `competitionCategories.js`).
 - `getChampionshipScope(championship)` — a abrangência `{ level, placeId }` (trava
   geográfica) ou `null`.
-- `getChampionshipAgeRestriction(championship)` — a trava de idade
-  `{ minAge, maxAge }` ou `null`.
-- `getChampionshipClubQuota(championship)` — a cota máx. de atletas por clube por
-  etapa ou `null`.
-- `buildCountryGeographicChampionships(config)` — **gera** os campeonatos
-  **Estaduais** (por estado) e **Regionais** (por região) de um país, **só para
-  lugares com cidade na database**, e os registra em `CHAMPIONSHIPS`. Genérico
-  (serve qualquer país); chamado para o **Brasil** no fim de `championships.js`.
+- `getChampionshipAgeRestriction(championship)` — a trava de idade ou `null`.
+- `getChampionshipClubQuota(championship)` — a cota máx. por clube por evento ou `null`.
 - `nthSaturday(year, month, n)` — data do N-ésimo sábado do mês.
 - `secondSaturday(year, month)` — data do 2º sábado (= `nthSaturday(...,2)`).
 - `buildMonthlyStagesOn(startYear, startMonth, count, nth)` — N etapas mensais no
@@ -158,6 +156,33 @@ Funções utilitárias:
   data de referência: retorna `true` ao **chegar no dia** da etapa ou depois.
 - `championshipProgress(championship, referenceDate)` — `{ done, total }` com o
   número de etapas já realizadas em relação a uma data.
+
+### Gerador universal de torneios — `tournaments.js`
+
+Monta torneios combinando **três eixos independentes e modulares**:
+
+1. **Coverage** (conteúdo) — o que disputa: `{ type, ids }` com `type` ∈
+   `"event"` (provas específicas), `"modality"` (todas as provas de modalidade(s)),
+   `"sport"` (todas as provas de esporte(s) — 1, vários) ou `"all"` (todas —
+   Olimpíadas). `resolveCoverageEventIds(coverage)` expande para a lista de eventos.
+2. **Format** (formato) — como roda (`TOURNAMENT_FORMATS`, cada um agenda as
+   etapas): **`single`** (etapa única), **`league`** (N rodadas periódicas, pontos
+   somam), **`multiday`** (provas distribuídas por dias consecutivos), **`knockout`**
+   (rodadas eliminatórias — chave real é futura). Cada etapa gerada sabe **quais
+   eventos** roda (`stage.events`).
+3. **Scope** (trava geográfica) — quem disputa: `buildScope(level, placeId)` com
+   `level` ∈ `region`/`state`/`country`/`city` (e — futuro — `continent`/`world`).
+
+`buildTournament(config)` resolve a coverage, agenda as etapas pelo formato e
+registra o torneio em `CHAMPIONSHIPS`. `buildCountryGeographicChampionships(config)`
+gera Estaduais/Regionais de um país (mesma coverage/format). No fim do arquivo, o
+**calendário do Brasil** é gerado (CNA + Estaduais + Regionais — Atletismo, tudo).
+
+**Formatos inspirados em torneios reais** (fontes possíveis): liga ~ *Wanda
+Diamond League* (temporada de etapas, cada etapa com várias provas, pontos somam);
+multiday ~ programa do **Atletismo nos Jogos Olímpicos** / **Campeonato Mundial de
+Atletismo** (provas em dias); mata-mata ~ chaves do **tênis** (Grand Slam) e das
+lutas/boxe/judô olímpicos.
 
 ### Categorias de Competição — `competitionCategories.js`
 
@@ -404,39 +429,39 @@ atleta). Ver a seção 4 e as Etapas 23–24.
 
 ### Participação atleta ↔ etapa — `participation.js`
 
-A ponte entre **atletas (via clube/contrato)** e as **etapas** de um campeonato:
-define **quais atletas disputam cada etapa** e aplica a **fadiga** de participação.
+A ponte entre **atletas (via clube/contrato)** e as **etapas** de um campeonato.
+Uma etapa pode rodar **vários eventos** (`stage.events`); cada evento é disputado
+pelos atletas cujo **evento favorito** é aquele (o atleta compete só na sua prova
+— ver `athletes.js`). Define **quem disputa cada evento**, resolve o resultado e
+aplica a **fadiga/ritmo** de participação.
 
-**Regra de TESTE (temporária):** cada clube inscreve **todos** os seus atletas em
-**todas** as etapas. Assim, os participantes de uma etapa são todos os atletas
-com **contrato ativo na data da etapa** em algum clube do país do campeonato;
-**agentes livres não disputam** (nenhum clube os inscreve). Falta a mecânica
-**real** de cadastro (ver `TODO.md`, prioridade média).
+**Regra de TESTE (temporária):** os participantes de um EVENTO são os atletas com
+**contrato ativo na data** em clube do país do campeonato, **elegíveis** (geografia
++ idade), cujo **`favoriteEventId`** é aquele evento; **agentes livres não
+disputam**. Falta a mecânica **real** de cadastro (ver `TODO.md`).
 
-**Travas de inscrição:** o participante precisa ser **elegível** às travas de
-atleta (abrangência `scope` + faixa etária `ageRestriction` — ver `eligibility.js`)
-**e** respeitar a **cota por clube** (`clubQuota`): cada clube inscreve no máximo
-N atletas **por etapa** (ex.: **CNA = 1**). Assim, participantes = **contratados
-via clube ∩ elegíveis (geografia+idade)**, depois **limitados pela cota**. Quando
-a cota corta, um **placeholder** manda os atletas **mais fortes** do clube
-(`limitAthletesPerClub`, por `strength`, desempate por id) — a seleção **real**
-(qual atleta o clube inscreve) é a mecânica pendente (ver `TODO.md`).
+**Travas de inscrição:** elegibilidade de atleta (abrangência `scope` + idade
+`ageRestriction` — ver `eligibility.js`) **e** **cota por clube** (`clubQuota`):
+cada clube inscreve no máximo N atletas **por evento** (ex.: **CNA = 1**). Quando
+a cota corta, um **placeholder** manda os **mais fortes** do clube
+(`limitAthletesPerClub`, por `strength`, desempate por id) — a seleção **real** é
+pendente (ver `TODO.md`).
 
 Funções:
 
-- `getStageParticipants(championship, stage)` — atletas participantes da etapa
-  (contratados via clube, elegíveis pelas travas de atleta e dentro da cota por
-  clube); `getStageParticipantCount(...)` retorna a quantidade.
+- `getStageEventParticipants(championship, stage, event)` — participantes de um
+  evento de uma etapa (contratados via clube, elegíveis, com aquele evento
+  favorito, dentro da cota por clube).
 - `limitAthletesPerClub(athletes, athleteClubId, quota)` — aplica a cota por clube
   (placeholder: os mais fortes).
-- `getStageEvent(championship, stage)` — a prova (evento) disputada (por ora, o
-  primeiro evento do campeonato; senão, o primeiro evento do esporte).
-- `processStage(championship, stage)` — processa uma etapa **uma única vez**:
-  (1) **resolve o resultado** com a fadiga atual dos participantes (via
-  `resolveEvent`) e o **trava**; (2) **soma os pontos** ao ranking
-  (`recordStageForRanking`, conforme a tier) e **registra as marcas**
-  (`recordStageMarks`, melhor por atleta); (3) aplica a fadiga da etapa aos
-  participantes.
+- `getStageEvents(championship, stage)` — os eventos (objetos) que a etapa roda.
+  `getStageEvent(championship, stage)` — o primeiro evento **disputável** (compat).
+- `processStage(championship, stage)` — processa uma etapa **uma única vez**: para
+  **cada evento disputável** (`isEventPlayable`): (1) **resolve o resultado** com a
+  fadiga/ritmo atuais dos participantes daquele evento e o **trava**; (2) **soma os
+  pontos** (`recordStageForRanking`, conforme a tier) e **registra a marca**
+  (`recordStageMarks`, por evento); (3) aplica **fadiga e ritmo** aos participantes.
+  Retorna os ids de quem competiu (para a orquestração do descanso).
 - `processDay(date)` — processa **um dia**: (0) na virada de ano **encerra a
   temporada** — arquiva os rankings de pontos e marcas (`archiveSeason` /
   `archiveMarksSeason`) e os zera — e reinicia o **ritmo** de todos
@@ -445,8 +470,9 @@ Funções:
   (recuperam Cansaço com `applyRestDay` e **perdem ritmo** com `applyRestDayRitmo`).
   Quem competiu no dia não descansa nesse dia. Chamado **dia a dia** por
   `advanceDays`.
-- `getStageResult(championship, stage)` — o resultado travado da etapa
-  (`[{ id, result, position }]`) ou `null` se ainda não realizada.
+- `getStageEventResult(championship, stage, event)` — o resultado travado de um
+  evento de uma etapa (`[{ id, result, position }]`) ou `null`.
+  `getStageResult(championship, stage)` — o do primeiro evento disputável (compat).
   `resetParticipation()` zera os resultados processados.
 
 ### Travas de inscrição — `eligibility.js`
@@ -1006,6 +1032,40 @@ tempo vence).
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 52 — Torneios modulares: gerador universal (coverage + format + scope)
+
+- Novo **gerador universal** (`tournaments.js`): um torneio é montado por três
+  eixos modulares — **coverage** (o que disputa: evento/modalidade/esporte/vários/
+  todos), **format** (como roda: single/league/multiday/knockout) e **scope** (trava
+  geográfica escolhível: region/state/country/city; continent/world prontos p/
+  futuro). `buildTournament(config)` resolve a coverage, agenda as etapas pelo
+  formato e registra em `CHAMPIONSHIPS`.
+- **Etapas passaram a carregar seus eventos** (`stage.events`): uma etapa pode
+  rodar **vários eventos**. A `participation` resolve **cada evento** da etapa, e
+  cada evento é disputado só pelos atletas cujo **evento favorito** é aquele (o
+  atleta compete na sua prova). Cota por clube passou a ser **por evento**.
+- **Entidade Campeonato remodelada**: ganhou `coverage` e `format`, `events` virou
+  a lista **resolvida** da coverage, `stages` viraram `{number,date,events}`, e
+  `sportId` saiu (o esporte é **derivado** — `getChampionshipSports`/`Sport`).
+  `CHAMPIONSHIPS` começa vazio; `tournaments.js` popula o calendário.
+- **Existentes adaptados** (a pedido, para simplificar): os 16 torneios do Brasil
+  agora são de **Atletismo abrangendo TODAS as modalidades/eventos** (coverage por
+  esporte), formato **liga** (10 etapas mensais), ids preservados.
+- **Formatos inspirados em torneios reais** (fontes possíveis documentadas): liga ~
+  Diamond League; multiday ~ programa olímpico/Mundial de Atletismo; mata-mata ~
+  chaves de tênis/lutas.
+- **Escopo**: `tournaments.js` (novo), `championships.js` (entidade/helpers, saiu o
+  gerador antigo), `participation.js` (resolução por evento + filtro de evento
+  favorito), `index.html` (carga). A UI (mostrar coverage/format/scope e resultados
+  por evento) é a **próxima etapa**; por ora ela mostra o 1º evento por etapa
+  (compat).
+- **Verificado** (navegador headless): 16 torneios gerados; CNA coverage = esporte
+  Atletismo → 27 eventos, formato liga, 10 etapas, cada etapa com os 27 eventos;
+  ao avançar o tempo, os eventos **de tempo** resolvem por etapa (16 provas com
+  resultado na etapa 1), com o filtro de evento favorito ativo; rankings populam;
+  o CNA aparece na aba Campeonatos com "Provas 27" e o "Ver" mostra a prova; sem
+  erros de JS.
 
 ### Etapa 51 — Modalidade e evento do atleta na UI
 

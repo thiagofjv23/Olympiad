@@ -1,30 +1,28 @@
 // -----------------------------------------------------------------------------
 // Participação atleta ↔ etapa
-// Define QUAIS atletas disputam cada etapa de um campeonato — a ponte entre
-// atletas (via clube/contrato) e as etapas. Com os participantes definidos,
-// resolve o RESULTADO da etapa (via evento + ResultsEngine) e desgasta os
-// participantes (fadiga).
+// Define QUAIS atletas disputam cada EVENTO de cada etapa de um campeonato — a
+// ponte entre atletas (via clube/contrato) e as provas. Com os participantes
+// definidos, resolve o RESULTADO de cada evento (via ResultSystem) e desgasta os
+// participantes (fadiga/ritmo).
 //
-// REGRA DE TESTE (temporária): cada clube inscreve TODOS os seus atletas em
-// TODAS as etapas. Ou seja, os participantes de uma etapa são todos os atletas
-// com contrato ATIVO (na data da etapa) em algum clube do país do campeonato.
-// Atletas sem clube (agentes livres) não disputam, pois ninguém os inscreve.
+// Uma etapa pode rodar VÁRIOS eventos (ver stage.events — tournaments.js). Cada
+// evento é disputado pelos atletas cujo EVENTO FAVORITO é aquele (o atleta
+// compete só na sua prova — ver athletes.js).
 //
-// TRAVAS DE INSCRIÇÃO:
-//   - de ATLETA (ver eligibility.js): só disputa quem é elegível à ABRANGÊNCIA
-//     (`scope`) e à FAIXA ETÁRIA (`ageRestriction`) do campeonato. Ex.: um
-//     Estadual de São Paulo só recebe atletas nascidos em SP.
-//   - de COTA por clube (`clubQuota`): cada clube inscreve no máximo N atletas
-//     por etapa (ex.: CNA = 1). É uma trava de GRUPO, aplicada aqui.
+// REGRA DE TESTE (temporária): cada clube inscreve seus atletas contratados nos
+// eventos correspondentes ao evento favorito deles. Participantes de um evento =
+// atletas com contrato ATIVO (na data) em clube do país + elegíveis (geografia +
+// idade) + com aquele evento favorito, limitados pela cota por clube. Agentes
+// livres não disputam (ninguém os inscreve).
 //
-// FALTA (ver TODO.md — prioridade média): a mecânica REAL de cadastro de atletas
-// em campeonatos (o clube escolhendo quais atletas inscrever, vagas, critérios).
+// FALTA (ver TODO.md): mecânica REAL de cadastro (o clube escolhendo quais
+// atletas inscrever, vagas, critérios) e a lógica de chave do mata-mata.
 // -----------------------------------------------------------------------------
 
-// Retorna os atletas participantes de uma etapa de um campeonato: contratados via
-// clube (na data da etapa), que passam nas travas de atleta (geográfica + idade)
-// e respeitando a cota por clube. Sem duplicatas.
-function getStageParticipants(championship, stage) {
+// Participantes de um EVENTO de uma etapa: contratados via clube (na data),
+// elegíveis pelas travas de atleta (geografia + idade), cujo evento FAVORITO é
+// este, respeitando a cota por clube. Sem duplicatas.
+function getStageEventParticipants(championship, stage, event) {
   // Mapa atleta → clube (contrato ativo na data da etapa) nos clubes do país.
   const athleteClubId = new Map();
   for (const club of getClubsByCountry(championship.countryId)) {
@@ -32,13 +30,15 @@ function getStageParticipants(championship, stage) {
       athleteClubId.set(contract.athleteId, club.id);
     }
   }
-  // Contratados via clube E elegíveis pelas travas de atleta (abrangência + idade).
+  // Contratados via clube, elegíveis (abrangência + idade) e cujo evento favorito
+  // é ESTE evento (o atleta compete só na sua prova).
   let participants = ATHLETES.filter(
     (athlete) =>
       athleteClubId.has(athlete.id) &&
+      athlete.favoriteEventId === event.id &&
       isAthleteEligibleForChampionship(athlete, championship)
   );
-  // Trava de cota: cada clube inscreve no máximo `clubQuota` atletas.
+  // Trava de cota: cada clube inscreve no máximo `clubQuota` atletas por evento.
   const quota = getChampionshipClubQuota(championship);
   if (quota != null) {
     participants = limitAthletesPerClub(participants, athleteClubId, quota);
@@ -65,53 +65,60 @@ function limitAthletesPerClub(athletes, athleteClubId, quota) {
   return selected;
 }
 
-// Quantidade de participantes de uma etapa (atalho para a UI/depuração).
-function getStageParticipantCount(championship, stage) {
-  return getStageParticipants(championship, stage).length;
+// Eventos (objetos) que uma etapa disputa (os ids em stage.events resolvidos).
+function getStageEvents(championship, stage) {
+  return (stage.events || []).map((id) => getEvent(id)).filter(Boolean);
 }
 
-// Evento (prova) que uma etapa disputa. Por ora, o primeiro evento do campeonato;
-// na falta, o primeiro evento do esporte do campeonato.
-// TODO: evento por etapa (cada etapa uma prova diferente) — ver TODO.md.
+// Primeiro evento DISPUTÁVEL de uma etapa (atalho/compat, ex.: para a UI simples).
+// Retorna null se a etapa não tiver nenhum evento jogável.
 function getStageEvent(championship, stage) {
-  if (championship.events && championship.events.length > 0) {
-    const event = getEvent(championship.events[0]);
-    if (event) return event;
-  }
-  const sportEvents = getEventsBySport(championship.sportId);
-  return sportEvents.length > 0 ? sportEvents[0] : null;
+  const events = getStageEvents(championship, stage);
+  return events.find((event) => isEventPlayable(event)) || null;
 }
 
 // --- resolução de resultados e fadiga por etapa -------------------------------
-// Uma etapa é processada UMA única vez, ao ser realizada: (1) resolve-se o
-// resultado com a fadiga ATUAL dos participantes (antes desta etapa) e trava-se
-// o resultado; (2) então os participantes se cansam por esta etapa. Guardar os
-// resultados evita recalcular com a fadiga futura (um resultado é histórico).
-const _stageResults = new Map(); // stageKey -> [{ id, result, position }]
+// Uma etapa é processada UMA única vez, ao ser realizada. Para cada EVENTO
+// disputável da etapa: (1) resolve-se o resultado com a fadiga/ritmo ATUAIS dos
+// participantes daquele evento e trava-se o resultado; (2) somam-se os pontos e
+// registra-se a marca; (3) os participantes daquele evento se cansam e ganham
+// ritmo. Um resultado é histórico (fixado no momento da realização).
+const _stageEventResults = new Map(); // `${champ}#${stage}#${event}` -> results
+const _processedStages = new Set(); // `${champ}#${stage}` (idempotência)
 
 function stageKey(championship, stage) {
   return `${championship.id}#${stage.number}`;
 }
 
-// Processa uma etapa (idempotente): resolve o resultado e desgasta os
-// participantes. Retorna o resultado (ranking) da etapa.
+function stageEventKey(championship, stage, event) {
+  return `${championship.id}#${stage.number}#${event.id}`;
+}
+
+// Processa uma etapa (idempotente): resolve cada evento disputável e desgasta os
+// seus participantes. Retorna a lista de ids dos atletas que competiram (em
+// qualquer evento da etapa), para a orquestração do descanso em processDay.
 function processStage(championship, stage) {
   const key = stageKey(championship, stage);
-  if (_stageResults.has(key)) return _stageResults.get(key);
+  if (_processedStages.has(key)) return [];
+  _processedStages.add(key);
 
-  const participants = getStageParticipants(championship, stage);
-  const event = getStageEvent(championship, stage);
-  // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos desta etapa).
-  const results = event ? resolveEvent(participants, event) : [];
-  _stageResults.set(key, results);
-  // Ranking de pontos: soma os pontos desta etapa (conforme a tier do campeonato).
-  recordStageForRanking(championship, results);
-  // Ranking de marcas: registra a melhor marca de cada atleta no evento.
-  recordStageMarks(championship, stage, event, results);
-  // Depois de competir: os participantes se cansam (fadiga) e ganham ritmo (forma).
-  applyStageFatigueToParticipants(participants);
-  applyRaceRitmoToParticipants(participants);
-  return results;
+  const competedIds = [];
+  for (const event of getStageEvents(championship, stage)) {
+    if (!isEventPlayable(event)) continue; // sem ResultSystem/params ainda: pula
+
+    const participants = getStageEventParticipants(championship, stage, event);
+    // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos deste evento).
+    const results = resolveEvent(participants, event);
+    _stageEventResults.set(stageEventKey(championship, stage, event), results);
+    // Ranking de pontos (conforme a tier do campeonato) e de marcas (por evento).
+    recordStageForRanking(championship, results);
+    recordStageMarks(championship, stage, event, results);
+    // Depois de competir: os participantes se cansam e ganham ritmo (forma).
+    applyStageFatigueToParticipants(participants);
+    applyRaceRitmoToParticipants(participants);
+    for (const athlete of participants) competedIds.push(athlete.id);
+  }
+  return competedIds;
 }
 
 // Processa UM dia da simulação:
@@ -137,8 +144,9 @@ function processDay(date) {
 
   const competingIds = new Set();
   for (const { championship, stage } of getStagesOnDate(date)) {
-    const results = processStage(championship, stage);
-    for (const entry of results) competingIds.add(entry.id);
+    for (const athleteId of processStage(championship, stage)) {
+      competingIds.add(athleteId);
+    }
   }
   for (const athlete of ATHLETES) {
     if (competingIds.has(athlete.id)) continue; // competiu hoje: não descansa
@@ -147,13 +155,20 @@ function processDay(date) {
   }
 }
 
-// Resultado já resolvido de uma etapa ([{ id, result, position }]) ou null se a
-// etapa ainda não foi realizada/processada.
+// Resultado travado de um EVENTO de uma etapa ([{ id, result, position }]) ou
+// null se ainda não realizado/processado.
+function getStageEventResult(championship, stage, event) {
+  return _stageEventResults.get(stageEventKey(championship, stage, event)) || null;
+}
+
+// Resultado do primeiro evento disputável de uma etapa (atalho/compat).
 function getStageResult(championship, stage) {
-  return _stageResults.get(stageKey(championship, stage)) || null;
+  const event = getStageEvent(championship, stage);
+  return event ? getStageEventResult(championship, stage, event) : null;
 }
 
 // Zera os resultados processados (ex.: ao reiniciar a simulação).
 function resetParticipation() {
-  _stageResults.clear();
+  _stageEventResults.clear();
+  _processedStages.clear();
 }

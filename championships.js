@@ -2,28 +2,33 @@
 // Entidade: Campeonatos (Championships)
 // Relaciona-se com os países (countries.js) através de countryId.
 //
+// Um campeonato/TORNEIO é MODULAR: o gerador universal (ver tournaments.js) monta
+// campeonatos combinando ABRANGÊNCIA DE CONTEÚDO (coverage), FORMATO (format) e
+// TRAVA GEOGRÁFICA (scope). Esta entidade guarda o resultado dessa combinação.
+//
 // Cada campeonato possui:
 //   - id           : identificador único
 //   - name         : nome do campeonato
 //   - participants : número de participantes (0 inicialmente)
-//   - countryId    : referência ao país (ver countries.js)
-//   - sportId      : esporte disputado (ver sports.js) — todo campeonato tem um
+//   - countryId    : país organizador (para portes nacional/subnacional)
 //   - categoryId   : categoria/porte no calendário (ver competitionCategories.js)
 //   - scope        : abrangência geográfica { level, placeId } — TRAVA de
 //                    inscrição (ver eligibility.js). level ∈ country/region/
-//                    state/city; placeId aponta para a entidade correspondente.
-//                    Só atletas daquele recorte podem disputar.
-//   - ageRestriction : TRAVA de idade { minAge, maxAge } (ambos opcionais) ou
-//                    ausente/null (sem restrição). Para campeonatos juvenis/sub
-//                    (uso FUTURO — o mecanismo existe, mas nenhum campeonato usa
-//                    ainda; ver TODO.md).
-//   - clubQuota    : TRAVA de cota — máximo de atletas que CADA clube pode
-//                    inscrever POR ETAPA (ou ausente/null = sem limite).
-//                    Ex.: CNA = 1 atleta por clube por etapa.
-//   - events       : eventos
-//   - modalities   : modalidades
+//                    state/city (e — futuro — continental/world). Só atletas
+//                    daquele recorte podem disputar.
+//   - coverage     : ABRANGÊNCIA DE CONTEÚDO { type, ids } — o que o torneio
+//                    disputa: type ∈ "all"/"sport"/"modality"/"event" (ver
+//                    tournaments.js). Resolvida para a lista de eventos abaixo.
+//   - format       : FORMATO { type, ... } — como o torneio roda (single/league/
+//                    multiday/knockout — ver tournaments.js).
+//   - ageRestriction : TRAVA de idade { minAge, maxAge } (opcional) — uso FUTURO.
+//   - clubQuota    : TRAVA de cota — máx. de atletas por clube POR EVENTO de uma
+//                    etapa (ou ausente/null = sem limite). Ex.: CNA = 1.
+//   - events       : lista (resolvida) de ids de eventos que o torneio abrange
+//                    (derivada de coverage — ver getChampionshipEvents).
 //   - competitors  : lista de participantes
-//   - stages       : etapas (datas calculadas)
+//   - stages       : etapas — cada uma { number, date, events: [ids] } (os
+//                    eventos disputados naquela etapa, conforme o formato).
 // -----------------------------------------------------------------------------
 
 // Retorna a data do N-ésimo sábado de um determinado mês/ano (n = 1, 2, 3, ...).
@@ -59,29 +64,34 @@ function buildMonthlyStages(startYear, startMonth, count) {
   return buildMonthlyStagesOn(startYear, startMonth, count, 2);
 }
 
-const CHAMPIONSHIPS = {
-  // ID única do campeonato.
-  "CNA-2026": {
-    id: "CNA-2026",
-    name: "Campeonato Nacional de Atletismo",
-    participants: 0,
-    countryId: "BRA",
-    sportId: "SPT-ATLETISMO", // esporte disputado (ver sports.js)
-    categoryId: "CAT-NACIONAL", // porte no calendário (ver competitionCategories.js)
-    // Trava de inscrição: campeonato nacional → só atletas do Brasil (ver eligibility.js).
-    scope: { level: "country", placeId: "BRA" },
-    // Trava de cota: cada clube inscreve no máximo 1 atleta por etapa.
-    clubQuota: 1,
-    events: ["EVT-ATL-100M"], // provas (eventos) disputadas (ver events.js)
-    competitors: [],
-    // 10 etapas, sempre no segundo sábado de cada mês, começando em janeiro/2026.
-    stages: buildMonthlyStages(2026, 0, 10),
-  },
-};
+// Lista viva de campeonatos. Começa VAZIA — o gerador universal (tournaments.js)
+// popula o calendário (Nacional + Estaduais + Regionais, etc.) ao carregar.
+const CHAMPIONSHIPS = {};
 
-// Esporte disputado por um campeonato (objeto de sports.js) ou undefined.
+// Eventos (ids) que um campeonato abrange — a lista resolvida da sua coverage,
+// guardada no campo `events` ao ser gerado (ver tournaments.js).
+function getChampionshipEvents(championship) {
+  return (championship.events || []).slice();
+}
+
+// Esportes distintos abrangidos por um campeonato (derivados dos seus eventos →
+// modalidades → esportes). Um torneio pode ter 1 (Atletismo), vários ou todos.
+function getChampionshipSports(championship) {
+  const sportIds = new Set();
+  for (const eventId of getChampionshipEvents(championship)) {
+    const event = getEvent(eventId);
+    if (!event) continue;
+    const modality = getModality(event.modalityId);
+    if (modality) sportIds.add(modality.sportId);
+  }
+  return [...sportIds].map((id) => getSport(id)).filter(Boolean);
+}
+
+// Esporte de um campeonato de esporte ÚNICO (objeto de sports.js), ou undefined
+// se ele abranger mais de um esporte (multiesportivo/Olimpíadas).
 function getChampionshipSport(championship) {
-  return getSport(championship.sportId);
+  const sports = getChampionshipSports(championship);
+  return sports.length === 1 ? sports[0] : undefined;
 }
 
 // Categoria/porte de um campeonato (objeto de competitionCategories.js) ou
@@ -152,86 +162,6 @@ function championshipProgress(championship, referenceDate) {
   return { done, total: championship.stages.length };
 }
 
-// -----------------------------------------------------------------------------
-// Gerador do calendário geográfico de um país
-//
-// A partir da GEOGRAFIA de um país (regiões e estados — ver regions.js/states.js)
-// e das CIDADES que existem na database (cities.js), cria os campeonatos
-// Estaduais (um por estado) e Regionais (um por região). É GENÉRICO: serve
-// qualquer país; basta informar o esporte/evento e o país. Os campeonatos
-// gerados recebem `categoryId` (Estadual/Regional) e `scope` (a trava de
-// inscrição), e são registrados em CHAMPIONSHIPS.
-//
-// Só cria competições para lugares COM cidade na database: um estado sem cidade
-// (ou uma região sem nenhuma cidade nos seus estados) NÃO gera campeonato. Assim
-// o calendário reflete exatamente as cidades que temos.
-// -----------------------------------------------------------------------------
-function buildCountryGeographicChampionships(config) {
-  const {
-    countryId,
-    sportId,
-    eventId,
-    startYear = 2026,
-    startMonth = 0,
-    stageCount = 10,
-    estadualNthSaturday = 1, // estaduais no 1º sábado do mês
-    regionalNthSaturday = 3, // regionais no 3º sábado (nacional fica no 2º)
-  } = config;
-
-  const events = eventId ? [eventId] : [];
-  const created = [];
-
-  // Estaduais: um por estado do país que possua ao menos uma cidade na database.
-  for (const state of getStatesByCountry(countryId)) {
-    if (getCitiesByState(state.id).length === 0) continue; // sem cidade → não cria
-    const championship = {
-      id: `CAMP-EST-${state.abbreviation}-${startYear}`,
-      name: `Campeonato Estadual de ${state.name}`,
-      participants: 0,
-      countryId,
-      sportId,
-      categoryId: "CAT-ESTADUAL",
-      scope: { level: "state", placeId: state.id },
-      events,
-      competitors: [],
-      stages: buildMonthlyStagesOn(startYear, startMonth, stageCount, estadualNthSaturday),
-    };
-    CHAMPIONSHIPS[championship.id] = championship;
-    created.push(championship);
-  }
-
-  // Regionais: um por região do país que possua ao menos uma cidade (via estados).
-  for (const region of getRegionsByCountry(countryId)) {
-    const hasCity = getStatesByRegion(region.id).some(
-      (state) => getCitiesByState(state.id).length > 0
-    );
-    if (!hasCity) continue; // região sem nenhuma cidade → não cria
-    const regionSlug = region.id.replace("REG-", "");
-    const championship = {
-      id: `CAMP-REG-${regionSlug}-${startYear}`,
-      name: `Campeonato Regional ${region.name}`,
-      participants: 0,
-      countryId,
-      sportId,
-      categoryId: "CAT-REGIONAL",
-      scope: { level: "region", placeId: region.id },
-      events,
-      competitors: [],
-      stages: buildMonthlyStagesOn(startYear, startMonth, stageCount, regionalNthSaturday),
-    };
-    CHAMPIONSHIPS[championship.id] = championship;
-    created.push(championship);
-  }
-
-  return created;
-}
-
-// Popula o calendário do Brasil (único país atual) a partir da sua geografia:
-// campeonatos Estaduais e Regionais de Atletismo (evento dos 100 m). O Nacional
-// (CNA-2026) já está na database acima. Ao adicionar outros países, chamar este
-// gerador para cada um.
-buildCountryGeographicChampionships({
-  countryId: "BRA",
-  sportId: "SPT-ATLETISMO",
-  eventId: "EVT-ATL-100M",
-});
+// O GERADOR UNIVERSAL de torneios (coverage + format + scope) e o povoamento do
+// calendário (Nacional + Estaduais + Regionais) ficam em `tournaments.js`, que é
+// carregado depois deste arquivo e usa os helpers de etapa acima.
