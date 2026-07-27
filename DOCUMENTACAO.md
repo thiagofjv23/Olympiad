@@ -1033,6 +1033,55 @@ tempo vence).
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
 
+### Etapa 54 — Escalabilidade: índices, render sob demanda e re-render por aba
+
+Motivação: ao subir `athletesPerEvent` para gerar competições mais cheias
+(hoje **100 por evento → ~19.000 atletas**, ~14.000 contratos), o jogo travava.
+A causa **não** eram as features nem os esportes, e sim **como os dados eram
+consultados e renderizados** — padrões que viravam custo **quadrático** com a
+carga. Otimização em três frentes, **sem perder nenhuma feature/esporte**:
+
+- **Índices derivados (aceleradores de consulta).** Consultas que varriam listas
+  inteiras passaram a olhar só o subconjunto relevante:
+  - `athletes.js`: `_athleteById` (id → atleta) e `_athletesByCountry` (país →
+    atletas), com `getAthlete(id)` e `getAthletesByCountry(countryId)`,
+    reconstruídos em `generateAthletes` (`rebuildAthleteIndexes`). Substituem os
+    `ATHLETES.find(a => a.id === …)` espalhados pela UI/rankings.
+  - `contracts.js`: `_contractsByAthlete` e `_contractsByClub`, mantidos em
+    `signContract`/`resetContracts`. `getActiveContractForAthlete` e
+    `getContractsByClub` deixam de varrer todos os contratos. **Princípio
+    preservado**: os índices são **cache** de `CONTRACTS`, não uma segunda fonte
+    de verdade — a situação ativo/encerrado continua **derivada das datas**
+    (`isContractActive`; ver `PRINCIPIOS_CONTRATOS.md`). Isso removeu o pior ponto
+    (agentes livres, antes O(atletas × contratos)).
+- **Render sob demanda na aba Atletas e nos Agentes livres.** Em vez de pintar
+  todos os atletas de um país de uma vez (milhares de nós `<details>` → travamento),
+  pinta-se um **lote** por vez (`ATHLETE_PAGE_SIZE`/`FREE_AGENTS_PAGE_SIZE` = 50),
+  com **busca por nome/clube** (aba Atletas) e botão **"Carregar mais"**. Nenhum
+  atleta some: todos continuam existindo e acessíveis (inclusive pelos links
+  "Atletas do clube"/agente livre, que garantem trazer o alvo ao lote e destacá-lo).
+- **Re-render só da aba visível.** A passagem de tempo (`advanceDays`) deixou de
+  repintar **todas** as abas dependentes da data: só a aba **ativa** é atualizada
+  na hora; as demais ficam "sujas" (`_dirtyTabs`) e se atualizam **ao serem
+  abertas** (`activateTab` → `renderTabContent`). Evita repintar milhares de nós a
+  cada dia quando o usuário nem está olhando.
+- **Participação: elenco por etapa construído uma vez.** `processStage` deixou de
+  reconstruir o mapa atleta→clube e reavaliar a elegibilidade **por evento**
+  (uma etapa roda até 190 eventos): agora `buildStageRoster` monta o mapa e
+  **agrupa o elenco elegível por evento favorito uma única vez por etapa**,
+  reaproveitado em todos os eventos.
+- **Escopo**: `athletes.js` e `contracts.js` (índices), `participation.js`
+  (roster por etapa), `script.js` (render sob demanda + re-render por aba),
+  `index.html` (campo de busca) e `styles.css` (busca, "Carregar mais", contagem).
+  Nenhuma mecânica de jogo foi alterada.
+- **Verificado** (Node + navegador headless, `athletesPerEvent = 100` →
+  19.000 atletas): índices batem 100% com a varredura linear (0 divergências em
+  `getActiveContractForAthlete`/`getContractsByClub`); `getFreeAgents` ~56 ms;
+  1 ano de simulação dia-a-dia caiu de **~57 s para ~3,7 s** (roster por etapa);
+  a página carrega em ~1 s; a aba Atletas mostra **50 de 19.000** com "Carregar
+  mais" e busca funcional; agentes livres em lote; avançar 4 semanas ~1 s; sem
+  erros de JS.
+
 ### Etapa 53 — UI dos torneios modulares (cobertura, formato, resultados por evento)
 
 - A aba **Campeonatos** passou a refletir o modelo modular:

@@ -66,6 +66,45 @@ const GROWTH_END_AGE = 32; // a partir desta idade, potencial já atingido (gap 
 // Lista viva de atletas da simulação atual.
 let ATHLETES = [];
 
+// -----------------------------------------------------------------------------
+// Índices derivados (aceleradores de consulta)
+// Mapas reconstruídos ao (re)gerar ATHLETES. São apenas um CACHE de ATHLETES —
+// NÃO uma segunda fonte de verdade: a lista viva continua sendo ATHLETES; estes
+// mapas só a agrupam por chave para responder buscas sem varrer tudo. Sem eles,
+// cada "atleta por id" ou "atletas do país" é O(nº de atletas); com milhares de
+// atletas isso vira gargalo (ver DECISOES.md).
+//   - _athleteById       : id (número) -> atleta            (O(1) por id)
+//   - _athletesByCountry : countryId   -> lista de atletas  (pré-agrupada)
+// -----------------------------------------------------------------------------
+let _athleteById = new Map();
+let _athletesByCountry = new Map();
+
+// Reconstrói os índices a partir de ATHLETES. Chamado sempre que a lista muda.
+function rebuildAthleteIndexes() {
+  _athleteById = new Map();
+  _athletesByCountry = new Map();
+  for (const athlete of ATHLETES) {
+    _athleteById.set(athlete.id, athlete);
+    if (!_athletesByCountry.has(athlete.countryId)) {
+      _athletesByCountry.set(athlete.countryId, []);
+    }
+    _athletesByCountry.get(athlete.countryId).push(athlete);
+  }
+}
+
+// Atleta por id (O(1)). Substitui os `ATHLETES.find(a => a.id === id)` da UI.
+// Retorna undefined se não existir.
+function getAthlete(id) {
+  return _athleteById.get(id);
+}
+
+// Atletas de um país (lista pré-agrupada; O(1) para obtê-la). Retorna a lista
+// interna do índice — os chamadores NÃO devem ordená-la/mutá-la no lugar (usar
+// filter/slice antes). Retorna [] se o país não tiver atletas.
+function getAthletesByCountry(countryId) {
+  return _athletesByCountry.get(countryId) || [];
+}
+
 // --- utilidades ---------------------------------------------------------------
 
 function clampNumber(value, min, max) {
@@ -399,5 +438,6 @@ function generateAthletes(
     }
   }
   ATHLETES = list;
+  rebuildAthleteIndexes(); // mantém os índices em sincronia com a lista
   return list;
 }

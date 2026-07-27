@@ -19,26 +19,43 @@
 // atletas inscrever, vagas, critérios) e a lógica de chave do mata-mata.
 // -----------------------------------------------------------------------------
 
-// Participantes de um EVENTO de uma etapa: contratados via clube (na data),
-// elegíveis pelas travas de atleta (geografia + idade), cujo evento FAVORITO é
-// este, respeitando a cota por clube. Sem duplicatas.
-function getStageEventParticipants(championship, stage, event) {
-  // Mapa atleta → clube (contrato ativo na data da etapa) nos clubes do país.
+// Mapa atleta → clube (contrato ATIVO na data) para os clubes de um país. É a
+// base da participação: quem está contratado, e por qual clube, naquela data.
+function buildAthleteClubMap(championship, referenceDate) {
   const athleteClubId = new Map();
   for (const club of getClubsByCountry(championship.countryId)) {
-    for (const contract of getContractsByClub(club.id, stage.date)) {
+    for (const contract of getContractsByClub(club.id, referenceDate)) {
       athleteClubId.set(contract.athleteId, club.id);
     }
   }
-  // Contratados via clube, elegíveis (abrangência + idade) e cujo evento favorito
-  // é ESTE evento (o atleta compete só na sua prova).
-  let participants = ATHLETES.filter(
-    (athlete) =>
-      athleteClubId.has(athlete.id) &&
-      athlete.favoriteEventId === event.id &&
-      isAthleteEligibleForChampionship(athlete, championship)
-  );
-  // Trava de cota: cada clube inscreve no máximo `clubQuota` atletas por evento.
+  return athleteClubId;
+}
+
+// Elenco elegível de uma ETAPA, agrupado por EVENTO favorito. Constrói o mapa
+// atleta→clube e avalia a elegibilidade (geografia + idade) UMA vez por etapa —
+// não por evento —, o que importa quando a etapa roda muitos eventos com muitos
+// atletas (evita reprocessar o elenco inteiro a cada prova). Retorna
+// { athleteClubId, byEvent } onde byEvent: eventId → atletas elegíveis daquele
+// evento (o atleta compete só na sua prova favorita).
+function buildStageRoster(championship, stage) {
+  const athleteClubId = buildAthleteClubMap(championship, stage.date);
+  const byEvent = new Map();
+  for (const athleteId of athleteClubId.keys()) {
+    const athlete = getAthlete(athleteId);
+    if (!athlete) continue;
+    if (!isAthleteEligibleForChampionship(athlete, championship)) continue;
+    if (!byEvent.has(athlete.favoriteEventId)) byEvent.set(athlete.favoriteEventId, []);
+    byEvent.get(athlete.favoriteEventId).push(athlete);
+  }
+  return { athleteClubId, byEvent };
+}
+
+// Participantes de UM evento de uma etapa (contratados + elegíveis + com este
+// evento favorito), respeitando a cota por clube. Atalho para uso avulso; a
+// resolução em massa (processStage) usa buildStageRoster uma vez por etapa.
+function getStageEventParticipants(championship, stage, event) {
+  const { athleteClubId, byEvent } = buildStageRoster(championship, stage);
+  let participants = byEvent.get(event.id) || [];
   const quota = getChampionshipClubQuota(championship);
   if (quota != null) {
     participants = limitAthletesPerClub(participants, athleteClubId, quota);
@@ -102,11 +119,19 @@ function processStage(championship, stage) {
   if (_processedStages.has(key)) return [];
   _processedStages.add(key);
 
+  // Elenco elegível agrupado por evento favorito: construído UMA vez para a
+  // etapa e reaproveitado em todos os seus eventos (ver buildStageRoster).
+  const { athleteClubId, byEvent } = buildStageRoster(championship, stage);
+  const quota = getChampionshipClubQuota(championship);
+
   const competedIds = [];
   for (const event of getStageEvents(championship, stage)) {
     if (!isEventPlayable(event)) continue; // sem ResultSystem/params ainda: pula
 
-    const participants = getStageEventParticipants(championship, stage, event);
+    let participants = byEvent.get(event.id) || [];
+    if (quota != null) {
+      participants = limitAthletesPerClub(participants, athleteClubId, quota);
+    }
     // Resultado com a fadiga e o ritmo ATUAIS (antes dos efeitos deste evento).
     const results = resolveEvent(participants, event);
     _stageEventResults.set(stageEventKey(championship, stage, event), results);

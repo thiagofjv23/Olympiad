@@ -59,6 +59,14 @@ const TABS = {
   },
 };
 
+// Aba atualmente visível e conjunto de abas "sujas" (dependentes da data que
+// mudaram fora de vista). Na passagem de tempo, só a aba VISÍVEL é re-renderizada
+// na hora; as demais são marcadas como sujas e renderizadas ao serem abertas
+// (activateTab). Evita repintar milhares de nós (Atletas/Clubes/Rankings) a cada
+// dia quando o usuário nem está olhando para elas.
+let activeTab = "calendar";
+const _dirtyTabs = new Set();
+
 // Elementos — campeonatos.
 const championshipSelect = document.getElementById("championship-select");
 const championshipDetails = document.getElementById("championship-details");
@@ -66,7 +74,16 @@ const dayDetail = document.getElementById("day-detail");
 
 // Elementos — atletas.
 const athleteCountrySelect = document.getElementById("athlete-country-select");
+const athleteSearch = document.getElementById("athlete-search");
 const athleteList = document.getElementById("athlete-list");
+
+// Renderização SOB DEMANDA da aba Atletas: em vez de pintar TODOS os atletas do
+// país de uma vez (milhares de nós no DOM → travamento), pinta um LOTE por vez,
+// com busca por nome/clube e um botão "Carregar mais". O estado da visão (país,
+// termo e quantos já mostrados) sobrevive às re-renderizações da passagem de
+// tempo, para não perder o progresso do usuário.
+const ATHLETE_PAGE_SIZE = 50;
+let _athleteView = { countryId: null, term: "", shown: ATHLETE_PAGE_SIZE };
 
 // Elementos — clubes.
 const clubCountrySelect = document.getElementById("club-country-select");
@@ -173,14 +190,41 @@ function advanceDays(days) {
   viewYear = currentDate.getFullYear();
   viewMonth = currentDate.getMonth();
   render();
-  // Status de etapas e situação de contratos dependem da data atual: atualiza
-  // as visões que os exibem (contratos podem ter expirado/entrado em vigor;
-  // a fadiga dos participantes pode ter mudado).
-  refreshChampionshipView();
-  refreshDayDetail();
-  refreshClubView();
-  refreshAthleteView();
-  renderRanking(); // o ranking muda a cada etapa resolvida na passagem de tempo
+  refreshDayDetail(); // pertence à aba Calendário (barata; só se há dia aberto)
+  // Status de etapas e situação de contratos dependem da data atual. Em vez de
+  // re-renderizar TODAS as abas que os exibem (caro com muitos atletas), só a
+  // aba visível é atualizada agora; as demais ficam "sujas" e se atualizam ao
+  // serem abertas. Ver activateTab / renderTabContent / _dirtyTabs.
+  for (const tab of TIME_DEPENDENT_TABS) {
+    if (tab === activeTab) renderTabContent(tab);
+    else _dirtyTabs.add(tab);
+  }
+}
+
+// Abas cujo conteúdo depende da data da simulação (etapas realizadas, contratos
+// ativos, fadiga/ritmo, rankings). A aba Calendário é tratada por render() e a
+// aba Esportes é estática (não depende da data).
+const TIME_DEPENDENT_TABS = ["championships", "athletes", "clubs", "rankings"];
+
+// Renderiza o conteúdo (dependente da data) de uma aba, a partir da seleção
+// atual dos seus seletores. Usado ao abrir uma aba suja e na aba visível durante
+// a passagem de tempo.
+function renderTabContent(tab) {
+  switch (tab) {
+    case "championships":
+      refreshChampionshipView();
+      break;
+    case "athletes":
+      refreshAthleteView();
+      break;
+    case "clubs":
+      refreshClubView();
+      break;
+    case "rankings":
+      renderRanking();
+      break;
+    // "calendar": render()/refreshDayDetail; "sports": não depende da data.
+  }
 }
 
 // Re-renderiza o campeonato atualmente selecionado (mantém a data em dia).
@@ -297,6 +341,13 @@ function activateTab(tab) {
     btn.classList.toggle("tab--active", active);
     btn.setAttribute("aria-selected", String(active));
     panel.classList.toggle("tab-panel--hidden", !active);
+  }
+  activeTab = tab;
+  // Se a aba abriu "suja" (dados mudaram enquanto estava escondida), atualiza-a
+  // agora — sob demanda, uma vez só.
+  if (_dirtyTabs.has(tab)) {
+    renderTabContent(tab);
+    _dirtyTabs.delete(tab);
   }
 }
 
@@ -541,14 +592,14 @@ function renderStageResults(championship, stage) {
 
     const rows = results
       .map((entry) => {
-        const athlete = ATHLETES.find((a) => a.id === entry.id);
+        const athlete = getAthlete(entry.id);
         const name = athlete ? getAthleteName(athlete) : `Atleta ${entry.id}`;
         const value = formatEventResult(entry.result, event);
         return `<tr><td>${entry.position}</td><td>${name}</td><td>${value}</td></tr>`;
       })
       .join("");
 
-    const winner = ATHLETES.find((a) => a.id === results[0].id);
+    const winner = getAthlete(results[0].id);
     const winnerName = winner ? getAthleteName(winner) : `Atleta ${results[0].id}`;
     blocks.push(`
       <details class="stage-event">
@@ -595,55 +646,103 @@ function formatCityLocation(city) {
   return parts.length ? `${city.name} — ${parts.join(" · ")}` : city.name;
 }
 
-// ao clicar, expande para os demais atributos (inclui o clube atual).
-// Se `highlightAthleteId` for informado, o atleta correspondente já vem aberto
-// e a visualização rola até ele (usado ao vir da tela de Clubes).
-function renderAthletes(countryId, highlightAthleteId) {
-  const list = ATHLETES.filter((athlete) => athlete.countryId === countryId);
+// HTML do cartão de um atleta (o <details> expansível). `highlight` marca o
+// atleta que veio destacado da tela de Clubes (vem aberto e recebe um id-âncora).
+function athleteCardHtml(athlete, highlight) {
+  const birthCity = getCity(athlete.birthCityId);
+  const birthPlace = formatCityLocation(birthCity);
+  const favoriteSport = getAthleteFavoriteSport(athlete);
+  const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
+  // Modalidade e evento em que o atleta compete (trio favorito — ver athletes.js).
+  const favoriteModality = getAthleteFavoriteModality(athlete);
+  const favoriteModalityName = favoriteModality ? favoriteModality.name : "—";
+  const favoriteEvent = getAthleteFavoriteEvent(athlete);
+  const favoriteEventName = favoriteEvent ? favoriteEvent.name : "—";
+  // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
+  // ativo, o atleta é um agente livre.
+  const club = getAthleteClub(athlete.id, currentDate);
+  const clubName = club ? club.name : "Agente livre";
+  return `
+    <details class="athlete${highlight ? " athlete--highlight" : ""}"${highlight ? " open id=\"athlete-card\"" : ""}>
+      <summary class="athlete__summary">
+        <span class="athlete__name">${getAthleteName(athlete)}</span>
+        <span class="athlete__brief">${athlete.age} anos · Força ${athlete.strength}</span>
+      </summary>
+      <ul class="athlete__stats">
+        <li><span>Força</span><strong>${athlete.strength}</strong></li>
+        <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
+        <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
+        <li><span>Cansaço</span><strong>${Math.round(athlete.fatigue)}%</strong></li>
+        <li><span>Ritmo</span><strong>${Math.round(athlete.ritmo)}/100</strong></li>
+        <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
+        <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
+        <li><span>Modalidade favorita</span><strong>${favoriteModalityName}</strong></li>
+        <li><span>Evento favorito</span><strong>${favoriteEventName}</strong></li>
+        <li><span>Clube atual</span><strong>${clubName}</strong></li>
+      </ul>
+    </details>`;
+}
 
-  if (list.length === 0) {
-    athleteList.innerHTML =
-      `<p class="athletes__empty">Nenhum atleta para este país.</p>`;
+// Atletas de um país filtrados pelo termo de busca (nome exibido OU clube atual).
+// Sem termo, devolve todos (a lista pré-agrupada do índice, ver athletes.js).
+function filterAthletes(countryId, term) {
+  const all = getAthletesByCountry(countryId);
+  const q = term.trim().toLowerCase();
+  if (!q) return all;
+  return all.filter((athlete) => {
+    if (getAthleteName(athlete).toLowerCase().includes(q)) return true;
+    const club = getAthleteClub(athlete.id, currentDate);
+    const clubName = (club ? club.name : "Agente livre").toLowerCase();
+    return clubName.includes(q);
+  });
+}
+
+// Renderiza o LOTE visível da aba Atletas a partir do estado `_athleteView`
+// (país, termo e quantos mostrar). `highlightAthleteId` (ao vir dos Clubes)
+// garante que o atleta-alvo esteja dentro do lote e rola até ele.
+function renderAthleteList(highlightAthleteId) {
+  const { countryId, term } = _athleteView;
+  const filtered = filterAthletes(countryId, term);
+
+  if (filtered.length === 0) {
+    athleteList.innerHTML = term.trim()
+      ? `<p class="athletes__empty">Nenhum atleta encontrado para “${term.trim()}”.</p>`
+      : `<p class="athletes__empty">Nenhum atleta para este país.</p>`;
     return;
   }
 
-  athleteList.innerHTML = list
-    .map((athlete) => {
-      const birthCity = getCity(athlete.birthCityId);
-      const birthPlace = formatCityLocation(birthCity);
-      const favoriteSport = getAthleteFavoriteSport(athlete);
-      const favoriteSportName = favoriteSport ? favoriteSport.name : "—";
-      // Modalidade e evento em que o atleta compete (trio favorito — ver athletes.js).
-      const favoriteModality = getAthleteFavoriteModality(athlete);
-      const favoriteModalityName = favoriteModality ? favoriteModality.name : "—";
-      const favoriteEvent = getAthleteFavoriteEvent(athlete);
-      const favoriteEventName = favoriteEvent ? favoriteEvent.name : "—";
-      // Clube atual: derivado do contrato ativo (ver contracts.js). Sem contrato
-      // ativo, o atleta é um agente livre.
-      const club = getAthleteClub(athlete.id, currentDate);
-      const clubName = club ? club.name : "Agente livre";
-      const highlight = athlete.id === highlightAthleteId;
-      return `
-        <details class="athlete${highlight ? " athlete--highlight" : ""}"${highlight ? " open id=\"athlete-card\"" : ""}>
-          <summary class="athlete__summary">
-            <span class="athlete__name">${getAthleteName(athlete)}</span>
-            <span class="athlete__brief">${athlete.age} anos · Força ${athlete.strength}</span>
-          </summary>
-          <ul class="athlete__stats">
-            <li><span>Força</span><strong>${athlete.strength}</strong></li>
-            <li><span>Potencial</span><strong>${athlete.potential}</strong></li>
-            <li><span>Preparação Física</span><strong>${athlete.physicalPreparation}</strong></li>
-            <li><span>Cansaço</span><strong>${Math.round(athlete.fatigue)}%</strong></li>
-            <li><span>Ritmo</span><strong>${Math.round(athlete.ritmo)}/100</strong></li>
-            <li><span>Local de nascimento</span><strong>${birthPlace}</strong></li>
-            <li><span>Esporte favorito</span><strong>${favoriteSportName}</strong></li>
-            <li><span>Modalidade favorita</span><strong>${favoriteModalityName}</strong></li>
-            <li><span>Evento favorito</span><strong>${favoriteEventName}</strong></li>
-            <li><span>Clube atual</span><strong>${clubName}</strong></li>
-          </ul>
-        </details>`;
-    })
+  // Quantos mostrar: o pedido atual, mas o suficiente para incluir o destacado.
+  let visibleCount = Math.min(_athleteView.shown, filtered.length);
+  if (highlightAthleteId != null) {
+    const idx = filtered.findIndex((a) => a.id === highlightAthleteId);
+    if (idx >= 0 && idx + 1 > visibleCount) {
+      visibleCount = Math.min(
+        Math.ceil((idx + 1) / ATHLETE_PAGE_SIZE) * ATHLETE_PAGE_SIZE,
+        filtered.length
+      );
+    }
+  }
+  _athleteView.shown = visibleCount;
+
+  const cards = filtered
+    .slice(0, visibleCount)
+    .map((athlete) => athleteCardHtml(athlete, athlete.id === highlightAthleteId))
     .join("");
+  const remaining = filtered.length - visibleCount;
+  const moreButton = remaining
+    ? `<button type="button" class="load-more" id="athlete-load-more">Carregar mais (${remaining} restantes)</button>`
+    : "";
+  const countLine = `<p class="athletes__count">Mostrando ${visibleCount} de ${filtered.length}.</p>`;
+
+  athleteList.innerHTML = countLine + cards + moreButton;
+
+  const moreBtn = document.getElementById("athlete-load-more");
+  if (moreBtn) {
+    moreBtn.addEventListener("click", () => {
+      _athleteView.shown += ATHLETE_PAGE_SIZE;
+      renderAthleteList();
+    });
+  }
 
   if (highlightAthleteId != null) {
     const card = document.getElementById("athlete-card");
@@ -651,10 +750,24 @@ function renderAthletes(countryId, highlightAthleteId) {
   }
 }
 
+// Lista os atletas de um país, SOB DEMANDA (busca + lote — ver renderAthleteList).
+// Ao trocar de país ou vir um destaque (link de clube), reinicia a busca e o
+// lote; na re-renderização por passagem de tempo (mesmo país, sem destaque), o
+// termo e o tamanho do lote são preservados. Se `highlightAthleteId` for
+// informado, o atleta correspondente vem aberto e a visão rola até ele.
+function renderAthletes(countryId, highlightAthleteId) {
+  if (_athleteView.countryId !== countryId || highlightAthleteId != null) {
+    const term = highlightAthleteId != null ? "" : _athleteView.term;
+    _athleteView = { countryId, term, shown: ATHLETE_PAGE_SIZE };
+    if (athleteSearch) athleteSearch.value = term;
+  }
+  renderAthleteList(highlightAthleteId);
+}
+
 // Vai para o perfil do atleta na aba Atletas: seleciona o país do atleta e
 // abre/destaca o seu cartão. Usado pelos links "Atletas do clube".
 function goToAthlete(athleteId) {
-  const athlete = ATHLETES.find((a) => a.id === athleteId);
+  const athlete = getAthlete(athleteId);
   if (!athlete) return;
   activateTab("athletes");
   athleteCountrySelect.value = athlete.countryId;
@@ -766,7 +879,7 @@ function renderClubAthletes(clubId, container) {
 
   container.innerHTML = contracts
     .map((contract) => {
-      const athlete = ATHLETES.find((a) => a.id === contract.athleteId);
+      const athlete = getAthlete(contract.athleteId);
       const name = athlete ? getAthleteName(athlete) : `Atleta ${contract.athleteId}`;
       const renewal = contract.renewalOf ? " · renovado" : "";
       const contractInfo = `${contractDurationText(contract)} · até ${formatDate(contract.endDate)}${renewal}`;
@@ -785,11 +898,20 @@ function renderClubAthletes(clubId, container) {
   });
 }
 
-// Lista os AGENTES LIVRES do país (atletas sem contrato ativo na data atual).
-// Cada nome é clicável e leva ao perfil do atleta.
+// Renderização SOB DEMANDA dos agentes livres: os agentes livres de um país
+// podem ser MILHARES; pintá-los todos de uma vez trava. Mostra um lote por vez,
+// com "Carregar mais". O tamanho do lote é preservado entre re-renderizações do
+// mesmo país (passagem de tempo).
+const FREE_AGENTS_PAGE_SIZE = 50;
+let _freeAgentsView = { countryId: null, shown: FREE_AGENTS_PAGE_SIZE };
+
+// Lista os AGENTES LIVRES do país (atletas sem contrato ativo na data atual),
+// em lotes. Cada nome é clicável e leva ao perfil do atleta.
 function renderFreeAgents(countryId) {
-  const athletes = ATHLETES.filter((athlete) => athlete.countryId === countryId);
-  const free = getFreeAgents(athletes, currentDate);
+  if (_freeAgentsView.countryId !== countryId) {
+    _freeAgentsView = { countryId, shown: FREE_AGENTS_PAGE_SIZE };
+  }
+  const free = getFreeAgents(getAthletesByCountry(countryId), currentDate);
   const heading = `<h3 class="free-agents__title">Agentes livres</h3>`;
 
   if (free.length === 0) {
@@ -798,20 +920,34 @@ function renderFreeAgents(countryId) {
     return;
   }
 
+  const visibleCount = Math.min(_freeAgentsView.shown, free.length);
   const items = free
+    .slice(0, visibleCount)
     .map(
       (athlete) =>
         `<li><button type="button" class="free-agent-link link-button" data-athlete="${athlete.id}">${getAthleteName(athlete)}</button></li>`
     )
     .join("");
+  const remaining = free.length - visibleCount;
+  const moreButton = remaining
+    ? `<button type="button" class="load-more" id="free-agents-load-more">Carregar mais (${remaining} restantes)</button>`
+    : "";
+  const countLine = `<p class="free-agents__count">${free.length} agente(s) livre(s) — mostrando ${visibleCount}.</p>`;
   freeAgentsEl.innerHTML =
-    heading + `<ul class="free-agents__list">${items}</ul>`;
+    heading + countLine + `<ul class="free-agents__list">${items}</ul>` + moreButton;
 
   freeAgentsEl.querySelectorAll(".free-agent-link").forEach((button) => {
     button.addEventListener("click", () =>
       goToAthlete(Number(button.dataset.athlete))
     );
   });
+  const moreBtn = document.getElementById("free-agents-load-more");
+  if (moreBtn) {
+    moreBtn.addEventListener("click", () => {
+      _freeAgentsView.shown += FREE_AGENTS_PAGE_SIZE;
+      renderFreeAgents(countryId);
+    });
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -822,7 +958,7 @@ function renderFreeAgents(countryId) {
 
 // Nome de exibição do atleta (com fallback) — usado pelos rankings.
 function rankingAthleteName(athleteId) {
-  const athlete = ATHLETES.find((a) => a.id === athleteId);
+  const athlete = getAthlete(athleteId);
   return athlete ? getAthleteName(athlete) : `Atleta ${athleteId}`;
 }
 
@@ -1093,6 +1229,11 @@ TABS.sports.btn.addEventListener("click", () => activateTab("sports"));
 rankingTypeSelect.addEventListener("change", () => renderRanking());
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
+athleteSearch.addEventListener("input", () => {
+  _athleteView.term = athleteSearch.value;
+  _athleteView.shown = ATHLETE_PAGE_SIZE; // nova busca recomeça do primeiro lote
+  renderAthleteList();
+});
 clubCountrySelect.addEventListener("change", (e) => renderClubs(e.target.value));
 
 document.addEventListener("keydown", (event) => {

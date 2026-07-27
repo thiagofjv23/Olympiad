@@ -887,6 +887,54 @@ Regras a seguir sempre, salvo instrução em contrário:
 
 ---
 
+## Escalabilidade e performance
+
+Contexto: um teste com muitos atletas por evento (`athletesPerEvent = 100` →
+~19.000 atletas, ~14.000 contratos) deixou o jogo lento. As decisões abaixo
+atacam a **forma de consultar e renderizar os dados** — sem sacrificar features
+nem esportes —, a pedido de tornar o jogo escalável para grandes cargas.
+
+19cs. **Índices como CACHE derivado, não segunda fonte de verdade.** As consultas
+    "atleta por id", "atletas do país", "contrato ativo do atleta" e "elenco do
+    clube" varriam listas inteiras a cada chamada; com milhares de atletas, e como
+    a UI as chama uma vez por atleta na tela, o custo virava **quadrático**.
+    Acrescentei mapas de aceleração (`_athleteById`/`_athletesByCountry` em
+    `athletes.js`; `_contractsByAthlete`/`_contractsByClub` em `contracts.js`).
+    **Optei por mantê-los como cache** de `ATHLETES`/`CONTRACTS`, reconstruído/
+    atualizado nos pontos que mudam a lista (`generateAthletes`, `signContract`,
+    `resetContracts`). O status ativo/encerrado **continua derivado das datas** —
+    respeitando `PRINCIPIOS_CONTRATOS.md` (nada de campo de status nem de vínculo
+    duplicado no atleta/clube). Alternativa descartada: guardar o clube no atleta
+    (duplicaria o elo e violaria o princípio do vínculo único derivado).
+
+19ct. **Render sob demanda (lote + busca) em vez de virtualização.** Para não
+    pintar milhares de nós de uma vez na aba Atletas e nos Agentes livres, escolhi
+    **paginação por lote** ("Carregar mais", 50 por vez) com **busca por nome/
+    clube** — a pedido do usuário, que topou não renderizar todos de uma vez. Preferi
+    isso a uma virtualização (scroll infinito com reciclagem de nós), que seria mais
+    complexa e desnecessária para o objetivo. Nenhuma feature se perde: todos os
+    atletas seguem existindo e alcançáveis; os links de clube/agente livre garantem
+    trazer o atleta-alvo ao lote e destacá-lo (`renderAthleteList` estende o lote
+    até incluir o `highlightAthleteId`).
+
+19cu. **Re-render só da aba visível na passagem de tempo.** `advanceDays` repintava
+    todas as abas dependentes da data a cada dia (caro com muitos atletas, mesmo
+    para abas escondidas). Passei a re-renderizar **apenas a aba ativa** e a marcar
+    as demais como "sujas" (`_dirtyTabs`), atualizando-as **ao serem abertas**
+    (`activateTab`). O calendário continua sempre atualizado (é barato e dá o
+    feedback do tempo). Correção preservada: ao abrir uma aba, ela renderiza com a
+    data corrente.
+
+19cv. **Elenco da etapa construído uma vez (não por evento).** `processStage`
+    reconstruía o mapa atleta→clube e reavaliava a elegibilidade a cada evento —
+    e uma etapa "liga" roda até ~190 eventos. Extraí `buildStageRoster`, que monta
+    o mapa e **agrupa o elenco elegível por evento favorito uma única vez por
+    etapa**, reaproveitado em todos os eventos. Resultado igual (determinístico),
+    ~15× mais rápido na simulação (1 ano: ~57 s → ~3,7 s). `getStageEventParticipants`
+    virou um atalho sobre o mesmo builder (DRY), para uso avulso.
+
+---
+
 ## Processo
 
 20. **Validação antes de entregar:** rodo checagem de sintaxe (`node --check`) e,

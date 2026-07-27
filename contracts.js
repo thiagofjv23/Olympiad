@@ -38,6 +38,33 @@ let CONTRACTS = [];
 // Contador interno para ids sequenciais de contratos.
 let _nextContractId = 1;
 
+// -----------------------------------------------------------------------------
+// Índices derivados (aceleradores de consulta)
+// Cache de CONTRACTS agrupado por chave, para não varrer TODA a lista a cada
+// pergunta ("contrato ativo do atleta X?", "elenco do clube Y?"). Com milhares
+// de contratos, a varredura linear repetida (uma por atleta na tela) vira custo
+// quadrático — ver DECISOES.md. NÃO são uma segunda fonte de verdade: a situação
+// ativo/encerrado continua DERIVADA das datas (isContractActive); estes mapas só
+// agrupam os mesmos contratos por atleta e por clube.
+//   - _contractsByAthlete : athleteId -> lista de contratos daquele atleta
+//   - _contractsByClub    : clubId    -> lista de contratos daquele clube
+// Mantidos em sincronia por _indexContract (a cada assinatura) e resetContracts.
+// -----------------------------------------------------------------------------
+const _contractsByAthlete = new Map();
+const _contractsByClub = new Map();
+
+// Registra um contrato recém-criado nos índices (por atleta e por clube).
+function _indexContract(contract) {
+  if (!_contractsByAthlete.has(contract.athleteId)) {
+    _contractsByAthlete.set(contract.athleteId, []);
+  }
+  _contractsByAthlete.get(contract.athleteId).push(contract);
+  if (!_contractsByClub.has(contract.clubId)) {
+    _contractsByClub.set(contract.clubId, []);
+  }
+  _contractsByClub.get(contract.clubId).push(contract);
+}
+
 // --- utilidades ---------------------------------------------------------------
 
 // Duração válida? (1, 2 ou 3 anos.)
@@ -78,13 +105,13 @@ function getAllContracts() {
   return CONTRACTS.slice();
 }
 
-// Contrato ativo de um atleta numa data (o seu vínculo atual) ou null.
+// Contrato ativo de um atleta numa data (o seu vínculo atual) ou null. Olha só
+// os contratos daquele atleta (via índice), em vez de varrer toda a lista.
 function getActiveContractForAthlete(athleteId, referenceDate) {
+  const list = _contractsByAthlete.get(athleteId);
+  if (!list) return null;
   return (
-    CONTRACTS.find(
-      (contract) =>
-        contract.athleteId === athleteId && isContractActive(contract, referenceDate)
-    ) || null
+    list.find((contract) => isContractActive(contract, referenceDate)) || null
   );
 }
 
@@ -97,8 +124,8 @@ function getAthleteClub(athleteId, referenceDate) {
 // Contratos de um clube. Sem `referenceDate`, retorna todos (histórico); com
 // `referenceDate`, apenas os ativos naquela data (o elenco atual do clube).
 function getContractsByClub(clubId, referenceDate) {
-  const list = CONTRACTS.filter((contract) => contract.clubId === clubId);
-  if (referenceDate == null) return list;
+  const list = _contractsByClub.get(clubId) || [];
+  if (referenceDate == null) return list.slice(); // cópia do histórico do clube
   return list.filter((contract) => isContractActive(contract, referenceDate));
 }
 
@@ -143,6 +170,7 @@ function signContract(athleteId, clubId, startDate, durationYears) {
     renewalOf: null,
   };
   CONTRACTS.push(contract);
+  _indexContract(contract); // mantém os índices por atleta/por clube em sincronia
   return contract;
 }
 
@@ -166,6 +194,8 @@ function renewContract(contract, durationYears) {
 function resetContracts() {
   CONTRACTS = [];
   _nextContractId = 1;
+  _contractsByAthlete.clear();
+  _contractsByClub.clear();
   return CONTRACTS;
 }
 

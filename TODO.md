@@ -135,11 +135,14 @@ existe para ancorar os portes Regional e Estadual. Pendências:
 ## Atletas (regens)
 
 - [ ] **Quantidade de atletas por simulação é de teste.** Hoje geramos
-      **`athletesPerEvent` (2) atletas por evento** (`ATHLETE_GENERATION_CONFIG` em
-      `athletes.js`) → ~380 atletas, cobrindo todos os eventos; distribuídos entre
-      clubes e agentes livres pelo seed de teste. Esse número é apenas para nossos
-      testes — depois precisará mudar (provavelmente derivado dos campeonatos/
-      países/vagas).
+      **`athletesPerEvent` (100) atletas por evento** (`ATHLETE_GENERATION_CONFIG`
+      em `athletes.js`) → ~19.000 atletas, cobrindo todos os eventos; distribuídos
+      entre clubes e agentes livres pelo seed de teste. Esse número é apenas para
+      nossos testes — depois precisará mudar (provavelmente derivado dos
+      campeonatos/países/vagas). **Escalabilidade**: a partir da Etapa 54 o jogo
+      suporta cargas grandes sem gargalo (índices derivados, render sob demanda na
+      aba Atletas/Agentes livres, re-render só da aba visível e elenco por etapa —
+      ver `DOCUMENTACAO.md`/`DECISOES.md`), então o número pode subir sem travar.
 - [ ] **Faixa de idade do exemplo inicial.** O gerador suporta **12–40 anos**
       (`ATHLETE_AGE_LIMITS`), mas neste exemplo geramos só **18–35**
       (`ATHLETE_GENERATION_CONFIG.minAge/maxAge`). Rever depois.
@@ -307,10 +310,11 @@ modalidades olímpicas por esporte; `events.js` = provas resolvíveis, hoje só 
       na etapa** já suportam provas diferentes por dia (multiday) — usar em torneios
       reais quando quiser.
 - [ ] **Tamanho dos grids depende de `athletesPerEvent`.** Com o filtro de evento
-      favorito, cada evento é disputado só por quem o tem como favorito; com
-      `athletesPerEvent = 2` (teste) e cota, os grids ficam pequenos. Ajustar o
-      número de atletas por evento (ou a distribuição) quando quiser competições
-      mais cheias.
+      favorito, cada evento é disputado só por quem o tem como favorito; com a
+      **cota por clube** o grid final também depende dela (ex.: CNA com cota 1 →
+      até 22 por evento, um por clube). Ajustar o número de atletas por evento (ou
+      a distribuição/cota) quando quiser competições mais cheias — a performance já
+      aguenta valores altos (ver Etapa 54).
 - [x] **Participação atleta ↔ etapa (versão de teste).** Feito em
       `participation.js`: `getStageParticipants` define quem disputa cada etapa
       (regra de teste "todos os contratados via clube"), o **resultado é resolvido

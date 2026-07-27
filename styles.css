@@ -570,6 +570,56 @@ button.day:not(.day--current):hover {
   color: var(--muted);
 }
 
+/* Busca de atletas (nome/clube) ------------------------------------------- */
+.athletes__search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  margin: -6px 0 18px; /* logo abaixo do seletor de país */
+}
+
+.athletes__search:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Contagem "mostrando N de M" (Atletas e Agentes livres) ------------------ */
+.athletes__count,
+.free-agents__count {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Botão "Carregar mais" (paginação sob demanda) --------------------------- */
+.load-more {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.load-more:hover {
+  filter: brightness(1.08);
+}
+
+.load-more:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .athlete-list,
 .club-list,
 .sport-list {
