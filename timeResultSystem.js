@@ -36,11 +36,13 @@ const TimeResultSystem = {
   label: "Tempo",
 
   // Parâmetros de ordenação padrão: prova de TEMPO, MENOR tempo vence.
+  // `precision: 3` = o tempo é guardado/arredondado em MILÉSIMOS de segundo (a
+  // granularidade que a exibição h:m:s.mmm mostra ao jogador — ver `format`).
   DEFAULT_RESOLUTION: {
     metric: ResultsEngine.METRICS.TIME,
     order: ResultsEngine.ORDERS.ASCENDING, // menor tempo vence
     aggregation: ResultsEngine.AGGREGATIONS.SINGLE,
-    precision: 2,
+    precision: 3,
   },
 
   // Defaults do MODELO (o que é comum a toda prova de tempo). Cada evento pode
@@ -101,13 +103,34 @@ const TimeResultSystem = {
     return p.recordTime + (100 - effective) * p.secondsPerStrengthPoint;
   },
 
-  // Formata um tempo para exibição (ex.: "10.18 s"), conforme a precisão/unidade.
+  // Formata um tempo (em SEGUNDOS) como relógio, mostrando só as unidades
+  // necessárias — a forma padrão dos esportes, mais apresentável ao jogador:
+  //   - abaixo de 1 min → "S.mmm"         (ex.: 9.580)
+  //   - abaixo de 1 h   → "M:SS.mmm"      (ex.: 1:40.910, 3:26.000)
+  //   - a partir de 1 h → "H:MM:SS.mmm"   (ex.: 2:00:35.000)
+  // Sempre com MILÉSIMOS (3 casas). Trabalha em milissegundos INTEIROS para o
+  // arredondamento não "vazar" entre as unidades (ex.: 59,9997 s → 1:00.000, e
+  // não 60.000). Genérico: serve qualquer prova de tempo (corrida, natação,
+  // maratona, marcha…).
+  formatTime(seconds) {
+    if (seconds == null || Number.isNaN(seconds)) return "—";
+    const totalMs = Math.max(0, Math.round(seconds * 1000));
+    const h = Math.floor(totalMs / 3600000);
+    const m = Math.floor((totalMs % 3600000) / 60000);
+    const s = Math.floor((totalMs % 60000) / 1000);
+    const ms = totalMs % 1000;
+    const pad2 = (n) => String(n).padStart(2, "0");
+    const msStr = String(ms).padStart(3, "0");
+    if (h > 0) return `${h}:${pad2(m)}:${pad2(s)}.${msStr}`;
+    if (m > 0) return `${m}:${pad2(s)}.${msStr}`;
+    return `${s}.${msStr}`;
+  },
+
+  // Formata um resultado de tempo para exibição (ex.: "9.580", "1:40.910",
+  // "2:00:35.000"). Delega a `formatTime` — a notação de relógio já se descreve
+  // (sem sufixo de unidade). `event` fica na assinatura por compatibilidade.
   format(value, event) {
-    if (value == null) return "—";
-    const res = this.resolution(event);
-    const precision = res.precision != null ? res.precision : 2;
-    const unit = ResultsEngine.UNITS[res.metric] || "s";
-    return `${value.toFixed(precision)} ${unit}`.trim();
+    return this.formatTime(value);
   },
 
   // Gera o tempo de cada atleta e resolve o ranking pela ResultsEngine.

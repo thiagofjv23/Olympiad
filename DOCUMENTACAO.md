@@ -784,9 +784,17 @@ ao modelo anterior.
 
 Interface (`TimeResultSystem`, objeto único como a `ResultsEngine`): `id`,
 `DEFAULTS`, `params(event)`, `resolves(event)`, `effectiveStrength(athlete,
-event)`, `computeResult(athlete, event)` (o tempo), `format(value, event)` (ex.:
-`10.18 s`) e `resolve(athletes, event)` (ranqueia pela `ResultsEngine`, menor
-tempo vence).
+event)`, `computeResult(athlete, event)` (o tempo), `formatTime(seconds)` /
+`format(value, event)` e `resolve(athletes, event)` (ranqueia pela
+`ResultsEngine`, menor tempo vence).
+
+**Exibição do tempo (h:m:s.mmm).** O resultado é mostrado em **notação de
+relógio**, com apenas as unidades necessárias e sempre em **milésimos** de
+segundo: abaixo de 1 min → `9.809`; abaixo de 1 h → `1:43.475`; a partir de
+1 h → `2:03:09.799`. `formatTime` trabalha em milissegundos **inteiros**, então
+o arredondamento não "vaza" entre unidades (ex.: `59,9997 s` → `1:00.000`). Para
+isso o `precision` da resolução das provas de tempo é **3** (o valor é guardado
+em milésimos). Sem sufixo de unidade — a própria notação já se descreve.
 
 ---
 
@@ -1032,6 +1040,29 @@ tempo vence).
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 55 — Tempos exibidos como h:m:s.mmm (mais apresentáveis)
+
+- Antes, os resultados de tempo apareciam só em **segundos** (ex.: `103.48 s`).
+  Agora aparecem em **notação de relógio**, com apenas as unidades necessárias e
+  em **milésimos**: `9.809` (100 m), `1:43.475` (800 m), `2:03:09.799` (maratona),
+  `2:25:14.046` (marcha 35 km). Mais legível para o jogador e alinhado ao padrão
+  dos esportes.
+- Novo `TimeResultSystem.formatTime(seconds)` (genérico p/ qualquer prova de
+  tempo): decompõe em h/min/s/ms trabalhando em **milissegundos inteiros**, então
+  o arredondamento não "vaza" entre unidades (ex.: `59,9997 s` → `1:00.000`, não
+  `60.000`). `format` passou a delegar a ele; sem sufixo de unidade (a notação já
+  se descreve).
+- **`precision` das provas de tempo = 3** (era 2): o tempo é guardado/arredondado
+  em **milésimos**, a granularidade que a tela mostra (`makeTimeEvent`, o evento
+  `EVT-ATL-100M` e o `DEFAULT_RESOLUTION`).
+- **Escopo**: `timeResultSystem.js` (`formatTime`/`format` + precisão padrão) e
+  `events.js` (precision 3). A UI não mudou — já delegava a formatação ao sistema
+  do evento (`formatEventResult`). Nenhuma mecânica/ordenação alterada.
+- **Verificado** (Node + navegador headless): 14 casos de `formatTime` corretos
+  (incl. carry-over, horas e milésimos); no jogo, a etapa 1 do CNA mostra 100 m
+  `9.809`, 200 m `19.820`, 800 m `1:43.710`, 1500 m `3:30.851`, 5000 m
+  `13:04.057`; ranking de marcas dos 100 m em milésimos; sem erros de JS.
 
 ### Etapa 54 — Escalabilidade: índices, render sob demanda e re-render por aba
 

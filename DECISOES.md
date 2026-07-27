@@ -586,6 +586,18 @@ Regras a seguir sempre, salvo instrução em contrário:
     Só aparece "Ver" nas etapas realizadas; ao clicar, mostra posição/atleta/
     resultado (empates dividem a posição, como na engine).
 
+19cw. **Tempo exibido como relógio (h:m:s.mmm), sem sufixo de unidade.** A pedido
+    de deixar os resultados mais apresentáveis, troquei a exibição de "só segundos"
+    (`103.48 s`) pela **notação de relógio** com as unidades necessárias e
+    milésimos (`1:43.475`; `2:03:09.799`). Optei por **não** pôr sufixo de unidade
+    (a notação com `:` já se descreve, é o padrão dos esportes e evita o esquisito
+    `2:03:09.799 s`). `formatTime` decompõe em **milissegundos inteiros** para o
+    arredondamento não vazar entre unidades (ex.: `59,9997 s` → `1:00.000`). Subi
+    a `precision` das provas de tempo para **3** (o valor passa a ser guardado em
+    milésimos, senão o 3º dígito sairia sempre 0). Só o `TimeResultSystem` e os
+    parâmetros dos eventos mudaram — a UI já delegava a formatação ao sistema do
+    evento. Reverter para um sufixo (`… s`) ou menos casas é trivial se preferir.
+
 ### Cansaço: recuperação em dias de descanso
 
 19am. **Por que a fórmula de recuperação é do jeito que é.** O stat `fatigue` é a
