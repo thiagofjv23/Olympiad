@@ -573,6 +573,51 @@ Regras a seguir sempre, salvo instrução em contrário:
     listar os 55 nos seletores de país não quebra nada. A geração de atletas
     continua só no Brasil.
 
+### Inscrição de atletas e controle de clube
+
+19dc. **Inscrição como entidade própria (`registrations.js`), guardada.** Ao
+    contrário da participação de teste (derivada na hora), a inscrição **é** uma
+    escolha do jogador que precisa persistir — então modelei o elo Atleta ↔
+    Campeonato como uma entidade guardada, com regras de validação
+    (`canRegisterAthlete`) e índices para cota em O(1). A participação
+    (`participation.js`) passou a **ler** as inscrições em vez de inscrever todos os
+    contratados. Sem inscrições, ninguém disputa — é o comportamento "real" pedido.
+
+19dd. **Inscrição por CAMPEONATO (não por etapa), para este teste.** O inscrito
+    disputa **todas as etapas** do campeonato. É o mais simples e usável para o
+    teste (inscrever "o mundo todo" por etapa seria inviável de fazer à mão). A
+    inscrição **por etapa** (rodar/poupar atletas) fica como refinamento futuro (já
+    no `TODO.md`).
+
+19de. **Cota barrada na INSCRIÇÃO (o jogador escolhe até o limite) — sem IA.** O
+    pedido foi criar a estrutura de inscrição **sem** a IA que decide. Então a cota
+    por clube por evento é aplicada na hora de inscrever (bloqueia o excedente); a
+    escolha de **quem** vai é 100% do jogador. Mantive o `limitAthletesPerClub`
+    (mais fortes) só como **rede de segurança** na resolução — não é uma decisão
+    de estratégia, e não inscrevo ninguém automaticamente.
+
+19df. **Agentes livres não podem ser inscritos.** A inscrição é **por clube**
+    (o clube inscreve os seus contratados); quem não tem contrato ativo não é
+    inscrito por ninguém — coerente com o elo Atleta ↔ Clube (contratos) e com a
+    regra anterior. Assim, "todos os atletas do mundo" que o jogador inscreve são,
+    na prática, todos os **contratados** (os clubes cobrem a maioria via seed).
+
+19dg. **Controle de clube num módulo próprio (`clubControl.js`), começando no maior
+    prestígio.** O escopo de teste é "MMO de uma pessoa só": o jogador controla
+    todos os clubes, um de cada vez. Guardei o clube controlado como estado próprio
+    e a ordem de troca por **prestígio decrescente** (o pedido: começar no maior e
+    ter um botão para trocar). Ofereci **botão "próximo"** (percorre a ordem, dá a
+    volta) **e** um seletor para pular direto — o botão atende ao pedido; o seletor
+    é conveniência com 22 clubes. A UI (aba Inscrições) opera sempre sobre o clube
+    controlado.
+
+19dh. **Bulk "Inscrever elegíveis (até a cota)" é conveniência do jogador, não IA.**
+    Como inscrever atleta por atleta "o mundo todo" seria impraticável, pus um botão
+    que o jogador aciona para **preencher** cada evento até a cota, na ordem de
+    exibição (mais fortes primeiro — a mesma ordenação de desempate que já existia).
+    É determinístico, reversível ("Remover todos") e disparado pelo jogador — não é
+    uma IA autônoma de inscrição. Fácil de trocar por outra ordem se preferir.
+
 ### Campeonato ↔ esporte e Participação
 
 19ae. **`sportId` no campeonato, não na etapa.** Vinculei o esporte ao campeonato

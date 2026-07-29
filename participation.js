@@ -9,41 +9,34 @@
 // evento é disputado pelos atletas cujo EVENTO FAVORITO é aquele (o atleta
 // compete só na sua prova — ver athletes.js).
 //
-// REGRA DE TESTE (temporária): cada clube inscreve seus atletas contratados nos
-// eventos correspondentes ao evento favorito deles. Participantes de um evento =
-// atletas com contrato ATIVO (na data) em clube do país + elegíveis (geografia +
-// idade) + com aquele evento favorito, limitados pela cota por clube. Agentes
-// livres não disputam (ninguém os inscreve).
+// QUEM DISPUTA vem das INSCRIÇÕES (registrations.js), feitas pelo JOGADOR — não
+// mais da regra automática de "todos os contratados". Participantes de um evento
+// numa etapa = atletas INSCRITOS no campeonato, cujo evento favorito é aquele,
+// que na DATA DA ETAPA continuam CONTRATADOS ao clube que os inscreveu e ELEGÍVEIS
+// (geografia + idade), limitados pela cota por clube. A revalidação na data da
+// etapa cobre mudanças posteriores à inscrição (contrato expirou/mudou de clube).
 //
-// FALTA (ver TODO.md): mecânica REAL de cadastro (o clube escolhendo quais
-// atletas inscrever, vagas, critérios) e a lógica de chave do mata-mata.
+// FALTA (ver TODO.md): a lógica de chave do mata-mata e a inscrição POR ETAPA
+// (hoje a inscrição é por campeonato — o inscrito disputa todas as etapas).
 // -----------------------------------------------------------------------------
 
-// Mapa atleta → clube (contrato ATIVO na data) para os clubes de um país. É a
-// base da participação: quem está contratado, e por qual clube, naquela data.
-function buildAthleteClubMap(championship, referenceDate) {
-  const athleteClubId = new Map();
-  for (const club of getClubsByCountry(championship.countryId)) {
-    for (const contract of getContractsByClub(club.id, referenceDate)) {
-      athleteClubId.set(contract.athleteId, club.id);
-    }
-  }
-  return athleteClubId;
-}
-
-// Elenco elegível de uma ETAPA, agrupado por EVENTO favorito. Constrói o mapa
-// atleta→clube e avalia a elegibilidade (geografia + idade) UMA vez por etapa —
-// não por evento —, o que importa quando a etapa roda muitos eventos com muitos
-// atletas (evita reprocessar o elenco inteiro a cada prova). Retorna
-// { athleteClubId, byEvent } onde byEvent: eventId → atletas elegíveis daquele
-// evento (o atleta compete só na sua prova favorita).
+// Elenco INSCRITO de uma ETAPA, agrupado por EVENTO favorito. Lê as inscrições do
+// campeonato (registrations.js) e, para a DATA DA ETAPA, mantém só quem segue
+// contratado ao clube que o inscreveu e elegível. Constrói o mapa atleta→clube e
+// agrupa por evento UMA vez por etapa (reaproveitado em todos os seus eventos).
+// Retorna { athleteClubId, byEvent } onde byEvent: eventId → atletas daquele evento.
 function buildStageRoster(championship, stage) {
-  const athleteClubId = buildAthleteClubMap(championship, stage.date);
+  const athleteClubId = new Map();
   const byEvent = new Map();
-  for (const athleteId of athleteClubId.keys()) {
-    const athlete = getAthlete(athleteId);
+  for (const registration of getChampionshipRegistrations(championship.id)) {
+    const athlete = getAthlete(registration.athleteId);
     if (!athlete) continue;
+    // Ainda contratado ao clube que o inscreveu, na data da etapa?
+    const contract = getActiveContractForAthlete(athlete.id, stage.date);
+    if (!contract || contract.clubId !== registration.clubId) continue;
+    // Ainda elegível (geografia + idade)?
     if (!isAthleteEligibleForChampionship(athlete, championship)) continue;
+    athleteClubId.set(athlete.id, registration.clubId);
     if (!byEvent.has(athlete.favoriteEventId)) byEvent.set(athlete.favoriteEventId, []);
     byEvent.get(athlete.favoriteEventId).push(athlete);
   }

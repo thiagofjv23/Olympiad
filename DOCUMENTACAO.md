@@ -446,18 +446,53 @@ atual** de cada atleta (ou "Agente livre"). Tudo é **reativo à passagem de tem
 (um contrato que expira/entra em vigor atualiza elenco, agentes livres e clube do
 atleta). Ver a seção 4 e as Etapas 23–24.
 
+### Inscrições (Atleta ↔ Campeonato) — `registrations.js`
+
+O **elo Atleta ↔ Campeonato**: uma inscrição registra que um **atleta** foi
+inscrito num **campeonato** por um **clube**. É o que define **quem disputa** — a
+participação (abaixo) passou a usar **apenas os inscritos** (não mais "todos os
+contratados"). **Quem inscreve é o JOGADOR** (escopo de teste, ver Controle de
+clube); **não há IA** que inscreva sozinha.
+
+Regras de uma inscrição (`canRegisterAthlete`, que devolve `{ ok, reason }`):
+(1) ainda **não inscrito** no campeonato; (2) **contratado** ao clube que o
+inscreve (contrato ativo na data — agentes livres não podem); (3) **elegível**
+(trava geográfica + idade — `eligibility.js`); (4) o **evento favorito** está na
+**cobertura** do campeonato; (5) a **cota por clube por evento** (`clubQuota`) não
+foi atingida. Cada inscrição guarda `{ championshipId, athleteId, clubId, eventId }`.
+
+Funções: `registerAthlete` / `unregisterAthlete`, `isAthleteRegistered`,
+`getRegistration`, `getChampionshipRegistrations`, `getChampionshipRegistrationCount`,
+`getClubEventRegistrationCount`, `canRegisterAthlete`, `resetRegistrations`. Índices
+por campeonato e de contagem por `champ#club#event` (cota em O(1)). Começa **vazio**
+(o jogador inscreve).
+
+### Controle de clube — `clubControl.js`
+
+Escopo de **teste**: o jogador controla **todos os clubes**, **um de cada vez**
+(como um "MMO de uma pessoa só"). Guarda qual clube está sob controle e permite
+trocar. Começa pelo clube de **maior prestígio**; a **ordem de controle** é por
+prestígio decrescente (desempate por nome/id). É a estrutura (estado + operações);
+a UI fica na aba **Inscrições**.
+
+Funções: `initClubControl` (começa no maior prestígio), `getControlledClubId` /
+`getControlledClub`, `setControlledClub(id)`, `switchToNextControlledClub` (percorre
+por prestígio, dá a volta), `getClubsByControlOrder`.
+
 ### Participação atleta ↔ etapa — `participation.js`
 
-A ponte entre **atletas (via clube/contrato)** e as **etapas** de um campeonato.
-Uma etapa pode rodar **vários eventos** (`stage.events`); cada evento é disputado
-pelos atletas cujo **evento favorito** é aquele (o atleta compete só na sua prova
-— ver `athletes.js`). Define **quem disputa cada evento**, resolve o resultado e
-aplica a **fadiga/ritmo** de participação.
+A ponte entre **atletas inscritos** e as **etapas** de um campeonato. Uma etapa
+pode rodar **vários eventos** (`stage.events`); cada evento é disputado pelos
+atletas cujo **evento favorito** é aquele (o atleta compete só na sua prova — ver
+`athletes.js`). Define **quem disputa cada evento**, resolve o resultado e aplica a
+**fadiga/ritmo** de participação.
 
-**Regra de TESTE (temporária):** os participantes de um EVENTO são os atletas com
-**contrato ativo na data** em clube do país do campeonato, **elegíveis** (geografia
-+ idade), cujo **`favoriteEventId`** é aquele evento; **agentes livres não
-disputam**. Falta a mecânica **real** de cadastro (ver `TODO.md`).
+**Quem disputa vem das INSCRIÇÕES** (`registrations.js`): os participantes de um
+EVENTO são os atletas **inscritos** no campeonato, cujo `favoriteEventId` é aquele
+evento, que na **data da etapa** seguem **contratados ao clube que os inscreveu** e
+**elegíveis** (geografia + idade). Essa revalidação na data cobre mudanças após a
+inscrição (contrato expirou/mudou de clube). Enquanto o jogador não inscrever
+ninguém, as etapas ficam **sem participantes** (nenhum resultado).
 
 **Travas de inscrição:** elegibilidade de atleta (abrangência `scope` + idade
 `ageRestriction` — ver `eligibility.js`) **e** **cota por clube** (`clubQuota`):
@@ -468,11 +503,15 @@ pendente (ver `TODO.md`).
 
 Funções:
 
+- `buildStageRoster(championship, stage)` — o elenco **inscrito** de uma etapa,
+  agrupado por evento favorito (lê `getChampionshipRegistrations` e revalida
+  contrato + elegibilidade na data da etapa). Construído **uma vez por etapa**.
 - `getStageEventParticipants(championship, stage, event)` — participantes de um
-  evento de uma etapa (contratados via clube, elegíveis, com aquele evento
-  favorito, dentro da cota por clube).
+  evento de uma etapa (inscritos, revalidados na data, com aquele evento favorito,
+  dentro da cota por clube).
 - `limitAthletesPerClub(athletes, athleteClubId, quota)` — aplica a cota por clube
-  (placeholder: os mais fortes).
+  como **rede de segurança** (a cota já é barrada na **inscrição**); se sobrar,
+  mantém os **mais fortes** (por `strength`, desempate por id).
 - `getStageEvents(championship, stage)` — os eventos (objetos) que a etapa roda.
   `getStageEvent(championship, stage)` — o primeiro evento **disputável** (compat).
 - `processStage(championship, stage)` — processa uma etapa **uma única vez**: para
@@ -1062,6 +1101,40 @@ separados pelo milésimo), sem que o jogador veja a 3ª casa. Sem sufixo de unid
 - **Verificado**: força efetiva 100 → 9,58 s; atleta cansado corre mais lento
   (For 80 descansado 10,58 s → fatigue 60 = 11,18 s); empates dividem a posição.
 - Ainda **sem UI de resultados** e sem participação atleta↔etapa (ver `TODO.md`).
+
+### Etapa 58 — Inscrição de atletas e controle de clube (jogável)
+
+Para o jogo ficar **realmente jogável**, a participação deixou de ser automática
+("todos os contratados") e passou a depender de **inscrições feitas pelo jogador**.
+
+- **Estrutura de inscrição** (`registrations.js`): elo Atleta ↔ Campeonato feito
+  por um clube, com regras (`canRegisterAthlete`): não inscrito antes, contratado
+  ao clube, elegível (geografia + idade), evento favorito na cobertura e dentro da
+  **cota por clube por evento**. **Sem IA** — quem inscreve é o jogador.
+- **Controle de clube** (`clubControl.js`): escopo de teste "MMO de uma pessoa
+  só" — o jogador controla **todos os clubes, um de cada vez**. Começa pelo de
+  **maior prestígio**; um botão passa para o **próximo** (por prestígio) e um
+  seletor escolhe direto.
+- **Participação a partir das inscrições** (`participation.js`): `buildStageRoster`
+  lê `getChampionshipRegistrations` e revalida contrato + elegibilidade na data da
+  etapa. **Substitui a regra de teste**; sem inscrições, a etapa fica sem
+  participantes.
+- **UI — aba "Inscrições"** (`index.html`/`script.js`/`styles.css`): painel de
+  **controle de clube** (clube controlado, "Controlar próximo clube ›", seletor) e
+  painel de **inscrição** por campeonato — os atletas elegíveis do clube agrupados
+  por **evento** (`<details>`), cada um com **Inscrever/Remover** (cota barra o
+  excedente), mais **"Inscrever elegíveis (até a cota)"** e **"Remover todos deste
+  clube"**. A aba Campeonatos ganhou a linha **"Atletas inscritos"**.
+- **Escopo**: `registrations.js`/`clubControl.js` (novos), `clubs.js`
+  (`getAllClubs`), `participation.js` (roster das inscrições), `index.html`
+  (scripts + aba), `script.js` (UI da aba + linha no campeonato), `styles.css` e
+  docs. Contratos/atletas/rankings intactos.
+- **Verificado** (Node + navegador headless): controle começa no maior prestígio
+  (Flamengo 92) e troca (→ Corinthians 90); cota barra o 2º atleta do mesmo evento
+  (CNA = 1), agente livre é recusado (`notContracted`), remover libera a cota;
+  participação só com inscritos (campeonato sem inscrição → 0 participantes);
+  na UI, inscrever pelo botão em massa e avançar o tempo resolve a etapa 1 do CNA
+  só para os inscritos; sem erros de JS.
 
 ### Etapa 57 — Entidade Continente e database de 55 países
 

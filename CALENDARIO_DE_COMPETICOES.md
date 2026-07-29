@@ -9,9 +9,12 @@ inscrição**).
 
 > Estado atual: **a estrutura (categorias) está implementada** e o **calendário do
 > Brasil está populado** (Nacional + Estaduais + Regionais), com as **travas de
-> inscrição** por país/região/estado/cidade. A lógica de **inscrição real** (o
-> clube escolhendo quais atletas), a **distribuição de ranking**, os **índices**,
-> as **finais** e a **premiação** ainda **não existem** — desenhadas aqui e
+> inscrição** por país/região/estado/cidade. A **inscrição** já existe como
+> estrutura (`registrations.js`) e **substituiu** a participação automática — mas,
+> por ora (escopo de teste), quem inscreve é o **jogador**, controlando todos os
+> clubes um a um (`clubControl.js`, aba **Inscrições**); a **IA de inscrição** (o
+> clube decidindo sozinho), a **distribuição de ranking**, os **índices**, as
+> **finais** e a **premiação** ainda **não existem** — desenhadas aqui e
 > registradas no `TODO.md`.
 
 ---

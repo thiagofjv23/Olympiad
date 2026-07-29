@@ -1051,6 +1051,242 @@ button.day:not(.day--current):hover {
   min-width: calc(100% - 24px);
 }
 
+/* Inscrições (controle de clube + inscrição de atletas) ------------------- */
+.registrations {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 4px 24px;
+}
+
+.club-control__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+
+.club-control__label {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.club-control__name {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.club-control__meta {
+  margin: 2px 0 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.club-control__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.club-control__pick-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.club-control__select {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.control-btn {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 9px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.control-btn:hover {
+  filter: brightness(1.08);
+}
+
+.control-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.control-btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.registrations__select-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+
+.registrations__select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.reg-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.reg-summary__title {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+.reg-summary__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reg-summary__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 0.9rem;
+}
+
+.reg-summary__list span {
+  color: var(--muted);
+}
+
+.reg-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.reg-event {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  background: var(--surface);
+}
+
+.reg-event__summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+.reg-event__name {
+  font-weight: 600;
+}
+
+.reg-event__pending {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.reg-event__count {
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.reg-athletes {
+  list-style: none;
+  margin: 0;
+  padding: 0 14px 10px;
+}
+
+.reg-athlete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.reg-athlete__info {
+  color: var(--text);
+}
+
+.reg-toggle {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease;
+}
+
+.reg-toggle--on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.reg-toggle:hover {
+  filter: brightness(1.08);
+}
+
+.reg-toggle:disabled {
+  border-color: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.reg-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.registration__empty {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14161c;

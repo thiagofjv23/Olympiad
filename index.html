@@ -21,6 +21,9 @@
       <button id="tab-btn-clubs" class="tab" role="tab" aria-selected="false" aria-controls="tab-clubs" type="button">
         Clubes
       </button>
+      <button id="tab-btn-registrations" class="tab" role="tab" aria-selected="false" aria-controls="tab-registrations" type="button">
+        Inscrições
+      </button>
       <button id="tab-btn-rankings" class="tab" role="tab" aria-selected="false" aria-controls="tab-rankings" type="button">
         Rankings
       </button>
@@ -96,6 +99,19 @@
       </div>
     </section>
 
+    <!-- ABA: Inscrições -->
+    <section id="tab-registrations" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-registrations">
+      <div class="registrations">
+        <!-- Controle de clube: qual clube o jogador controla + trocar de clube -->
+        <div id="club-control" class="club-control" aria-live="polite"></div>
+
+        <!-- Inscrição dos atletas do clube controlado num campeonato -->
+        <label class="registrations__select-label" for="registration-championship-select">Campeonato</label>
+        <select id="registration-championship-select" class="registrations__select"></select>
+        <div id="registration-panel" class="registration-panel"></div>
+      </div>
+    </section>
+
     <!-- ABA: Rankings -->
     <section id="tab-rankings" class="tab-panel tab-panel--hidden" role="tabpanel" aria-labelledby="tab-btn-rankings">
       <div class="rankings">
@@ -132,8 +148,10 @@
   <script src="tournaments.js"></script>
   <script src="athletes.js"></script>
   <script src="clubs.js"></script>
+  <script src="clubControl.js"></script>
   <script src="contracts.js"></script>
   <script src="eligibility.js"></script>
+  <script src="registrations.js"></script>
   <script src="ranking.js"></script>
   <script src="marksRanking.js"></script>
   <script src="participation.js"></script>

@@ -49,6 +49,10 @@ const TABS = {
     btn: document.getElementById("tab-btn-clubs"),
     panel: document.getElementById("tab-clubs"),
   },
+  registrations: {
+    btn: document.getElementById("tab-btn-registrations"),
+    panel: document.getElementById("tab-registrations"),
+  },
   rankings: {
     btn: document.getElementById("tab-btn-rankings"),
     panel: document.getElementById("tab-rankings"),
@@ -89,6 +93,13 @@ let _athleteView = { countryId: null, term: "", shown: ATHLETE_PAGE_SIZE };
 const clubCountrySelect = document.getElementById("club-country-select");
 const clubList = document.getElementById("club-list");
 const freeAgentsEl = document.getElementById("free-agents");
+
+// Elementos — inscrições (controle de clube + inscrição de atletas).
+const clubControlEl = document.getElementById("club-control");
+const registrationChampionshipSelect = document.getElementById(
+  "registration-championship-select"
+);
+const registrationPanel = document.getElementById("registration-panel");
 
 // Elementos — esportes.
 const sportList = document.getElementById("sport-list");
@@ -204,7 +215,13 @@ function advanceDays(days) {
 // Abas cujo conteúdo depende da data da simulação (etapas realizadas, contratos
 // ativos, fadiga/ritmo, rankings). A aba Calendário é tratada por render() e a
 // aba Esportes é estática (não depende da data).
-const TIME_DEPENDENT_TABS = ["championships", "athletes", "clubs", "rankings"];
+const TIME_DEPENDENT_TABS = [
+  "championships",
+  "athletes",
+  "clubs",
+  "registrations",
+  "rankings",
+];
 
 // Renderiza o conteúdo (dependente da data) de uma aba, a partir da seleção
 // atual dos seus seletores. Usado ao abrir uma aba suja e na aba visível durante
@@ -219,6 +236,9 @@ function renderTabContent(tab) {
       break;
     case "clubs":
       refreshClubView();
+      break;
+    case "registrations":
+      renderRegistrations();
       break;
     case "rankings":
       renderRanking();
@@ -533,6 +553,7 @@ function renderChampionship(id, highlightStage) {
         <li><span>Cobertura</span><strong>${coverageText}</strong></li>
         <li><span>Formato</span><strong>${formatText}</strong></li>
         <li><span>Atletas elegíveis</span><strong>${eligibleCount}</strong></li>
+        <li><span>Atletas inscritos</span><strong>${getChampionshipRegistrationCount(championship.id)}</strong></li>
         <li><span>Provas</span><strong>${championship.events.length}</strong></li>
         <li><span>Etapas realizadas</span><strong>${progress.done} / ${progress.total}</strong></li>
       </ul>
@@ -951,6 +972,241 @@ function renderFreeAgents(countryId) {
 }
 
 // -----------------------------------------------------------------------------
+// Inscrições (UI) — CONTROLE DE CLUBE + inscrição de atletas em campeonatos.
+//
+// Escopo de teste: o jogador controla todos os clubes (um de cada vez, ver
+// clubControl.js) e inscreve os atletas do clube controlado nos campeonatos (ver
+// registrations.js). A inscrição é 100% do jogador — nenhuma IA inscreve.
+// -----------------------------------------------------------------------------
+
+// Renderiza a aba Inscrições inteira: o painel de controle de clube + o painel de
+// inscrição do clube controlado no campeonato selecionado.
+function renderRegistrations() {
+  renderClubControl();
+  renderRegistrationPanel();
+}
+
+// Painel de CONTROLE DE CLUBE: mostra o clube controlado (começa no de maior
+// prestígio) e permite trocar — botão "próximo clube" (percorre por prestígio) e
+// um seletor para escolher diretamente.
+function renderClubControl() {
+  const club = getControlledClub();
+  if (!club) {
+    clubControlEl.innerHTML =
+      `<p class="club-control__empty">Nenhum clube disponível para controle.</p>`;
+    return;
+  }
+  const city = getCity(club.cityId);
+  const cityName = city ? city.name : "—";
+  const options = getClubsByControlOrder()
+    .map(
+      (c) =>
+        `<option value="${c.id}"${c.id === club.id ? " selected" : ""}>${c.name} — Prestígio ${c.prestige}</option>`
+    )
+    .join("");
+  clubControlEl.innerHTML = `
+    <div class="club-control__card">
+      <p class="club-control__label">Clube controlado</p>
+      <p class="club-control__name">${club.name}</p>
+      <p class="club-control__meta">${cityName} · Prestígio ${club.prestige}/100</p>
+      <div class="club-control__actions">
+        <button type="button" id="control-next-club" class="control-btn">Controlar próximo clube ›</button>
+        <label class="club-control__pick-label" for="control-club-select">ou escolher:</label>
+        <select id="control-club-select" class="club-control__select">${options}</select>
+      </div>
+    </div>`;
+
+  document.getElementById("control-next-club").addEventListener("click", () => {
+    switchToNextControlledClub();
+    renderRegistrations();
+  });
+  document.getElementById("control-club-select").addEventListener("change", (e) => {
+    setControlledClub(e.target.value);
+    renderRegistrations();
+  });
+}
+
+// Preenche o seletor de campeonato da aba Inscrições (todos os campeonatos).
+function populateRegistrationChampionshipSelect() {
+  registrationChampionshipSelect.innerHTML = "";
+  for (const championship of Object.values(CHAMPIONSHIPS)) {
+    const option = document.createElement("option");
+    option.value = championship.id;
+    option.textContent = championship.name;
+    registrationChampionshipSelect.appendChild(option);
+  }
+}
+
+// Bloco-resumo do campeonato na aba Inscrições (abrangência, cota, contagens).
+function registrationSummaryHtml(championship, scopeText, quotaText, registeredByClub, candidateCount) {
+  return `
+    <div class="reg-summary">
+      <p class="reg-summary__title">${championship.name}</p>
+      <ul class="reg-summary__list">
+        <li><span>Abrangência</span><strong>${scopeText}</strong></li>
+        <li><span>Cota por clube</span><strong>${quotaText}</strong></li>
+        <li><span>Atletas elegíveis do clube</span><strong>${candidateCount}</strong></li>
+        <li><span>Inscritos (deste clube)</span><strong>${registeredByClub}</strong></li>
+      </ul>
+    </div>`;
+}
+
+// Uma linha de atleta no painel de inscrição: nome/atributos + botão de alternar
+// (Inscrever / Inscrito ✓). Se a cota do evento estiver cheia e o atleta não
+// estiver inscrito, o botão fica desabilitado (com uma nota).
+function registrationRowHtml(championship, athlete, quota) {
+  const registered = isAthleteRegistered(championship.id, athlete.id);
+  let disabled = false;
+  let note = "";
+  if (!registered && quota != null) {
+    const club = getControlledClub();
+    const count = getClubEventRegistrationCount(
+      championship.id,
+      club.id,
+      athlete.favoriteEventId
+    );
+    if (count >= quota) {
+      disabled = true;
+      note = ` <span class="reg-note">cota cheia</span>`;
+    }
+  }
+  const label = registered ? "Inscrito ✓ — remover" : "Inscrever";
+  const cls = registered ? "reg-toggle reg-toggle--on" : "reg-toggle";
+  return `
+    <li class="reg-athlete">
+      <span class="reg-athlete__info">${getAthleteName(athlete)} · Força ${athlete.strength} · Ritmo ${Math.round(athlete.ritmo)}</span>
+      <button type="button" class="${cls}" data-athlete="${athlete.id}"${disabled ? " disabled" : ""}>${label}</button>${note}
+    </li>`;
+}
+
+// Painel de INSCRIÇÃO do clube controlado no campeonato selecionado. Mostra os
+// atletas do clube ELEGÍVEIS (contratados + trava geográfica/idade + evento na
+// cobertura), agrupados por evento, cada um com botão de inscrever/remover
+// (respeitando a cota). Botões em massa: preencher até a cota / remover todos.
+function renderRegistrationPanel() {
+  const club = getControlledClub();
+  const champId = registrationChampionshipSelect.value;
+  const championship = champId ? CHAMPIONSHIPS[champId] : null;
+  if (!club || !championship) {
+    registrationPanel.innerHTML = "";
+    return;
+  }
+
+  const scopeText = formatChampionshipScopeText(championship);
+  const quota = getChampionshipClubQuota(championship);
+  const quotaText = quota != null ? `${quota} por evento` : "sem limite";
+  const registeredByClub = getChampionshipRegistrations(championship.id).filter(
+    (reg) => reg.clubId === club.id
+  ).length;
+
+  // Candidatos: contratados ao clube (na data), elegíveis, com evento na cobertura.
+  const coveredEvents = new Set(getChampionshipEvents(championship));
+  const candidates = [];
+  for (const contract of getContractsByClub(club.id, currentDate)) {
+    const athlete = getAthlete(contract.athleteId);
+    if (!athlete) continue;
+    if (!coveredEvents.has(athlete.favoriteEventId)) continue;
+    if (!isAthleteEligibleForChampionship(athlete, championship)) continue;
+    candidates.push(athlete);
+  }
+
+  const summary = registrationSummaryHtml(
+    championship,
+    scopeText,
+    quotaText,
+    registeredByClub,
+    candidates.length
+  );
+
+  if (candidates.length === 0) {
+    registrationPanel.innerHTML =
+      summary +
+      `<p class="registration__empty">Este clube não tem atletas elegíveis para este campeonato (abrangência: ${scopeText}).</p>`;
+    return;
+  }
+
+  // Agrupa por evento favorito e ordena cada grupo (mais fortes primeiro — ordem
+  // de exibição estável, também usada pelo "preencher até a cota").
+  const byEvent = new Map();
+  for (const athlete of candidates) {
+    if (!byEvent.has(athlete.favoriteEventId)) byEvent.set(athlete.favoriteEventId, []);
+    byEvent.get(athlete.favoriteEventId).push(athlete);
+  }
+  for (const list of byEvent.values()) {
+    list.sort((a, b) => b.strength - a.strength || a.id - b.id);
+  }
+
+  const eventBlocks = [...byEvent.entries()]
+    .map(([eventId, list]) => {
+      const event = getEvent(eventId);
+      const eventName = event ? event.name : eventId;
+      const playable = event && isEventPlayable(event);
+      const clubRegForEvent =
+        quota != null
+          ? getClubEventRegistrationCount(championship.id, club.id, eventId)
+          : list.filter((a) => isAthleteRegistered(championship.id, a.id)).length;
+      const quotaLabel = quota != null ? `${clubRegForEvent}/${quota}` : String(clubRegForEvent);
+      const rows = list
+        .map((athlete) => registrationRowHtml(championship, athlete, quota))
+        .join("");
+      return `
+        <details class="reg-event">
+          <summary class="reg-event__summary">
+            <span class="reg-event__name">${eventName}${playable ? "" : ` <span class="reg-event__pending">(sem modelo ainda)</span>`}</span>
+            <span class="reg-event__count">inscritos ${quotaLabel}</span>
+          </summary>
+          <ul class="reg-athletes">${rows}</ul>
+        </details>`;
+    })
+    .join("");
+
+  registrationPanel.innerHTML =
+    summary +
+    `<div class="reg-bulk">
+      <button type="button" id="reg-fill" class="control-btn">Inscrever elegíveis (até a cota)</button>
+      <button type="button" id="reg-clear" class="control-btn control-btn--ghost">Remover todos deste clube</button>
+    </div>
+    <div class="reg-events">${eventBlocks}</div>`;
+
+  // Alternar inscrição de um atleta.
+  registrationPanel.querySelectorAll(".reg-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const athleteId = Number(btn.dataset.athlete);
+      if (isAthleteRegistered(championship.id, athleteId)) {
+        unregisterAthlete(championship.id, athleteId);
+      } else {
+        registerAthlete(championship.id, athleteId, club.id, currentDate);
+      }
+      renderRegistrationPanel();
+    });
+  });
+
+  // Em massa: preencher cada evento até a cota (ordem de exibição) — conveniência
+  // do teste, o jogador aciona e pode desfazer. Não é IA de estratégia.
+  const fillBtn = document.getElementById("reg-fill");
+  if (fillBtn) {
+    fillBtn.addEventListener("click", () => {
+      for (const list of byEvent.values()) {
+        for (const athlete of list) {
+          registerAthlete(championship.id, athlete.id, club.id, currentDate); // ignora falhas
+        }
+      }
+      renderRegistrationPanel();
+    });
+  }
+  // Em massa: remover todas as inscrições deste clube neste campeonato.
+  const clearBtn = document.getElementById("reg-clear");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      for (const reg of getChampionshipRegistrations(championship.id)) {
+        if (reg.clubId === club.id) unregisterAthlete(championship.id, reg.athleteId);
+      }
+      renderRegistrationPanel();
+    });
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Rankings (UI) — apenas LÊ os motores (ranking.js / marksRanking.js) e exibe.
 // Nada de cálculo aqui: é só um indicador visual do que o sistema fez.
 // Ao abrir a aba, o jogador escolhe qual ranking ver (pontos ou marcas).
@@ -1224,10 +1480,12 @@ TABS.calendar.btn.addEventListener("click", () => activateTab("calendar"));
 TABS.championships.btn.addEventListener("click", () => activateTab("championships"));
 TABS.athletes.btn.addEventListener("click", () => activateTab("athletes"));
 TABS.clubs.btn.addEventListener("click", () => activateTab("clubs"));
+TABS.registrations.btn.addEventListener("click", () => activateTab("registrations"));
 TABS.rankings.btn.addEventListener("click", () => activateTab("rankings"));
 TABS.sports.btn.addEventListener("click", () => activateTab("sports"));
 rankingTypeSelect.addEventListener("change", () => renderRanking());
 championshipSelect.addEventListener("change", (e) => renderChampionship(e.target.value));
+registrationChampionshipSelect.addEventListener("change", () => renderRegistrationPanel());
 athleteCountrySelect.addEventListener("change", (e) => renderAthletes(e.target.value));
 athleteSearch.addEventListener("input", () => {
   _athleteView.term = athleteSearch.value;
@@ -1262,6 +1520,13 @@ renderAthletes(athleteCountrySelect.value);
 
 populateClubCountrySelect();
 renderClubs(clubCountrySelect.value);
+
+// Inscrições: controle de clube começa no clube de MAIOR PRESTÍGIO (ver
+// clubControl.js). As inscrições começam VAZIAS — é o jogador quem inscreve os
+// atletas (aba Inscrições). Até então, nenhuma etapa tem participantes.
+initClubControl();
+populateRegistrationChampionshipSelect();
+renderRegistrations();
 
 renderRanking();
 

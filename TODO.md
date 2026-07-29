@@ -31,18 +31,18 @@ Lista de coisas deixadas para depois, com contexto do porquê. Referenciada pela
 
 ## 🟡 Prioridade média
 
-- [ ] **Mecânica de cadastro de atletas em campeonatos.** Hoje a participação é
-      apenas uma **regra de TESTE** (`getStageParticipants` em `participation.js`):
-      cada clube inscreve **todos** os seus atletas em **todas** as etapas. Falta a
-      lógica **real**: o clube **escolhendo quais** atletas inscrever, vagas/limites,
-      critérios (força, forma, elenco), e a inscrição **por etapa** (não
-      necessariamente todas). Deve substituir a regra de teste. **Depende do
-      calendário de competições** (categorias/tiers) — o clube escolhe em **qual
-      competição** (porte) inscrever cada tipo de atleta. Ver a seção "Calendário
-      de competições" abaixo e `CALENDARIO_DE_COMPETICOES.md`.
-      **Já existe** o calendário populado (Estaduais/Regionais/Nacional) e a
-      **trava geográfica** (`eligibility.js`) que restringe por país/região/
-      estado/cidade — falta a **escolha do clube** (quais/quantos/por etapa).
+- [~] **Mecânica de inscrição de atletas em campeonatos.** A **estrutura** existe
+      (`registrations.js`) e **substituiu** a regra automática: a participação
+      (`participation.js`) usa só os **inscritos**. A inscrição é feita pelo
+      **JOGADOR** (escopo de teste: controla todos os clubes, um de cada vez —
+      `clubControl.js`), via a aba **Inscrições**, com trava geográfica/idade,
+      cobertura e **cota por clube por evento**. **Falta** (futuro):
+  - A **IA de inscrição** (o clube decidindo sozinho **quais** atletas inscrever
+    em **qual** porte, por perfil força/forma/índice) — hoje é tudo do jogador, de
+    propósito (a pedido, sem IA).
+  - Inscrição **por etapa** (hoje é **por campeonato** — o inscrito disputa todas
+    as etapas); poupar/rodar atletas por etapa.
+  - **Vagas/critérios** além da cota (ex.: número de vagas por competição, séries).
 
 ## Geografia (continente, regiões e estados)
 

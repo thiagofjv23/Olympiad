@@ -323,3 +323,8 @@ function getClub(id) {
 function getClubsByCountry(countryId) {
   return Object.values(CLUBS).filter((club) => club.countryId === countryId);
 }
+
+// Retorna todos os clubes (de todos os países).
+function getAllClubs() {
+  return Object.values(CLUBS);
+}
